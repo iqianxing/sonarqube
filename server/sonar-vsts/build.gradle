@@ -22,7 +22,7 @@ yarn_run {
   args = ['build']
 }
 
-yarn.dependsOn ':server:sonar-web:yarn_install'
+yarn.dependsOn ':server:sonar-web:yarn'
 
 def sources = fileTree(dir: "src") + fileTree(dir: "scripts") + fileTree(dir: "config")
 
