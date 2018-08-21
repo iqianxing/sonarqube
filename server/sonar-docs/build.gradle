@@ -8,11 +8,6 @@ sonarqube {
 
 group = 'com.sonarsource.sonarqube'
 
-yarn_install {
-  args = ['--network-concurrency','1', '--mutex', 'network']
-}
-
-
 yarn_run {
   inputs.dir('src').withPathSensitivity(PathSensitivity.RELATIVE)
   ['gatsby-config.js', 'gatsby-node.js', 'package.json', 'yarn.lock'].each {
