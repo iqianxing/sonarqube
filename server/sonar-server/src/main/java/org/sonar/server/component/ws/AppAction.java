@@ -44,7 +44,6 @@ import org.sonar.server.user.UserSession;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Arrays.asList;
-import static java.util.Collections.unmodifiableList;
 import static org.sonar.api.measures.CoreMetrics.COVERAGE;
 import static org.sonar.api.measures.CoreMetrics.COVERAGE_KEY;
 import static org.sonar.api.measures.CoreMetrics.DUPLICATED_LINES_DENSITY;
@@ -67,12 +66,12 @@ public class AppAction implements ComponentsWsAction {
 
   private static final String PARAM_COMPONENT_ID = "componentId";
   private static final String PARAM_COMPONENT = "component";
-  private static final List<String> METRIC_KEYS = unmodifiableList(asList(
+  private static final List<String> METRIC_KEYS = asList(
     LINES_KEY,
     VIOLATIONS_KEY,
     COVERAGE_KEY,
     DUPLICATED_LINES_DENSITY_KEY,
-    TESTS_KEY));
+    TESTS_KEY);
 
   private final DbClient dbClient;
 
