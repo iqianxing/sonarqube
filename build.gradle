@@ -19,6 +19,7 @@ buildscript {
     // https://www.jfrog.com/jira/browse/GAP-289
     classpath 'org.jfrog.buildinfo:build-info-extractor-gradle:4.6.2'
     classpath 'org.sonarsource.scanner.gradle:sonarqube-gradle-plugin:2.6.2'
+    classpath 'net.rdrei.android.buildtimetracker:gradle-plugin:0.11.0'
   }
 }
 
@@ -27,6 +28,20 @@ apply plugin: 'org.sonarqube'
 sonarqube {
   properties {
     property 'sonar.projectName', projectTitle
+  }
+}
+
+if (project.hasProperty('time-tracker')) {
+  // display a summary of task durations at the end of the build
+  apply plugin: 'build-time-tracker'
+  buildtimetracker {
+    reporters {
+      summary {
+        ordered false
+        threshold 50
+        barstyle 'unicode'
+      }
+    }
   }
 }
 
