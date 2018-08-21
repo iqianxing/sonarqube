@@ -127,6 +127,7 @@ public class AppLogging {
     LoggerContext ctx = helper.getRootContext();
     ctx.reset();
 
+    if (true)
     helper.enableJulChangePropagation(ctx);
 
     configureConsole(ctx);
