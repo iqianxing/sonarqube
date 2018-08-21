@@ -47,6 +47,10 @@ task copyBranding() {
   dependsOn copyBrandingFile
 }
 
+yarn_install {
+  args = ['--network-concurrency','1', '--mutex', 'network']
+}
+
 yarn_run {
   if (official) { dependsOn copyBranding }
   ['config', 'public', 'scripts', 'src', '../sonar-docs/src'].each {

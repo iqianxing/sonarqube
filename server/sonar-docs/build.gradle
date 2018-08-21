@@ -8,6 +8,11 @@ sonarqube {
 
 group = 'com.sonarsource.sonarqube'
 
+yarn_install {
+  args = ['--network-concurrency','1', '--mutex', 'network']
+}
+
+
 yarn_run {
   inputs.dir('src').withPathSensitivity(PathSensitivity.RELATIVE)
   ['gatsby-config.js', 'gatsby-node.js', 'package.json', 'yarn.lock'].each {
@@ -28,7 +33,7 @@ task zip(type: Zip) {
     from tasks.getByName('yarn_run').outputs
   }
 }
-zip.dependsOn yarn_run
+zip.dependsOn yarn
 assemble.dependsOn zip
 
 publishing {

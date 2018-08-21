@@ -9,6 +9,10 @@ sonarqube {
   }
 }
 
+yarn_install {
+  args = ['--network-concurrency','1', '--mutex', 'network']
+}
+
 yarn_run {
   ['config', 'public', 'scripts', 'src'].each {
     inputs.dir(it).withPathSensitivity(PathSensitivity.RELATIVE)
@@ -22,7 +26,7 @@ yarn_run {
   args = ['build']
 }
 
-yarn.dependsOn ':server:sonar-web:yarn'
+//yarn.dependsOn ':server:sonar-web:yarn'
 
 def sources = fileTree(dir: "src") + fileTree(dir: "scripts") + fileTree(dir: "config")
 
