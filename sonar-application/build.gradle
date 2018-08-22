@@ -34,6 +34,8 @@ dependencies {
   compile project(':server:sonar-main')
   compile project(':server:sonar-process')
   compile project(':server:sonar-server')
+  compile project(':server:sonar-vsts')
+  compile project(':server:sonar-web')
 
   compileOnly 'com.google.code.findbugs:jsr305'
 
