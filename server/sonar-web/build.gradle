@@ -47,7 +47,7 @@ task copyBranding() {
   dependsOn copyBrandingFile
 }
 
-yarn_install {
+yarn {
   doFirst {
     logger.lifecycle  'web-->yarn_install starting'
   }

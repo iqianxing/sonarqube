@@ -9,7 +9,7 @@ sonarqube {
   }
 }
 
-yarn_install {
+yarn {
   doFirst {
     logger.lifecycle  'vsts---->yarn_install starting'
   }
@@ -17,7 +17,7 @@ yarn_install {
     logger.lifecycle  'vsts---->yarn_install ended'
   }
   outputs.cacheIf { true }
-  mustRunAfter(':server:sonar-web:yarn_install')
+  mustRunAfter(':server:sonar-web:yarn')
 }
 
 yarn_run {
