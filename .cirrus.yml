@@ -2,6 +2,7 @@ gcp_credentials: ENCRYPTED[9cf993f6cc2ab666aa2d428185257608d065f6468146aaa26d6d2
 
 task:
   name: build
+  timeout_in: 60m
   gke_container:
     image: gradle:4.9.0-jdk8
     cluster_name: cirrus-ci-cluster
@@ -11,10 +12,11 @@ task:
     memory: 4G
   gradle_cache:
     folder: ~/.gradle/caches
+  env:
+    JAVA_OPTS: -XX:+PrintFlagsFinal -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -Xmx2G -XX:MaxRAMFraction=1
   script:
     - printenv
     - java -version
-    - export GRADLE_OPTS='-XX:+PrintFlagsFinal -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -Xmx2G -XX:MaxRAMFraction=1'
     - gradle build --no-daemon --build-cache --parallel -Ptime-tracker
   cleanup_before_cache_script:
     - rm -rf ~/.gradle/caches/$GRADLE_VERSION/
