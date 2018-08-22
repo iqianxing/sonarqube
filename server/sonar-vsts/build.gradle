@@ -9,11 +9,6 @@ sonarqube {
   }
 }
 
-yarn_install {
-  dependsOn(':server:sonar-web:yarn_install')
-}
-
-
 yarn_run {
   ['config', 'public', 'scripts', 'src'].each {
     inputs.dir(it).withPathSensitivity(PathSensitivity.RELATIVE)
@@ -27,6 +22,7 @@ yarn_run {
   args = ['build']
   dependsOn(':server:sonar-web:yarn_run')
 }
+yarn_run.dependsOn(':server:sonar-web:yarn_run')
 
 def sources = fileTree(dir: "src") + fileTree(dir: "scripts") + fileTree(dir: "config")
 
