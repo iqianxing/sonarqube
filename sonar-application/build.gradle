@@ -9,6 +9,7 @@ configurations {
 
   jsw
   scanner
+  web
   jdbc_mssql {
     transitive = false
   }
@@ -34,13 +35,13 @@ dependencies {
   compile project(':server:sonar-main')
   compile project(':server:sonar-process')
   compile project(':server:sonar-server')
-  compile project(':server:sonar-vsts')
-  compile project(':server:sonar-web')
 
   compileOnly 'com.google.code.findbugs:jsr305'
 
   jsw 'tanukisoft:wrapper:3.2.3'
   scanner project(path: ':sonar-scanner-engine-shaded', configuration: 'shadow')
+  web project(':server:sonar-vsts')
+  web project(':server:sonar-web')
 
   jdbc_h2 'com.h2database:h2'
   jdbc_mssql 'com.microsoft.sqlserver:mssql-jdbc'
@@ -108,8 +109,7 @@ task zip(type: Zip, dependsOn: [configurations.compile]) {
     from configurations.compile
   }
   into("${archiveDir}/web/") {
-    from tasks.getByPath(':server:sonar-web:yarn_run').outputs
-    from tasks.getByPath(':server:sonar-vsts:yarn_run').outputs
+    from configurations.web
   }
   into("${archiveDir}/lib/jdbc/mssql/") {
     from configurations.jdbc_mssql

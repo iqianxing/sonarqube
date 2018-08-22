@@ -9,7 +9,24 @@ sonarqube {
   }
 }
 
+yarn {
+  doFirst {
+    logger.lifecycle  'vsts---->yarn_install starting'
+  }
+  doLast {
+    logger.lifecycle  'vsts---->yarn_install ended'
+  }
+  dependsOn(':server:sonar-web:yarn')
+}
+
 yarn_run {
+  doFirst {
+    logger.lifecycle  'vsts---->yarn_run starting'
+  }
+  doLast {
+    logger.lifecycle  'vsts---->yarn_run ended'
+  }
+
   ['config', 'public', 'scripts', 'src'].each {
     inputs.dir(it).withPathSensitivity(PathSensitivity.RELATIVE)
   }
@@ -20,9 +37,8 @@ yarn_run {
   outputs.cacheIf { true }
 
   args = ['build']
-  dependsOn(':server:sonar-web:yarn_run')
 }
-yarn_run.dependsOn(':server:sonar-web:yarn_run')
+build.dependsOn(yarn_run)
 
 def sources = fileTree(dir: "src") + fileTree(dir: "scripts") + fileTree(dir: "config")
 

@@ -47,7 +47,24 @@ task copyBranding() {
   dependsOn copyBrandingFile
 }
 
+yarn {
+  doFirst {
+    logger.lifecycle  'web-->yarn_install starting'
+  }
+  doLast {
+    logger.lifecycle  'web-->yarn_install ended'
+  }
+}
+
 yarn_run {
+  doFirst {
+    logger.lifecycle 'web yarn_run starting'
+  }
+  doLast {
+    logger.lifecycle 'web yarn_run ended'
+  }
+
+
   if (official) { dependsOn copyBranding }
   ['config', 'public', 'scripts', 'src', '../sonar-docs/src'].each {
     inputs.dir(it).withPathSensitivity(PathSensitivity.RELATIVE)
@@ -58,8 +75,9 @@ yarn_run {
   outputs.dir(webappDir)
   outputs.cacheIf { true }
 
-  args = ['build', '--verbose', '--mutex', 'network']
+  args = ['build']
 }
+build.dependsOn(yarn_run)
 
 def sources = fileTree(dir: "src") + fileTree(dir: "scripts") + fileTree(dir: "config")
 
