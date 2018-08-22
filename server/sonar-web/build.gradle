@@ -58,7 +58,7 @@ yarn_run {
   outputs.dir(webappDir)
   outputs.cacheIf { true }
 
-  args = ['build']
+  args = ['build', '--verbose', '--mutex', 'network']
 }
 
 def sources = fileTree(dir: "src") + fileTree(dir: "scripts") + fileTree(dir: "config")

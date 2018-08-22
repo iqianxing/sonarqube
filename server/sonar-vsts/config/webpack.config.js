@@ -84,6 +84,10 @@ module.exports = ({ production = true }) => ({
       minify: utils.minifyParams({ production })
     }),
 
+    new webpack.LoaderOptionsPlugin({
+    debug: true
+  }),
+
     // keep `InterpolateHtmlPlugin` after `HtmlWebpackPlugin`
     !production && new InterpolateHtmlPlugin({ WEB_CONTEXT: '' }),
 
