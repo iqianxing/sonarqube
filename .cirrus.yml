@@ -13,7 +13,7 @@ task:
   gradle_cache:
     folder: ~/.gradle/caches
   env:
-    JAVA_OPTS: -XX:+PrintFlagsFinal -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -Xmx2G -XX:MaxRAMFraction=1
+    GRADLE_OPTS: -Dorg.gradle.jvmargs="-XX:+PrintFlagsFinal -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -Xmx2G -XX:MaxRAMFraction=1 -XX:+HeapDumpOnOutOfMemoryError"
   script:
     - printenv
     - java -version
