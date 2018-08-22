@@ -270,6 +270,9 @@ subprojects {
       exceptionFormat 'full' // log the full stack trace (default is the 1st line of the stack trace)
       events "skipped", "failed" // verbose log for failed and skipped tests (by default the name of the tests are not logged)
     }
+    maxHeapSize = '512m'
+    jvmArgs '-XX:+PrintFlagsFinal -XX:+UnlockExperimentalVMOptions -XX:+UseCGroupMemoryLimitForHeap -XX:MaxRAMFraction=1 -XX:+HeapDumpOnOutOfMemoryError'
+
     if (project.hasProperty('maxParallelTests'))
         maxParallelForks = project.maxParallelTests as int
   }
