@@ -9,9 +9,10 @@ sonarqube {
   }
 }
 
-dependencies {
-  compile project(':server:sonar-web')
+yarn_install {
+  dependsOn(':server:sonar-web:yarn_install')
 }
+
 
 yarn_run {
   ['config', 'public', 'scripts', 'src'].each {
@@ -24,6 +25,7 @@ yarn_run {
   outputs.cacheIf { true }
 
   args = ['build']
+  dependsOn(':server:sonar-web:yarn_run')
 }
 
 def sources = fileTree(dir: "src") + fileTree(dir: "scripts") + fileTree(dir: "config")
