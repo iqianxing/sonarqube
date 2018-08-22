@@ -47,7 +47,7 @@ task copyBranding() {
   dependsOn copyBrandingFile
 }
 
-yarn {
+yarn_install {
   doFirst {
     logger.lifecycle  'web-->yarn_install starting'
   }
@@ -58,10 +58,10 @@ yarn {
 
 yarn_run {
   doFirst {
-    logger.lifecycle 'web yarn_run starting'
+    logger.lifecycle 'web-->yarn_run starting'
   }
   doLast {
-    logger.lifecycle 'web yarn_run ended'
+    logger.lifecycle 'web-->yarn_run ended'
   }
 
 
@@ -69,7 +69,7 @@ yarn_run {
   ['config', 'public', 'scripts', 'src', '../sonar-docs/src'].each {
     inputs.dir(it).withPathSensitivity(PathSensitivity.RELATIVE)
   }
-  ['.babelrc', 'build.gradle', 'package.json', 'tsconfig.json', 'yarn.lock'].each {
+  ['.babelrc', 'package.json', 'tsconfig.json'].each {
     inputs.file(it).withPathSensitivity(PathSensitivity.RELATIVE)
   }
   outputs.dir(webappDir)

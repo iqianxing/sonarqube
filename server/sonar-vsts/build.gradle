@@ -9,14 +9,15 @@ sonarqube {
   }
 }
 
-yarn {
+yarn_install {
   doFirst {
     logger.lifecycle  'vsts---->yarn_install starting'
   }
   doLast {
     logger.lifecycle  'vsts---->yarn_install ended'
   }
-  dependsOn(':server:sonar-web:yarn')
+  outputs.cacheIf { true }
+  mustRunAfter(':server:sonar-web:yarn_install')
 }
 
 yarn_run {
@@ -30,7 +31,7 @@ yarn_run {
   ['config', 'public', 'scripts', 'src'].each {
     inputs.dir(it).withPathSensitivity(PathSensitivity.RELATIVE)
   }
-  ['.babelrc', 'package.json', 'tsconfig.json', 'yarn.lock'].each {
+  ['.babelrc', 'package.json', 'tsconfig.json'].each {
     inputs.file(it).withPathSensitivity(PathSensitivity.RELATIVE)
   }
   outputs.dir('build/webapp')
