@@ -54,6 +54,9 @@ yarn {
   doLast {
     logger.lifecycle  'web-->yarn_install ended'
   }
+  inputs.file('yarn.lock').withPathSensitivity(PathSensitivity.RELATIVE)
+  outputs.dir('node_modules')
+  outputs.cacheIf { true }
 }
 
 yarn_run {

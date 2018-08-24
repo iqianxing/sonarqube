@@ -16,6 +16,8 @@ yarn {
   doLast {
     logger.lifecycle  'vsts---->yarn_install ended'
   }
+  inputs.file('yarn.lock').withPathSensitivity(PathSensitivity.RELATIVE)
+  outputs.dir('node_modules')
   outputs.cacheIf { true }
   mustRunAfter(':server:sonar-web:yarn')
 }
