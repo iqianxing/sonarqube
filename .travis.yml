@@ -11,7 +11,7 @@ branches:
   - public_master
 
 env:
-  - TARGET=BUILD
+  - TARGET=sonar
   - TARGET=WEB_TESTS
 
 matrix:
