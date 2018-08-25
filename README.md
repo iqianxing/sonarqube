@@ -1,4 +1,4 @@
-SonarQube [![Build Status](https://travis-ci.org/SonarSource/sonarqube.svg?branch=master)](https://travis-ci.org/SonarSource/sonarqube)
+SonarQube [![Build Status](https://travis-ci.org/iqianxing/sonarqube.svg?branch=master)](https://travis-ci.org/iqianxing/sonarqube)
 =========
 
 Continuous Inspection
