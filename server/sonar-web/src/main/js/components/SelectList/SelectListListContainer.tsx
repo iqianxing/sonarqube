@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -91,7 +91,7 @@ export default class SelectListListContainer extends React.PureComponent<Props, 
             onCheck={this.handleBulkChange}
             thirdState={selectedElements.length > 0 && elements.length !== selectedElements.length}>
             <span className="big-spacer-left">
-              {translate('update_key.bulk_update')}
+              {translate('bulk_change')}
               <DeferredSpinner className="spacer-left" loading={this.state.loading} timeout={10} />
             </span>
           </Checkbox>

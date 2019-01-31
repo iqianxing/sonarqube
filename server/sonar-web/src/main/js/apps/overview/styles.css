@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -416,7 +416,7 @@
 }
 
 .overview-analysis-graph-tooltip-description {
-  max-width: 120px;
+  max-width: 80px;
 }
 
 .overview-activity-events {
@@ -468,6 +468,23 @@
 .overview-key {
   width: 100%;
   background-color: transparent !important;
+}
+
+.copy-paste-link .overview-key {
+  width: 90%;
+}
+
+.copy-paste-link .close {
+  color: #000;
+  border-bottom: 0;
+  height: 100%;
+  display: inline-block;
+  margin-left: 5px;
+  box-sizing: border-box;
+}
+
+.copy-paste-link .close svg {
+  vertical-align: sub;
 }
 
 .overview-deleted-profile,

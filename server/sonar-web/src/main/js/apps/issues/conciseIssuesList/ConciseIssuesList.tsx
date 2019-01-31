@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,11 +19,10 @@
  */
 import * as React from 'react';
 import ConciseIssue from './ConciseIssue';
-import { Issue } from '../../../app/types';
 import { scrollToElement } from '../../../helpers/scrolling';
 
 interface Props {
-  issues: Issue[];
+  issues: T.Issue[];
   onFlowSelect: (index: number) => void;
   onIssueSelect: (issueKey: string) => void;
   onLocationSelect: (index: number) => void;

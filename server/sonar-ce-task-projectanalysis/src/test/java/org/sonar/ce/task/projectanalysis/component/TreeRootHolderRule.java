@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,15 +30,29 @@ public class TreeRootHolderRule extends ExternalResource implements TreeRootHold
     this.delegate = null;
   }
 
-  public TreeRootHolderRule setRoot(Component newRoot) {
+  public TreeRootHolderRule setRoot(Component root) {
+    return setRoots(root, root);
+  }
+
+  public TreeRootHolderRule setRoots(Component root, Component reportRoot) {
     delegate = new TreeRootHolderImpl();
-    delegate.setRoot(newRoot);
+    delegate.setRoots(root, reportRoot);
     return this;
+  }
+
+  @Override
+  public boolean isEmpty() {
+    return delegate.isEmpty();
   }
 
   @Override
   public Component getRoot() {
     return delegate.getRoot();
+  }
+
+  @Override
+  public Component getReportTreeRoot() {
+    return delegate.getReportTreeRoot();
   }
 
   @Override
@@ -51,10 +65,13 @@ public class TreeRootHolderRule extends ExternalResource implements TreeRootHold
     return delegate.getOptionalComponentByRef(ref);
   }
 
+  @Override public Component getReportTreeComponentByRef(int ref) {
+    return delegate.getReportTreeComponentByRef(ref);
+  }
+
   @Override
   public int getSize() {
     return delegate.getSize();
   }
-
 
 }

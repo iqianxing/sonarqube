@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -56,6 +56,7 @@ public class MetricsAction implements CustomMeasuresWsAction {
   public void define(WebService.NewController context) {
     WebService.NewAction action = context.createAction(ACTION)
       .setSince("5.2")
+      .setDeprecatedSince("7.4")
       .setInternal(true)
       .setHandler(this)
       .setResponseExample(Resources.getResource(getClass(), "example-metrics.json"))

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -35,10 +35,10 @@ import org.sonar.server.user.UserSession;
 import org.sonar.server.ws.KeyExamples;
 import org.sonarqube.ws.Ce.ActivityStatusWsResponse;
 
-import static org.sonar.server.component.ComponentFinder.ParamNames.COMPONENT_ID_AND_KEY;
-import static org.sonar.server.ws.WsUtils.writeProtobuf;
 import static org.sonar.server.ce.ws.CeWsParameters.DEPRECATED_PARAM_COMPONENT_KEY;
 import static org.sonar.server.ce.ws.CeWsParameters.PARAM_COMPONENT_ID;
+import static org.sonar.server.component.ComponentFinder.ParamNames.COMPONENT_ID_AND_KEY;
+import static org.sonar.server.ws.WsUtils.writeProtobuf;
 
 public class ActivityStatusAction implements CeWsAction {
   private final UserSession userSession;
@@ -66,6 +66,7 @@ public class ActivityStatusAction implements CeWsAction {
       .setDescription("Id of the component (project) to filter on")
       .setExampleValue(Uuids.UUID_EXAMPLE_03);
     action.createParam(DEPRECATED_PARAM_COMPONENT_KEY)
+      .setDeprecatedSince("6.6")
       .setDescription("Key of the component (project) to filter on")
       .setExampleValue(KeyExamples.KEY_PROJECT_EXAMPLE_001);
 
@@ -83,9 +84,9 @@ public class ActivityStatusAction implements CeWsAction {
       Optional<ComponentDto> component = searchComponent(dbSession, request);
       String componentUuid = component.isPresent() ? component.get().uuid() : null;
       checkPermissions(component);
-      int pendingCount = dbClient.ceQueueDao().countByStatusAndComponentUuid(dbSession, CeQueueDto.Status.PENDING, componentUuid);
-      int inProgressCount = dbClient.ceQueueDao().countByStatusAndComponentUuid(dbSession, CeQueueDto.Status.IN_PROGRESS, componentUuid);
-      int failingCount = dbClient.ceActivityDao().countLastByStatusAndComponentUuid(dbSession, CeActivityDto.Status.FAILED, componentUuid);
+      int pendingCount = dbClient.ceQueueDao().countByStatusAndMainComponentUuid(dbSession, CeQueueDto.Status.PENDING, componentUuid);
+      int inProgressCount = dbClient.ceQueueDao().countByStatusAndMainComponentUuid(dbSession, CeQueueDto.Status.IN_PROGRESS, componentUuid);
+      int failingCount = dbClient.ceActivityDao().countLastByStatusAndMainComponentUuid(dbSession, CeActivityDto.Status.FAILED, componentUuid);
 
       return ActivityStatusWsResponse.newBuilder()
         .setPending(pendingCount)

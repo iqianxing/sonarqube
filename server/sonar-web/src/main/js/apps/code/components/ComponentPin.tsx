@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,29 +18,21 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
-import { Component } from '../types';
-import { BranchLike } from '../../../app/types';
 import PinIcon from '../../../components/icons-components/PinIcon';
-import { WorkspaceContext } from '../../../components/workspace/context';
+import { WorkspaceContextShape } from '../../../components/workspace/context';
 import { translate } from '../../../helpers/l10n';
 
 interface Props {
-  branchLike?: BranchLike;
-  component: Component;
+  branchLike?: T.BranchLike;
+  component: T.ComponentMeasure;
+  openComponent: WorkspaceContextShape['openComponent'];
 }
 
 export default class ComponentPin extends React.PureComponent<Props> {
-  context!: { workspace: WorkspaceContext };
-
-  static contextTypes = {
-    workspace: PropTypes.object.isRequired
-  };
-
   handleClick = (event: React.SyntheticEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     event.currentTarget.blur();
-    this.context.workspace.openComponent({
+    this.props.openComponent({
       branchLike: this.props.branchLike,
       key: this.props.component.key,
       name: this.props.component.path,

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -169,7 +169,7 @@ public final class Duplication {
         return "";
       }
       if (duplicate instanceof InProjectDuplicate) {
-        return ((InProjectDuplicate) duplicate).getFile().getKey();
+        return ((InProjectDuplicate) duplicate).getFile().getDbKey();
       }
       if (duplicate instanceof CrossProjectDuplicate) {
         return ((CrossProjectDuplicate) duplicate).getFileKey();

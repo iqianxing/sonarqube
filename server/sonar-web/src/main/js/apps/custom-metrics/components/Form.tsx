@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,7 +18,6 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import { Metric } from '../../../app/types';
 import DeferredSpinner from '../../../components/common/DeferredSpinner';
 import SimpleModal from '../../../components/controls/SimpleModal';
 import { translate } from '../../../helpers/l10n';
@@ -36,7 +35,7 @@ export interface MetricProps {
 interface Props {
   confirmButtonText: string;
   domains: string[];
-  metric?: Metric;
+  metric?: T.Metric;
   header: string;
   onClose: () => void;
   onSubmit: (data: MetricProps) => Promise<void>;
@@ -150,6 +149,7 @@ export default class Form extends React.PureComponent<Props, State> {
               <div className="modal-field">
                 <label htmlFor="create-metric-domain">{translate('custom_metrics.domain')}</label>
                 <Creatable
+                  id="create-metric-domain"
                   onChange={this.handleDomainChange}
                   options={domains.map(domain => ({ label: domain, value: domain }))}
                   value={this.state.domain}
@@ -162,6 +162,7 @@ export default class Form extends React.PureComponent<Props, State> {
                 </label>
                 <Select
                   clearable={false}
+                  id="create-metric-type"
                   onChange={this.handleTypeChange}
                   options={this.props.types.map(type => ({
                     label: translate('metric.type', type),

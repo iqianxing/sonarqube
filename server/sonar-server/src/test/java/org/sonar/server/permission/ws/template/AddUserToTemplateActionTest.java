@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,10 @@ import java.util.List;
 import javax.annotation.Nullable;
 import org.junit.Before;
 import org.junit.Test;
+import org.sonar.api.resources.Qualifiers;
+import org.sonar.api.resources.ResourceTypes;
 import org.sonar.core.permission.GlobalPermissions;
+import org.sonar.db.component.ResourceTypesRule;
 import org.sonar.db.organization.OrganizationDto;
 import org.sonar.db.permission.PermissionQuery;
 import org.sonar.db.permission.template.PermissionTemplateDto;
@@ -31,7 +34,11 @@ import org.sonar.db.user.UserDto;
 import org.sonar.server.exceptions.BadRequestException;
 import org.sonar.server.exceptions.ForbiddenException;
 import org.sonar.server.exceptions.NotFoundException;
+import org.sonar.server.permission.PermissionService;
+import org.sonar.server.permission.PermissionServiceImpl;
 import org.sonar.server.permission.ws.BasePermissionWsTest;
+import org.sonar.server.permission.ws.RequestValidator;
+import org.sonar.server.permission.ws.WsParameters;
 import org.sonar.server.ws.TestRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,10 +54,13 @@ public class AddUserToTemplateActionTest extends BasePermissionWsTest<AddUserToT
 
   private UserDto user;
   private PermissionTemplateDto permissionTemplate;
+  private ResourceTypes resourceTypes = new ResourceTypesRule().setRootQualifiers(Qualifiers.PROJECT);
+  private PermissionService permissionService = new PermissionServiceImpl(resourceTypes);
+  private WsParameters wsParameters = new WsParameters(permissionService);
 
   @Override
   protected AddUserToTemplateAction buildWsAction() {
-    return new AddUserToTemplateAction(db.getDbClient(), newPermissionWsSupport(), userSession);
+    return new AddUserToTemplateAction(db.getDbClient(), newPermissionWsSupport(), userSession, wsParameters);
   }
 
   @Before

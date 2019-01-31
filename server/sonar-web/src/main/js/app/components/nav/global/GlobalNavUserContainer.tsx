@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,14 +19,13 @@
  */
 import { connect } from 'react-redux';
 import GlobalNavUser from './GlobalNavUser';
-import { Organization } from '../../../types';
-import { getMyOrganizations } from '../../../../store/rootReducer';
+import { getMyOrganizations, Store } from '../../../../store/rootReducer';
 
 interface StateProps {
-  organizations: Organization[];
+  organizations: T.Organization[];
 }
 
-const mapStateToProps = (state: any): StateProps => ({
+const mapStateToProps = (state: Store): StateProps => ({
   organizations: getMyOrganizations(state)
 });
 

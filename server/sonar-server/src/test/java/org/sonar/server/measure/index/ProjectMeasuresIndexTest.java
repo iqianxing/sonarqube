@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -173,11 +173,10 @@ public class ProjectMeasuresIndexTest {
     index(
       newDoc(PROJECT1).setQualityGateStatus(OK.name()),
       newDoc(PROJECT2).setQualityGateStatus(ERROR.name()),
-      newDoc(PROJECT3).setQualityGateStatus(WARN.name()),
       newDoc(project4).setQualityGateStatus(OK.name()));
 
-    assertResults(new ProjectMeasuresQuery().setSort("alert_status").setAsc(true), PROJECT1, project4, PROJECT3, PROJECT2);
-    assertResults(new ProjectMeasuresQuery().setSort("alert_status").setAsc(false), PROJECT2, PROJECT3, PROJECT1, project4);
+    assertResults(new ProjectMeasuresQuery().setSort("alert_status").setAsc(true), PROJECT1, project4, PROJECT2);
+    assertResults(new ProjectMeasuresQuery().setSort("alert_status").setAsc(false), PROJECT2, PROJECT1, project4);
   }
 
   @Test
@@ -187,7 +186,7 @@ public class ProjectMeasuresIndexTest {
     ComponentDto apache1 = ComponentTesting.newPrivateProjectDto(ORG).setUuid("apache-1").setName("Apache").setDbKey("project3");
     ComponentDto apache2 = ComponentTesting.newPrivateProjectDto(ORG).setUuid("apache-2").setName("Apache").setDbKey("project4");
     index(
-      newDoc(windows).setQualityGateStatus(WARN.name()),
+      newDoc(windows).setQualityGateStatus(ERROR.name()),
       newDoc(apachee).setQualityGateStatus(OK.name()),
       newDoc(apache1).setQualityGateStatus(OK.name()),
       newDoc(apache2).setQualityGateStatus(OK.name()));
@@ -335,7 +334,7 @@ public class ProjectMeasuresIndexTest {
     index(
       newDoc(PROJECT1).setQualityGateStatus(OK.name()),
       newDoc(PROJECT2).setQualityGateStatus(OK.name()),
-      newDoc(PROJECT3).setQualityGateStatus(WARN.name()));
+      newDoc(PROJECT3).setQualityGateStatus(ERROR.name()));
 
     ProjectMeasuresQuery query = new ProjectMeasuresQuery().setQualityGateStatus(OK);
     assertResults(query, PROJECT1, PROJECT2);
@@ -1041,10 +1040,6 @@ public class ProjectMeasuresIndexTest {
       // 2 docs with QG OK
       newDoc().setQualityGateStatus(OK.name()),
       newDoc().setQualityGateStatus(OK.name()),
-      // 3 docs with QG WARN
-      newDoc().setQualityGateStatus(WARN.name()),
-      newDoc().setQualityGateStatus(WARN.name()),
-      newDoc().setQualityGateStatus(WARN.name()),
       // 4 docs with QG ERROR
       newDoc().setQualityGateStatus(ERROR.name()),
       newDoc().setQualityGateStatus(ERROR.name()),
@@ -1055,8 +1050,8 @@ public class ProjectMeasuresIndexTest {
 
     assertThat(result).containsOnly(
       entry(ERROR.name(), 4L),
-      entry(WARN.name(), 3L),
-      entry(OK.name(), 2L));
+      entry(OK.name(), 2L),
+      entry(WARN.name(), 0L));
   }
 
   @Test
@@ -1065,10 +1060,6 @@ public class ProjectMeasuresIndexTest {
       // 2 docs with QG OK
       newDoc(NCLOC, 10d, COVERAGE, 0d).setQualityGateStatus(OK.name()),
       newDoc(NCLOC, 10d, COVERAGE, 0d).setQualityGateStatus(OK.name()),
-      // 3 docs with QG WARN
-      newDoc(NCLOC, 100d, COVERAGE, 0d).setQualityGateStatus(WARN.name()),
-      newDoc(NCLOC, 100d, COVERAGE, 0d).setQualityGateStatus(WARN.name()),
-      newDoc(NCLOC, 100d, COVERAGE, 0d).setQualityGateStatus(WARN.name()),
       // 4 docs with QG ERROR
       newDoc(NCLOC, 100d, COVERAGE, 0d).setQualityGateStatus(ERROR.name()),
       newDoc(NCLOC, 5000d, COVERAGE, 40d).setQualityGateStatus(ERROR.name()),
@@ -1083,8 +1074,8 @@ public class ProjectMeasuresIndexTest {
     // Sticky facet on quality gate does not take into account quality gate filter
     assertThat(facets.get(ALERT_STATUS_KEY)).containsOnly(
       entry(OK.name(), 2L),
-      entry(WARN.name(), 3L),
-      entry(ERROR.name(), 3L));
+      entry(ERROR.name(), 3L),
+      entry(WARN.name(), 0L));
     // But facet on ncloc does well take into into filters
     assertThat(facets.get(NCLOC)).containsExactly(
       entry("*-1000.0", 1L),
@@ -1100,11 +1091,7 @@ public class ProjectMeasuresIndexTest {
     indexForUser(USER1,
       // 2 docs with QG OK
       newDoc().setQualityGateStatus(OK.name()),
-      newDoc().setQualityGateStatus(OK.name()),
-      // 3 docs with QG WARN
-      newDoc().setQualityGateStatus(WARN.name()),
-      newDoc().setQualityGateStatus(WARN.name()),
-      newDoc().setQualityGateStatus(WARN.name()));
+      newDoc().setQualityGateStatus(OK.name()));
 
     // User cannot see these projects
     indexForUser(USER2,
@@ -1119,6 +1106,30 @@ public class ProjectMeasuresIndexTest {
 
     assertThat(result).containsOnly(
       entry(ERROR.name(), 0L),
+      entry(OK.name(), 2L),
+      entry(WARN.name(), 0L));
+  }
+
+  @Test
+  public void facet_quality_gate_using_deprecated_warning() {
+    index(
+      // 2 docs with QG OK
+      newDoc().setQualityGateStatus(OK.name()),
+      newDoc().setQualityGateStatus(OK.name()),
+      // 3 docs with QG WARN
+      newDoc().setQualityGateStatus(WARN.name()),
+      newDoc().setQualityGateStatus(WARN.name()),
+      newDoc().setQualityGateStatus(WARN.name()),
+      // 4 docs with QG ERROR
+      newDoc().setQualityGateStatus(ERROR.name()),
+      newDoc().setQualityGateStatus(ERROR.name()),
+      newDoc().setQualityGateStatus(ERROR.name()),
+      newDoc().setQualityGateStatus(ERROR.name()));
+
+    LinkedHashMap<String, Long> result = underTest.search(new ProjectMeasuresQuery(), new SearchOptions().addFacets(ALERT_STATUS_KEY)).getFacets().get(ALERT_STATUS_KEY);
+
+    assertThat(result).containsOnly(
+      entry(ERROR.name(), 4L),
       entry(WARN.name(), 3L),
       entry(OK.name(), 2L));
   }
@@ -1252,7 +1263,7 @@ public class ProjectMeasuresIndexTest {
     index(
       newDoc().setTags(newArrayList("finance")).setQualityGateStatus(OK.name()),
       newDoc().setTags(newArrayList("finance")).setQualityGateStatus(ERROR.name()),
-      newDoc().setTags(newArrayList("cpp")).setQualityGateStatus(WARN.name()));
+      newDoc().setTags(newArrayList("cpp")).setQualityGateStatus(ERROR.name()));
 
     Facets facets = underTest.search(
       new ProjectMeasuresQuery().setTags(newHashSet("cpp")),
@@ -1264,8 +1275,8 @@ public class ProjectMeasuresIndexTest {
       entry("cpp", 1L));
     assertThat(facets.get(ALERT_STATUS_KEY)).containsOnly(
       entry(OK.name(), 0L),
-      entry(ERROR.name(), 0L),
-      entry(WARN.name(), 1L));
+      entry(ERROR.name(), 1L),
+      entry(WARN.name(), 0L));
   }
 
   @Test

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -50,7 +50,7 @@ import static org.junit.rules.ExpectedException.none;
 import static org.sonar.api.web.UserRole.ADMIN;
 import static org.sonar.db.DbTester.create;
 import static org.sonar.db.permission.OrganizationPermission.ADMINISTER;
-import static org.sonar.db.webhook.WebhookDbTesting.newDto;
+import static org.sonar.db.webhook.WebhookDeliveryTesting.newDto;
 import static org.sonar.server.organization.TestDefaultOrganizationProvider.from;
 import static org.sonar.server.tester.UserSessionRule.standalone;
 import static org.sonar.server.webhook.ws.WebhooksWsParameters.KEY_PARAM;

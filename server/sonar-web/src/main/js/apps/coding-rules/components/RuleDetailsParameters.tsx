@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,15 +18,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import { RuleParameter } from '../../../app/types';
 import { translate } from '../../../helpers/l10n';
 
 interface Props {
-  params: RuleParameter[];
+  params: T.RuleParameter[];
 }
 
 export default class RuleDetailsParameters extends React.PureComponent<Props> {
-  renderParameter = (param: RuleParameter) => (
+  renderParameter = (param: T.RuleParameter) => (
     <tr className="coding-rules-detail-parameter" key={param.key}>
       <td className="coding-rules-detail-parameter-name">{param.key}</td>
       <td className="coding-rules-detail-parameter-description">

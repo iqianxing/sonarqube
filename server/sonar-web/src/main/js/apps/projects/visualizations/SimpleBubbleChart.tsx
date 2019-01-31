@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,7 +27,7 @@ import { getProjectUrl } from '../../../helpers/urls';
 import { Project } from '../types';
 import HelpTooltip from '../../../components/controls/HelpTooltip';
 
-export interface Metric {
+interface Metric {
   key: string;
   type: string;
 }

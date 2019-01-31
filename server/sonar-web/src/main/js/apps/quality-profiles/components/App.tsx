@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,13 +24,11 @@ import { sortProfiles } from '../utils';
 import { Exporter, Profile } from '../types';
 import OrganizationHelmet from '../../../components/common/OrganizationHelmet';
 import { translate } from '../../../helpers/l10n';
-import { Languages } from '../../../store/languages/reducer';
 import '../styles.css';
 
 interface Props {
   children: React.ReactElement<any>;
-  languages: Languages;
-  onRequestFail: (reasong: any) => void;
+  languages: T.Languages;
   organization: { name: string; key: string } | undefined;
 }
 
@@ -103,7 +101,6 @@ export default class App extends React.PureComponent<Props, State> {
       languages: finalLanguages,
       exporters: this.state.exporters,
       updateProfiles: this.updateProfiles,
-      onRequestFail: this.props.onRequestFail,
       organization: organization ? organization.key : null
     });
   }

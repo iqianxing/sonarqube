@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,6 @@ import * as React from 'react';
 import { Link } from 'react-router';
 import * as classNames from 'classnames';
 import BranchStatus from '../../../../components/common/BranchStatus';
-import { BranchLike, Component } from '../../../types';
 import BranchIcon from '../../../../components/icons-components/BranchIcon';
 import {
   isShortLivingBranch,
@@ -34,9 +33,9 @@ import { translate } from '../../../../helpers/l10n';
 import { getBranchLikeUrl } from '../../../../helpers/urls';
 
 export interface Props {
-  branchLike: BranchLike;
-  component: Component;
-  onSelect: (branchLike: BranchLike) => void;
+  branchLike: T.BranchLike;
+  component: T.Component;
+  onSelect: (branchLike: T.BranchLike) => void;
   selected: boolean;
   innerRef?: (node: HTMLLIElement) => void;
 }

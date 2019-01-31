@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,36 +20,19 @@
 import { translate, translateWithParameters } from './l10n';
 import { parseDate } from './dates';
 
-export enum PeriodMode {
-  Days = 'days',
-  Date = 'date',
-  Version = 'version',
-  PreviousAnalysis = 'previous_analysis',
-  PreviousVersion = 'previous_version'
-}
-
-export interface Period {
-  date: string;
-  index: number;
-  mode: PeriodMode;
-  modeParam?: string;
-  parameter?: string;
-}
-
-function getPeriod(periods: Period[] | undefined, index: number) {
+function getPeriod<T extends T.Period | T.PeriodMeasure>(periods: T[] | undefined, index: number) {
   if (!Array.isArray(periods)) {
     return undefined;
   }
-
   return periods.find(period => period.index === index);
 }
 
-export function getLeakPeriod(periods: Period[] | undefined) {
+export function getLeakPeriod<T extends T.Period | T.PeriodMeasure>(periods: T[] | undefined) {
   return getPeriod(periods, 1);
 }
 
 export function getPeriodLabel(
-  period: Period | undefined,
+  period: T.Period | undefined,
   dateFormatter: (date: string) => string
 ) {
   if (!period) {
@@ -57,11 +40,11 @@ export function getPeriodLabel(
   }
 
   let parameter = period.modeParam || period.parameter;
-  if (period.mode === PeriodMode.PreviousVersion && !parameter) {
+  if (period.mode === 'previous_version' && !parameter) {
     return translate('overview.period.previous_version_only_date');
   }
 
-  if (period.mode === PeriodMode.Date && parameter) {
+  if (period.mode === 'date' && parameter) {
     parameter = dateFormatter(parameter);
   }
 

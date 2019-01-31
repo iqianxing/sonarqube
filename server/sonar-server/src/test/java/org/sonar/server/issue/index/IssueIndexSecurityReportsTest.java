@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -54,10 +54,10 @@ import static org.sonar.api.resources.Qualifiers.PROJECT;
 import static org.sonar.db.component.ComponentTesting.newPrivateProjectDto;
 import static org.sonar.db.organization.OrganizationTesting.newOrganizationDto;
 import static org.sonar.server.issue.IssueDocTesting.newDoc;
-import static org.sonar.server.issue.index.IssueIndexDefinition.SANS_TOP_25_INSECURE_INTERACTION;
-import static org.sonar.server.issue.index.IssueIndexDefinition.SANS_TOP_25_POROUS_DEFENSES;
-import static org.sonar.server.issue.index.IssueIndexDefinition.SANS_TOP_25_RISKY_RESOURCE;
-import static org.sonar.server.issue.index.IssueIndexDefinition.UNKNOWN_STANDARD;
+import static org.sonar.server.issue.index.SecurityStandardHelper.SANS_TOP_25_INSECURE_INTERACTION;
+import static org.sonar.server.issue.index.SecurityStandardHelper.SANS_TOP_25_POROUS_DEFENSES;
+import static org.sonar.server.issue.index.SecurityStandardHelper.SANS_TOP_25_RISKY_RESOURCE;
+import static org.sonar.server.issue.index.SecurityStandardHelper.UNKNOWN_STANDARD;
 
 public class IssueIndexSecurityReportsTest {
 

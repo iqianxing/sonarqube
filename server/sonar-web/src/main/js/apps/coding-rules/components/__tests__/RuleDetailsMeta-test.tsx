@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,9 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import RuleDetailsMeta from '../RuleDetailsMeta';
-import { RuleScope, RuleType } from '../../../../app/types';
 import RuleDetailsTagsPopup from '../RuleDetailsTagsPopup';
 
-const RULE = {
+const RULE: T.RuleDetails = {
   key: 'squid:S1133',
   repo: 'squid',
   name: 'Deprecated code should be removed',
@@ -32,22 +31,23 @@ const RULE = {
   status: 'READY',
   lang: 'java',
   langName: 'Java',
-  scope: RuleScope.Main,
-  type: RuleType.CodeSmell
+  scope: 'MAIN',
+  type: 'CODE_SMELL'
 };
 
-const EXTERNAL_RULE = {
+const EXTERNAL_RULE: T.RuleDetails = {
   key: 'external_xoo:OneExternalIssuePerLine',
   repo: 'external_xoo',
   name: 'xoo:OneExternalIssuePerLine',
   createdAt: '2018-05-31T11:22:13+0200',
+  severity: 'MAJOR',
   status: 'READY',
-  scope: RuleScope.All,
+  scope: 'ALL',
   isExternal: true,
-  type: RuleType.Unknown
+  type: 'UNKNOWN'
 };
 
-const EXTERNAL_RULE_WITH_DATA = {
+const EXTERNAL_RULE_WITH_DATA: T.RuleDetails = {
   key: 'external_xoo:OneExternalIssueWithDetailsPerLine',
   repo: 'external_xoo',
   name: 'One external issue per line',
@@ -57,24 +57,24 @@ const EXTERNAL_RULE_WITH_DATA = {
   tags: ['tag'],
   lang: 'xoo',
   langName: 'Xoo',
-  scope: RuleScope.All,
+  scope: 'ALL',
   isExternal: true,
-  type: RuleType.Bug
+  type: 'BUG'
 };
 
 it('should display right meta info', () => {
-  expect(getWrapper()).toMatchSnapshot();
+  expect(shallowRender()).toMatchSnapshot();
   expect(
-    getWrapper({ hideSimilarRulesFilter: true, ruleDetails: EXTERNAL_RULE })
+    shallowRender({ hideSimilarRulesFilter: true, ruleDetails: EXTERNAL_RULE })
   ).toMatchSnapshot();
   expect(
-    getWrapper({ hideSimilarRulesFilter: true, ruleDetails: EXTERNAL_RULE_WITH_DATA })
+    shallowRender({ hideSimilarRulesFilter: true, ruleDetails: EXTERNAL_RULE_WITH_DATA })
   ).toMatchSnapshot();
 });
 
 it('should edit tags', () => {
   const onTagsChange = jest.fn();
-  const wrapper = getWrapper({ onTagsChange });
+  const wrapper = shallowRender({ onTagsChange });
   expect(wrapper.find('[data-meta="tags"]')).toMatchSnapshot();
   const overlay = wrapper
     .find('[data-meta="tags"]')
@@ -85,7 +85,7 @@ it('should edit tags', () => {
   expect(onTagsChange).toBeCalledWith(['foo', 'bar']);
 });
 
-function getWrapper(props = {}) {
+function shallowRender(props: Partial<RuleDetailsMeta['props']> = {}) {
   return shallow(
     <RuleDetailsMeta
       canWrite={true}

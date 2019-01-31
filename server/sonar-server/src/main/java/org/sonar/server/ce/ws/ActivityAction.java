@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,12 +20,12 @@
 package org.sonar.server.ce.ws;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import java.util.Collections;
 import java.util.Date;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -53,8 +53,10 @@ import static java.lang.Boolean.parseBoolean;
 import static java.lang.Integer.parseInt;
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+import static java.util.Collections.emptyList;
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang.StringUtils.defaultString;
+import static org.sonar.api.server.ws.WebService.Param.TEXT_QUERY;
 import static org.sonar.api.utils.DateUtils.parseEndingDateOrDateTime;
 import static org.sonar.api.utils.DateUtils.parseStartingDateOrDateTime;
 import static org.sonar.core.util.stream.MoreCollectors.toList;
@@ -72,7 +74,7 @@ import static org.sonar.server.ws.WsUtils.writeProtobuf;
 
 public class ActivityAction implements CeWsAction {
   private static final int MAX_PAGE_SIZE = 1000;
-  private static final String[] POSSIBLE_QUALIFIERS = new String[] {Qualifiers.PROJECT, Qualifiers.APP, Qualifiers.VIEW, "DEV", Qualifiers.MODULE};
+  private static final String[] POSSIBLE_QUALIFIERS = new String[] {Qualifiers.PROJECT, Qualifiers.APP, Qualifiers.VIEW};
 
   private final UserSession userSession;
   private final DbClient dbClient;
@@ -102,7 +104,8 @@ public class ActivityAction implements CeWsAction {
         new Change("5.5", "it's no more possible to specify the page parameter."),
         new Change("6.1", "field \"logs\" is deprecated and its value is always false"),
         new Change("6.6", "fields \"branch\" and \"branchType\" added"),
-        new Change("7.1", "field \"pullRequest\" added"))
+        new Change("7.1", "field \"pullRequest\" added"),
+        new Change("7.6", String.format("The use of module keys in parameters '%s' and '%s' is deprecated", TEXT_QUERY, PARAM_COMPONENT_QUERY)))
       .setSince("5.2");
 
     action.createParam(PARAM_COMPONENT_ID)
@@ -114,10 +117,10 @@ public class ActivityAction implements CeWsAction {
         "<li>component keys that are exactly the same as the supplied string</li>" +
         "</ul>" +
         "Must not be set together with %s.<br />" +
-        "Deprecated and replaced by '%s'", PARAM_COMPONENT_ID, Param.TEXT_QUERY))
+        "Deprecated and replaced by '%s'", PARAM_COMPONENT_ID, TEXT_QUERY))
       .setExampleValue("Apache")
       .setDeprecatedSince("5.5");
-    action.createParam(Param.TEXT_QUERY)
+    action.createParam(TEXT_QUERY)
       .setDescription(format("Limit search to: <ul>" +
         "<li>component names that contain the supplied string</li>" +
         "<li>component keys that are exactly the same as the supplied string</li>" +
@@ -209,16 +212,16 @@ public class ActivityAction implements CeWsAction {
   private Optional<Ce.Task> searchTaskByUuid(DbSession dbSession, Request request) {
     String textQuery = request.getQ();
     if (textQuery == null) {
-      return Optional.absent();
+      return Optional.empty();
     }
 
-    java.util.Optional<CeQueueDto> queue = dbClient.ceQueueDao().selectByUuid(dbSession, textQuery);
+    Optional<CeQueueDto> queue = dbClient.ceQueueDao().selectByUuid(dbSession, textQuery);
     if (queue.isPresent()) {
       return Optional.of(formatter.formatQueue(dbSession, queue.get()));
     }
 
-    java.util.Optional<CeActivityDto> activity = dbClient.ceActivityDao().selectByUuid(dbSession, textQuery);
-    return activity.map(ceActivityDto -> Optional.of(formatter.formatActivity(dbSession, ceActivityDto, null))).orElseGet(Optional::absent);
+    Optional<CeActivityDto> activity = dbClient.ceActivityDao().selectByUuid(dbSession, textQuery);
+    return activity.map(ceActivityDto -> formatter.formatActivity(dbSession, ceActivityDto, null, emptyList()));
   }
 
   private CeTaskQuery buildQuery(DbSession dbSession, Request request, @Nullable ComponentDto component) {
@@ -237,9 +240,9 @@ public class ActivityAction implements CeWsAction {
 
     String componentQuery = request.getQ();
     if (component != null) {
-      query.setComponentUuid(component.uuid());
+      query.setMainComponentUuid(component.uuid());
     } else if (componentQuery != null) {
-      query.setComponentUuids(loadComponents(dbSession, componentQuery).stream()
+      query.setMainComponentUuids(loadComponents(dbSession, componentQuery).stream()
         .map(ComponentDto::uuid)
         .collect(toList()));
     }
@@ -287,7 +290,7 @@ public class ActivityAction implements CeWsAction {
   private static Request toSearchWsRequest(org.sonar.api.server.ws.Request request) {
     Request activityWsRequest = new Request()
       .setComponentId(request.param(PARAM_COMPONENT_ID))
-      .setQ(defaultString(request.param(Param.TEXT_QUERY), request.param(PARAM_COMPONENT_QUERY)))
+      .setQ(defaultString(request.param(TEXT_QUERY), request.param(PARAM_COMPONENT_QUERY)))
       .setStatus(request.paramAsStrings(PARAM_STATUS))
       .setType(request.param(PARAM_TYPE))
       .setMinSubmittedAt(request.param(PARAM_MIN_SUBMITTED_AT))

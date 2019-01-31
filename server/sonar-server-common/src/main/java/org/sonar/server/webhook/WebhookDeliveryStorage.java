@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -72,7 +72,7 @@ public class WebhookDeliveryStorage {
     delivery.getWebhook().getCeTaskUuid().ifPresent(dto::setCeTaskUuid);
     delivery.getWebhook().getAnalysisUuid().ifPresent(dto::setAnalysisUuid);
     dto.setName(delivery.getWebhook().getName());
-    dto.setUrl(delivery.getWebhook().getUrl());
+    dto.setUrl(delivery.getEffectiveUrl().orElse(delivery.getWebhook().getUrl()));
     dto.setSuccess(delivery.isSuccess());
     dto.setHttpStatus(delivery.getHttpStatus().orElse(null));
     dto.setDurationMs(delivery.getDurationInMs().orElse(null));

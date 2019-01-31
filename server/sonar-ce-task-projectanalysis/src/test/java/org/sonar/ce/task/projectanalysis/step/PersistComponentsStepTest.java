@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -55,7 +55,7 @@ public class PersistComponentsStepTest {
     String projectKey = randomAlphabetic(20);
 
     doReturn(component).when(treeRootHolder).getRoot();
-    doReturn(projectKey).when(component).getKey();
+    doReturn(projectKey).when(component).getDbKey();
     doReturn(componentDao).when(dbClient).componentDao();
     doReturn(emptyList()).when(componentDao).selectAllComponentsFromProjectKey(any(DbSession.class), eq(projectKey));
 

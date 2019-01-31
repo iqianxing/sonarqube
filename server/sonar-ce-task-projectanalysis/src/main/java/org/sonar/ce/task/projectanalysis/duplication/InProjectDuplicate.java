@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
 
 @Immutable
 public class InProjectDuplicate extends AbstractDuplicate {
-  private final Component file;
+  protected final Component file;
 
   public InProjectDuplicate(Component file, TextBlock textBlock) {
     super(textBlock);

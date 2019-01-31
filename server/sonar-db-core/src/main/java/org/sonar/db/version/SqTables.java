@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -58,12 +58,14 @@ public final class SqTables {
     "ce_queue",
     "ce_task_characteristics",
     "ce_task_input",
+    "ce_task_message",
     "ce_scanner_context",
     "default_qprofiles",
     "deprecated_rule_keys",
     "duplications_index",
     "es_queue",
     "events",
+    "event_component_changes",
     "file_sources",
     "groups",
     "groups_users",
@@ -76,6 +78,7 @@ public final class SqTables {
     "metrics",
     "notifications",
     "organizations",
+    "organization_alm_bindings",
     "organization_members",
     "org_qprofiles",
     "org_quality_gates",
@@ -105,8 +108,10 @@ public final class SqTables {
     "schema_migrations",
     "snapshots",
     "users",
+    "user_properties",
     "user_roles",
     "user_tokens",
+    "webhooks",
     "webhook_deliveries")));
 
   private SqTables() {

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,6 +29,8 @@ import org.sonar.api.rule.Severity;
 import org.sonar.api.rules.RuleType;
 import org.sonar.db.issue.IssueGroupDto;
 import org.sonar.db.rule.SeverityUtil;
+
+import static org.sonar.api.rules.RuleType.SECURITY_HOTSPOT;
 
 class IssueCounter {
 
@@ -115,9 +117,11 @@ class IssueCounter {
     private long leak = 0L;
 
     void add(IssueGroupDto group) {
-      absolute += group.getCount();
-      if (group.isInLeak()) {
-        leak += group.getCount();
+      if (group.getRuleType() != SECURITY_HOTSPOT.getDbConstant()) {
+        absolute += group.getCount();
+        if (group.isInLeak()) {
+          leak += group.getCount();
+        }
       }
     }
   }

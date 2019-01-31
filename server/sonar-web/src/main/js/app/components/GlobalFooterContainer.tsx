@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,23 +19,18 @@
  */
 import { connect } from 'react-redux';
 import GlobalFooter from './GlobalFooter';
-import { getAppState } from '../../store/rootReducer';
-import { EditionKey } from '../../apps/marketplace/utils';
+import { getAppState, Store } from '../../store/rootReducer';
 
 interface StateProps {
   productionDatabase: boolean;
-  sonarqubeEdition?: EditionKey;
+  sonarqubeEdition?: T.EditionKey;
   sonarqubeVersion?: string;
 }
 
-interface OwnProps {
-  hideLoggedInInfo?: boolean;
-}
-
-const mapStateToProps = (state: any): StateProps => ({
+const mapStateToProps = (state: Store): StateProps => ({
   productionDatabase: getAppState(state).productionDatabase,
   sonarqubeEdition: getAppState(state).edition,
   sonarqubeVersion: getAppState(state).version
 });
 
-export default connect<StateProps, {}, OwnProps>(mapStateToProps)(GlobalFooter);
+export default connect(mapStateToProps)(GlobalFooter);

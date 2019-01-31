@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@ import * as React from 'react';
 import { shallow } from 'enzyme';
 import Params from '../Params';
 
-const DEFAULT_PARAM = {
+const DEFAULT_PARAM: T.WebApi.Param = {
   key: 'foo',
   description: 'Foo desc',
   internal: false,
@@ -52,5 +52,22 @@ it('should render deprecated key', () => {
   ];
   expect(
     shallow(<Params params={params} showDeprecated={true} showInternal={false} />)
+  ).toMatchSnapshot();
+});
+
+it('should render different value constraints', () => {
+  const param: T.WebApi.Param = {
+    ...DEFAULT_PARAM,
+    defaultValue: 'def',
+    exampleValue: 'foo',
+    minimumLength: 2,
+    maximumLength: 200,
+    minimumValue: 1,
+    maximumValue: 500,
+    maxValuesAllowed: 1000,
+    possibleValues: ['foo', 'bar']
+  };
+  expect(
+    shallow(<Params params={[param]} showDeprecated={true} showInternal={true} />)
   ).toMatchSnapshot();
 });

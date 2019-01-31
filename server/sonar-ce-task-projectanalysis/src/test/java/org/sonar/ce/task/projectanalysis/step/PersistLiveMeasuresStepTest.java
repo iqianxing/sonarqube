@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -42,10 +42,10 @@ import org.sonar.db.measure.LiveMeasureDto;
 import org.sonar.db.metric.MetricDto;
 import org.sonar.server.project.Project;
 
+import static java.util.Collections.emptyList;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.DIRECTORY;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.FILE;
-import static org.sonar.ce.task.projectanalysis.component.Component.Type.MODULE;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.PROJECT;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.PROJECT_VIEW;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.SUBVIEW;
@@ -97,7 +97,6 @@ public class PersistLiveMeasuresStepTest extends BaseStepTest {
 
     // the computed measures
     measureRepository.addRawMeasure(REF_1, STRING_METRIC.getKey(), newMeasureBuilder().create("project-value"));
-    measureRepository.addRawMeasure(REF_2, STRING_METRIC.getKey(), newMeasureBuilder().create("module-value"));
     measureRepository.addRawMeasure(REF_3, STRING_METRIC.getKey(), newMeasureBuilder().create("dir-value"));
     measureRepository.addRawMeasure(REF_4, STRING_METRIC.getKey(), newMeasureBuilder().create("file-value"));
 
@@ -105,12 +104,11 @@ public class PersistLiveMeasuresStepTest extends BaseStepTest {
     step().execute(context);
 
     // all measures are persisted, from project to file
-    assertThat(db.countRowsOfTable("live_measures")).isEqualTo(4);
+    assertThat(db.countRowsOfTable("live_measures")).isEqualTo(3);
     assertThat(selectMeasure("project-uuid", STRING_METRIC).get().getDataAsString()).isEqualTo("project-value");
-    assertThat(selectMeasure("module-uuid", STRING_METRIC).get().getDataAsString()).isEqualTo("module-value");
     assertThat(selectMeasure("dir-uuid", STRING_METRIC).get().getDataAsString()).isEqualTo("dir-value");
     assertThat(selectMeasure("file-uuid", STRING_METRIC).get().getDataAsString()).isEqualTo("file-value");
-    verifyStatistics(context, 4, 0);
+    verifyStatistics(context, 3);
   }
 
   @Test
@@ -124,7 +122,7 @@ public class PersistLiveMeasuresStepTest extends BaseStepTest {
 
     assertThatMeasureIsNotPersisted("project-uuid", STRING_METRIC);
     assertThatMeasureIsNotPersisted("project-uuid", INT_METRIC);
-    verifyStatistics(context, 0, 0);
+    verifyStatistics(context, 0);
   }
 
   @Test
@@ -138,16 +136,14 @@ public class PersistLiveMeasuresStepTest extends BaseStepTest {
     LiveMeasureDto persistedMeasure = selectMeasure("project-uuid", INT_METRIC).get();
     assertThat(persistedMeasure.getValue()).isNull();
     assertThat(persistedMeasure.getVariation()).isEqualTo(42.0);
-    verifyStatistics(context, 1, 0);
+    verifyStatistics(context, 1);
   }
 
   @Test
-  public void delete_measures_from_db_if_no_more_computed() {
+  public void delete_measures_from_db_if_no_longer_computed() {
     prepareProject();
     // measure to be updated
     LiveMeasureDto measureOnFileInProject = insertMeasure("file-uuid", "project-uuid", INT_METRIC);
-    // measure to be deleted because on a file that has been deleted
-    LiveMeasureDto measureOnDeletedFileInProject = insertMeasure("deleted-file-in-project", "project-uuid", INT_METRIC);
     // measure to be deleted because not computed anymore
     LiveMeasureDto otherMeasureOnFileInProject = insertMeasure("file-uuid", "project-uuid", STRING_METRIC);
     // measure in another project, not touched
@@ -160,10 +156,9 @@ public class PersistLiveMeasuresStepTest extends BaseStepTest {
     step().execute(context);
 
     assertThatMeasureHasValue(measureOnFileInProject, 42);
-    assertThatMeasureDoesNotExist(measureOnDeletedFileInProject);
     assertThatMeasureDoesNotExist(otherMeasureOnFileInProject);
     assertThatMeasureHasValue(measureInOtherProject, (int) measureInOtherProject.getValue().doubleValue());
-    verifyStatistics(context, 1, 2);
+    verifyStatistics(context, 1);
   }
 
   @Test
@@ -183,7 +178,7 @@ public class PersistLiveMeasuresStepTest extends BaseStepTest {
 
     assertThatMeasureDoesNotExist(oldMeasure);
     assertThatMeasureHasValue("project-uuid", METRIC_WITH_BEST_VALUE, 0);
-    verifyStatistics(context, 1, 1);
+    verifyStatistics(context, 1);
   }
 
   @Test
@@ -202,7 +197,7 @@ public class PersistLiveMeasuresStepTest extends BaseStepTest {
     assertThat(selectMeasure("view-uuid", STRING_METRIC).get().getDataAsString()).isEqualTo("view-value");
     assertThat(selectMeasure("subview-uuid", STRING_METRIC).get().getDataAsString()).isEqualTo("subview-value");
     assertThat(selectMeasure("project-uuid", STRING_METRIC).get().getDataAsString()).isEqualTo("project-value");
-    verifyStatistics(context, 3, 0);
+    verifyStatistics(context, 3);
   }
 
   private LiveMeasureDto insertMeasure(String componentUuid, String projectUuid, Metric metric) {
@@ -210,7 +205,7 @@ public class PersistLiveMeasuresStepTest extends BaseStepTest {
       .setComponentUuid(componentUuid)
       .setProjectUuid(projectUuid)
       .setMetricId(metricRepository.getByKey(metric.getKey()).getId());
-    dbClient.liveMeasureDao().insertOrUpdate(db.getSession(), measure, null);
+    dbClient.liveMeasureDao().insertOrUpdate(db.getSession(), measure);
     return measure;
   }
 
@@ -231,28 +226,24 @@ public class PersistLiveMeasuresStepTest extends BaseStepTest {
   private void assertThatMeasureDoesNotExist(LiveMeasureDto template) {
     assertThat(dbClient.liveMeasureDao().selectMeasure(db.getSession(),
       template.getComponentUuid(), metricRepository.getById(template.getMetricId()).getKey()))
-        .isEmpty();
+      .isEmpty();
   }
 
   private void prepareProject() {
     // tree of components as defined by scanner report
     Component project = ReportComponent.builder(PROJECT, REF_1).setUuid("project-uuid")
       .addChildren(
-        ReportComponent.builder(MODULE, REF_2).setUuid("module-uuid")
+        ReportComponent.builder(DIRECTORY, REF_3).setUuid("dir-uuid")
           .addChildren(
-            ReportComponent.builder(DIRECTORY, REF_3).setUuid("dir-uuid")
-              .addChildren(
-                ReportComponent.builder(FILE, REF_4).setUuid("file-uuid")
-                  .build())
+            ReportComponent.builder(FILE, REF_4).setUuid("file-uuid")
               .build())
           .build())
       .build();
     treeRootHolder.setRoot(project);
-    analysisMetadataHolder.setProject(new Project(project.getUuid(), project.getKey(), project.getName()));
+    analysisMetadataHolder.setProject(new Project(project.getUuid(), project.getDbKey(), project.getName(), project.getDescription(), emptyList()));
 
     // components as persisted in db
     ComponentDto projectDto = insertComponent("project-key", "project-uuid");
-    ComponentDto moduleDto = insertComponent("module-key", "module-uuid");
     ComponentDto dirDto = insertComponent("dir-key", "dir-uuid");
     ComponentDto fileDto = insertComponent("file-key", "file-uuid");
   }
@@ -273,7 +264,7 @@ public class PersistLiveMeasuresStepTest extends BaseStepTest {
     ComponentDto portfolioDto = insertComponent("view-key", "view-uuid");
     ComponentDto subViewDto = insertComponent("subview-key", "subview-uuid");
     ComponentDto projectDto = insertComponent("project-key", "project-uuid");
-    analysisMetadataHolder.setProject(new Project(portfolioDto.uuid(), portfolioDto.getDbKey(), portfolioDto.name()));
+    analysisMetadataHolder.setProject(Project.from(portfolioDto));
   }
 
   private void assertThatMeasureIsNotPersisted(String componentUuid, Metric metric) {
@@ -301,8 +292,7 @@ public class PersistLiveMeasuresStepTest extends BaseStepTest {
     return new PersistLiveMeasuresStep(dbClient, metricRepository, new MeasureToMeasureDto(analysisMetadataHolder, treeRootHolder), treeRootHolder, measureRepository);
   }
 
-  private static void verifyStatistics(TestComputationStepContext context, int expectedInsertsOrUpdates, int expectedDeletes) {
+  private static void verifyStatistics(TestComputationStepContext context, int expectedInsertsOrUpdates) {
     context.getStatistics().assertValue("insertsOrUpdates", expectedInsertsOrUpdates);
-    context.getStatistics().assertValue("deletes", expectedDeletes);
   }
 }

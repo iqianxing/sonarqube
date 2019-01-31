@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,23 +19,23 @@
  */
 package org.sonar.scanner.cpd;
 
-import com.google.common.collect.Lists;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.Reader;
 import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.StreamSupport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.sonar.api.CoreProperties;
 import org.sonar.api.batch.Phase;
 import org.sonar.api.batch.fs.FilePredicates;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
-import org.sonar.api.batch.sensor.Sensor;
 import org.sonar.api.batch.sensor.SensorContext;
 import org.sonar.api.batch.sensor.SensorDescriptor;
+import org.sonar.api.scanner.sensor.ProjectSensor;
 import org.sonar.duplications.block.Block;
 import org.sonar.duplications.block.BlockChunker;
 import org.sonar.duplications.java.JavaStatementBuilder;
@@ -49,7 +49,7 @@ import org.sonar.scanner.cpd.index.SonarCpdBlockIndex;
  * Special case for Java that use a dedicated block indexer.
  */
 @Phase(name = Phase.Name.POST)
-public class JavaCpdBlockIndexerSensor implements Sensor {
+public class JavaCpdBlockIndexerSensor implements ProjectSensor {
 
   private static final int BLOCK_SIZE = 10;
   private static final Logger LOG = LoggerFactory.getLogger(JavaCpdBlockIndexerSensor.class);
@@ -62,18 +62,21 @@ public class JavaCpdBlockIndexerSensor implements Sensor {
   @Override
   public void describe(SensorDescriptor descriptor) {
     descriptor.name("Java CPD Block Indexer")
-      .onlyOnLanguage("java")
-      .global();
+      .onlyOnLanguage("java");
   }
 
   @Override
   public void execute(SensorContext context) {
-    String[] cpdExclusions = context.config().getStringArray(CoreProperties.CPD_EXCLUSIONS);
     FilePredicates p = context.fileSystem().predicates();
-    List<InputFile> sourceFiles = Lists.newArrayList(context.fileSystem().inputFiles(p.and(
-      p.hasType(InputFile.Type.MAIN),
-      p.hasLanguage("java"),
-      p.doesNotMatchPathPatterns(cpdExclusions))));
+    List<InputFile> sourceFiles = StreamSupport.stream(
+      context.fileSystem().inputFiles(
+        p.and(
+          p.hasType(InputFile.Type.MAIN),
+          p.hasLanguage("java")
+        )
+      ).spliterator(), false)
+      .filter(f -> !((DefaultInputFile) f).isExcludedForDuplication())
+      .collect(Collectors.toList());
     if (sourceFiles.isEmpty()) {
       return;
     }
@@ -87,7 +90,7 @@ public class JavaCpdBlockIndexerSensor implements Sensor {
 
     for (InputFile inputFile : sourceFiles) {
       LOG.debug("Populating index from {}", inputFile);
-      String resourceEffectiveKey = ((DefaultInputFile) inputFile).key();
+      String resourceEffectiveKey = inputFile.key();
 
       List<Statement> statements;
 

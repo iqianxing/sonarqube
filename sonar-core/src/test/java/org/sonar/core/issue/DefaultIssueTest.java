@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -211,5 +211,14 @@ public class DefaultIssueTest {
     DefaultIssue issue = new DefaultIssue().setKey("AAA").setFieldChange(issueChangeContext, "actionPlan", "1.0", "1.1");
 
     assertThat(issue.changes()).hasSize(1);
+  }
+
+  @Test
+  public void adding_null_change_has_no_effect() {
+    DefaultIssue issue = new DefaultIssue();
+
+    issue.addChange(null);
+
+    assertThat(issue.changes()).hasSize(0);
   }
 }

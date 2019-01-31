@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -83,17 +83,10 @@ public class SnapshotDao implements Dao {
     return dtos.get(0);
   }
 
-  /**
-   * Since this relies on tables EVENTS, this can return results only for root components (PROJECT, VIEW or DEVELOPER).
-   */
-  public List<SnapshotDto> selectPreviousVersionSnapshots(DbSession session, String componentUuid, String lastVersion) {
-    return mapper(session).selectPreviousVersionSnapshots(componentUuid, lastVersion);
-  }
-
-  @CheckForNull
-  public SnapshotDto selectOldestSnapshot(DbSession session, String componentUuid) {
-    List<SnapshotDto> snapshotDtos = mapper(session).selectOldestSnapshots(componentUuid, new RowBounds(0, 1));
-    return snapshotDtos.isEmpty() ? null : snapshotDtos.get(0);
+  public Optional<SnapshotDto> selectOldestSnapshot(DbSession session, String componentUuid) {
+    return mapper(session).selectOldestSnapshots(componentUuid, new RowBounds(0, 1))
+      .stream()
+      .findFirst();
   }
 
   /**

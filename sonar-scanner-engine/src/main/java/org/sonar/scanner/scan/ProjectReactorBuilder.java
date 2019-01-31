@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,18 +20,18 @@
 package org.sonar.scanner.scan;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Lists;
 import java.io.File;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.stream.Stream;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.ArrayUtils;
@@ -39,15 +39,20 @@ import org.apache.commons.lang.StringUtils;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.batch.bootstrap.ProjectDefinition;
 import org.sonar.api.batch.bootstrap.ProjectReactor;
+import org.sonar.api.notifications.AnalysisWarnings;
 import org.sonar.api.utils.MessageException;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
-import org.sonar.scanner.analysis.AnalysisProperties;
-import org.sonar.scanner.bootstrap.DroppedPropertyChecker;
+import org.sonar.core.config.IssueExclusionProperties;
+import org.sonar.scanner.bootstrap.ScannerProperties;
+import org.sonar.scanner.issue.ignore.pattern.IssueExclusionPatternInitializer;
+import org.sonar.scanner.issue.ignore.pattern.IssueInclusionPatternInitializer;
 import org.sonar.scanner.util.ScannerUtils;
 
-import static org.sonar.core.config.MultivalueProperty.parseAsCsv;
+import static java.util.Arrays.asList;
+import static java.util.stream.Collectors.toList;
+import static org.sonar.api.config.internal.MultivalueProperty.parseAsCsv;
 
 /**
  * Class that creates a project definition based on a set of properties.
@@ -55,13 +60,6 @@ import static org.sonar.core.config.MultivalueProperty.parseAsCsv;
 public class ProjectReactorBuilder {
 
   private static final String INVALID_VALUE_OF_X_FOR_Y = "Invalid value of {0} for {1}";
-
-  /**
-   * A map of dropped properties as key and specific message to display for that property
-   * (what will happen, what should the user do, ...) as a value
-   */
-  private static final Map<String, String> DROPPED_PROPERTIES = ImmutableMap.of(
-    "sonar.qualitygate", "It will be ignored.");
 
   private static final Logger LOG = Loggers.get(ProjectReactorBuilder.class);
 
@@ -103,30 +101,33 @@ public class ProjectReactorBuilder {
    */
   private static final String[] MANDATORY_PROPERTIES_FOR_CHILD = {MODULE_KEY_PROPERTY};
 
+  private static final Collection<String> UNSUPPORTED_PROPS_FOR_MODULES = asList(IssueExclusionPatternInitializer.CONFIG_KEY, IssueInclusionPatternInitializer.CONFIG_KEY,
+    IssueExclusionProperties.PATTERNS_BLOCK_KEY, IssueExclusionProperties.PATTERNS_ALLFILE_KEY);
+
   /**
    * Properties that must not be passed from the parent project to its children.
    */
-  private static final List<String> NON_HERITED_PROPERTIES_FOR_CHILD = Lists.newArrayList(PROPERTY_PROJECT_BASEDIR, CoreProperties.WORKING_DIRECTORY, PROPERTY_MODULES,
-    CoreProperties.PROJECT_DESCRIPTION_PROPERTY);
+  private static final List<String> NON_HERITED_PROPERTIES_FOR_CHILD = Stream.concat(Stream.of(PROPERTY_PROJECT_BASEDIR, CoreProperties.WORKING_DIRECTORY, PROPERTY_MODULES,
+    CoreProperties.PROJECT_DESCRIPTION_PROPERTY), UNSUPPORTED_PROPS_FOR_MODULES.stream()).collect(toList());
 
-  private final AnalysisProperties analysisProps;
+  private final ScannerProperties scannerProps;
+  private final AnalysisWarnings analysisWarnings;
   private File rootProjectWorkDir;
+  private boolean warnExclusionsAlreadyLogged;
 
-  public ProjectReactorBuilder(AnalysisProperties props) {
-    this.analysisProps = props;
+  public ProjectReactorBuilder(ScannerProperties props, AnalysisWarnings analysisWarnings) {
+    this.scannerProps = props;
+    this.analysisWarnings = analysisWarnings;
   }
 
   public ProjectReactor execute() {
     Profiler profiler = Profiler.create(LOG).startInfo("Process project properties");
-    new DroppedPropertyChecker(analysisProps.properties(), DROPPED_PROPERTIES).checkDroppedProperties();
     Map<String, Map<String, String>> propertiesByModuleIdPath = new HashMap<>();
-    extractPropertiesByModule(propertiesByModuleIdPath, "", "", analysisProps.properties());
-    ProjectDefinition rootProject = defineRootProject(propertiesByModuleIdPath.get(""), null);
+    extractPropertiesByModule(propertiesByModuleIdPath, "", "", new HashMap<>(scannerProps.properties()));
+    ProjectDefinition rootProject = createModuleDefinition(propertiesByModuleIdPath.get(""), null);
     rootProjectWorkDir = rootProject.getWorkDir();
     defineChildren(rootProject, propertiesByModuleIdPath, "");
     cleanAndCheckProjectDefinitions(rootProject);
-    // Since task properties are now empty we should add root module properties
-    analysisProps.properties().putAll(propertiesByModuleIdPath.get(""));
     profiler.stopDebug();
     return new ProjectReactor(rootProject);
   }
@@ -167,26 +168,44 @@ public class ProjectReactorBuilder {
     }
   }
 
-  protected ProjectDefinition defineRootProject(Map<String, String> rootProperties, @Nullable ProjectDefinition parent) {
-    if (rootProperties.containsKey(PROPERTY_MODULES)) {
-      checkMandatoryProperties(rootProperties, MANDATORY_PROPERTIES_FOR_MULTIMODULE_PROJECT);
+  protected ProjectDefinition createModuleDefinition(Map<String, String> moduleProperties, @Nullable ProjectDefinition parent) {
+    if (moduleProperties.containsKey(PROPERTY_MODULES)) {
+      checkMandatoryProperties(moduleProperties, MANDATORY_PROPERTIES_FOR_MULTIMODULE_PROJECT);
     } else {
-      checkMandatoryProperties(rootProperties, MANDATORY_PROPERTIES_FOR_SIMPLE_PROJECT);
+      checkMandatoryProperties(moduleProperties, MANDATORY_PROPERTIES_FOR_SIMPLE_PROJECT);
     }
-    File baseDir = new File(rootProperties.get(PROPERTY_PROJECT_BASEDIR));
-    final String projectKey = rootProperties.get(CoreProperties.PROJECT_KEY_PROPERTY);
+    File baseDir = new File(moduleProperties.get(PROPERTY_PROJECT_BASEDIR));
+    final String projectKey = moduleProperties.get(CoreProperties.PROJECT_KEY_PROPERTY);
     File workDir;
     if (parent == null) {
-      validateDirectories(rootProperties, baseDir, projectKey);
-      workDir = initRootProjectWorkDir(baseDir, rootProperties);
+      validateDirectories(moduleProperties, baseDir, projectKey);
+      workDir = initRootProjectWorkDir(baseDir, moduleProperties);
     } else {
-      workDir = initModuleWorkDir(baseDir, rootProperties);
+      workDir = initModuleWorkDir(baseDir, moduleProperties);
+      checkUnsupportedIssueExclusions(moduleProperties);
     }
 
-    return ProjectDefinition.create().setProperties(rootProperties)
+    return ProjectDefinition.create().setProperties(moduleProperties)
       .setBaseDir(baseDir)
       .setWorkDir(workDir)
-      .setBuildDir(initModuleBuildDir(baseDir, rootProperties));
+      .setBuildDir(initModuleBuildDir(baseDir, moduleProperties));
+  }
+
+  private void checkUnsupportedIssueExclusions(Map<String, String> moduleProperties) {
+    UNSUPPORTED_PROPS_FOR_MODULES.stream().forEach(p -> {
+      if (moduleProperties.containsKey(p)) {
+        warnOnceUnsupportedIssueExclusions(
+          "Specifying issue exclusions at module level is not supported anymore. Configure the property '" + p + "' and any other issue exclusions at project level.");
+      }
+    });
+  }
+
+  private void warnOnceUnsupportedIssueExclusions(String msg) {
+    if (!warnExclusionsAlreadyLogged) {
+      LOG.warn(msg);
+      analysisWarnings.addUnique(msg);
+      warnExclusionsAlreadyLogged = true;
+    }
   }
 
   @VisibleForTesting
@@ -266,7 +285,7 @@ public class ProjectReactorBuilder {
 
     mergeParentProperties(moduleProps, parentProject.properties());
 
-    return defineRootProject(moduleProps, parentProject);
+    return createModuleDefinition(moduleProps, parentProject);
   }
 
   @VisibleForTesting
@@ -402,9 +421,8 @@ public class ProjectReactorBuilder {
 
   /**
    * Transforms a comma-separated list String property in to a array of trimmed strings.
-   *
+   * <p>
    * This works even if they are separated by whitespace characters (space char, EOL, ...)
-   *
    */
   static String[] getListFromProperty(Map<String, String> properties, String key) {
     String propValue = properties.get(key);

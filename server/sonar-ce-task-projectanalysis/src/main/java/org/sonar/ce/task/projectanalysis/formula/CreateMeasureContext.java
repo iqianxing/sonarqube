@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,10 +21,6 @@ package org.sonar.ce.task.projectanalysis.formula;
 
 import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.ce.task.projectanalysis.metric.Metric;
-import org.sonar.ce.task.projectanalysis.period.Period;
-import org.sonar.ce.task.projectanalysis.component.Component;
-import org.sonar.ce.task.projectanalysis.metric.Metric;
-import org.sonar.ce.task.projectanalysis.period.Period;
 
 /**
  * Context passing information to implementation of {@link Formula#createMeasure(Counter, CreateMeasureContext)} method.
@@ -40,13 +36,4 @@ public interface CreateMeasureContext {
    */
   Metric getMetric();
 
-  /**
-   * The period for which variation of the measure can be created.
-   */
-  Period getPeriod();
-
-  /**
-   * Finds out whether the a period is definfed or not
-   */
-  boolean hasPeriod();
 }

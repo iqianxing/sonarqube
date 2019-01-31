@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,12 +18,10 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import { FormattedMessage } from 'react-intl';
 import { Link } from 'react-router';
 import ComponentNavBranchesMenu from './ComponentNavBranchesMenu';
 import DocTooltip from '../../../../components/docs/DocTooltip';
-import { BranchLike, Component } from '../../../types';
 import * as theme from '../../../theme';
 import BranchIcon from '../../../../components/icons-components/BranchIcon';
 import {
@@ -38,11 +36,14 @@ import HelpTooltip from '../../../../components/controls/HelpTooltip';
 import Toggler from '../../../../components/controls/Toggler';
 import DropdownIcon from '../../../../components/icons-components/DropdownIcon';
 import { isSonarCloud } from '../../../../helpers/system';
+import { getPortfolioAdminUrl } from '../../../../helpers/urls';
+import { withAppState } from '../../../../components/withAppState';
 
 interface Props {
-  branchLikes: BranchLike[];
-  component: Component;
-  currentBranchLike: BranchLike;
+  appState: Pick<T.AppState, 'branchesEnabled'>;
+  branchLikes: T.BranchLike[];
+  component: T.Component;
+  currentBranchLike: T.BranchLike;
   location?: any;
 }
 
@@ -50,17 +51,9 @@ interface State {
   dropdownOpen: boolean;
 }
 
-export default class ComponentNavBranch extends React.PureComponent<Props, State> {
+export class ComponentNavBranch extends React.PureComponent<Props, State> {
   mounted = false;
-
-  static contextTypes = {
-    branchesEnabled: PropTypes.bool.isRequired,
-    canAdmin: PropTypes.bool.isRequired
-  };
-
-  state: State = {
-    dropdownOpen: false
-  };
+  state: State = { dropdownOpen: false };
 
   componentDidMount() {
     this.mounted = true;
@@ -128,15 +121,13 @@ export default class ComponentNavBranch extends React.PureComponent<Props, State
   };
 
   renderOverlay = () => {
-    const adminLink = {
-      pathname: '/project/admin/extension/governance/console',
-      query: { id: this.props.component.breadcrumbs[0].key, qualifier: 'APP' }
-    };
     return (
       <>
         <p>{translate('application.branches.help')}</p>
         <hr className="spacer-top spacer-bottom" />
-        <Link className="spacer-left link-no-underline" to={adminLink}>
+        <Link
+          className="spacer-left link-no-underline"
+          to={getPortfolioAdminUrl(this.props.component.breadcrumbs[0].key, 'APP')}>
           {translate('application.branches.link')}
         </Link>
       </>
@@ -147,7 +138,7 @@ export default class ComponentNavBranch extends React.PureComponent<Props, State
     const { branchLikes, currentBranchLike } = this.props;
     const { configuration, breadcrumbs } = this.props.component;
 
-    if (isSonarCloud() && !this.context.branchesEnabled) {
+    if (isSonarCloud() && !this.props.appState.branchesEnabled) {
       return null;
     }
 
@@ -172,7 +163,7 @@ export default class ComponentNavBranch extends React.PureComponent<Props, State
         </div>
       );
     } else {
-      if (!this.context.branchesEnabled) {
+      if (!this.props.appState.branchesEnabled) {
         return (
           <div className="navbar-context-branches">
             <BranchIcon
@@ -237,3 +228,5 @@ export default class ComponentNavBranch extends React.PureComponent<Props, State
     );
   }
 }
+
+export default withAppState(ComponentNavBranch);

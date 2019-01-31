@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,11 +29,10 @@ import {
   addUserToGroup,
   getUsersInGroup
 } from '../../../api/user_groups';
-import { Group } from '../../../app/types';
 import DeferredSpinner from '../../../components/common/DeferredSpinner';
 
 interface Props {
-  group: Group;
+  group: T.Group;
   onClose: () => void;
   organization: string | undefined;
 }

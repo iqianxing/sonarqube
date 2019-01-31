@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,6 +34,7 @@ public class TelemetryDataJsonWriter {
     json.prop("id", statistics.getServerId());
     json.prop("version", statistics.getVersion());
     statistics.getEdition().ifPresent(e -> json.prop("edition", e.name().toLowerCase(Locale.ENGLISH)));
+    statistics.getLicenseType().ifPresent(e -> json.prop("licenseType", e));
     json.name("database");
     json.beginObject();
     json.prop("name", statistics.getDatabase().getName());

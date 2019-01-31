@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -59,14 +59,14 @@ export function isSameDay(dateLeft: Date, dateRight: Date): boolean {
   return _isSameDay(dateLeft, dateRight);
 }
 
-export function differenceInYears(dateLeft: Date, dateRight: Date): number {
+export function differenceInYears(dateLeft: ParsableDate, dateRight: ParsableDate): number {
   return _differenceInYears(dateLeft, dateRight);
 }
 
-export function differenceInDays(dateLeft: Date, dateRight: Date): number {
+export function differenceInDays(dateLeft: ParsableDate, dateRight: ParsableDate): number {
   return _differenceInDays(dateLeft, dateRight);
 }
 
-export function differenceInSeconds(dateLeft: Date, dateRight: Date): number {
+export function differenceInSeconds(dateLeft: ParsableDate, dateRight: ParsableDate): number {
   return _differenceInSeconds(dateLeft, dateRight);
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,9 +19,9 @@
  */
 package org.sonar.ce.task.projectanalysis.component;
 
-import com.google.common.base.Function;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.function.Function;
 
 import static com.google.common.base.Preconditions.checkState;
 
@@ -46,7 +46,7 @@ public final class MapBasedDbIdsRepository<T> implements MutableDbIdsRepository 
     T ref = componentToKey.apply(component);
     Long existingComponentId = componentIdsByRef.get(ref);
     checkState(existingComponentId == null,
-      "Component id '%s' is already registered in repository for Component '%s', can not set new id '%s'", existingComponentId, component.getKey(), componentId);
+      "Component id '%s' is already registered in repository for Component '%s', can not set new id '%s'", existingComponentId, component.getDbKey(), componentId);
     componentIdsByRef.put(ref, componentId);
     return this;
   }
@@ -55,7 +55,7 @@ public final class MapBasedDbIdsRepository<T> implements MutableDbIdsRepository 
   public long getComponentId(Component component) {
     T ref = componentToKey.apply(component);
     Long componentId = componentIdsByRef.get(ref);
-    checkState(componentId != null, "No component id registered in repository for Component '%s'", component.getKey());
+    checkState(componentId != null, "No component id registered in repository for Component '%s'", component.getDbKey());
     return componentId;
   }
 

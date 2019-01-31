@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
  */
 package org.sonar.ce.task.projectanalysis.analysis;
 
+import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -30,6 +31,8 @@ import org.sonar.server.project.Project;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
+import static org.sonar.db.component.ComponentTesting.newPrivateProjectDto;
+import static org.sonar.db.organization.OrganizationTesting.newOrganizationDto;
 
 public class AnalysisMetadataHolderImplTest {
 
@@ -274,7 +277,7 @@ public class AnalysisMetadataHolderImplTest {
   public void set_and_get_project() {
     AnalysisMetadataHolderImpl underTest = new AnalysisMetadataHolderImpl();
 
-    Project project = new Project("U", "K", "N");
+    Project project = Project.from(newPrivateProjectDto(newOrganizationDto()));
     underTest.setProject(project);
 
     assertThat(underTest.getProject()).isSameAs(project);
@@ -291,11 +294,12 @@ public class AnalysisMetadataHolderImplTest {
   @Test
   public void setProject_throws_ISE_when_called_twice() {
     AnalysisMetadataHolderImpl underTest = new AnalysisMetadataHolderImpl();
-    underTest.setProject(new Project("U", "K", "N"));
+    underTest.setProject(Project.from(newPrivateProjectDto(newOrganizationDto())));
 
     expectedException.expect(IllegalStateException.class);
     expectedException.expectMessage("Project has already been set");
-    underTest.setProject(new Project("U", "K", "N"));
+
+    underTest.setProject(Project.from(newPrivateProjectDto(newOrganizationDto())));
   }
 
   @Test
@@ -354,5 +358,29 @@ public class AnalysisMetadataHolderImplTest {
     underTest.setBranch(branch);
 
     assertThat(underTest.isPullRequest()).isTrue();
+  }
+
+  @Test
+  public void setScmRevisionId_throws_ISE_when_called_twice() {
+    AnalysisMetadataHolderImpl underTest = new AnalysisMetadataHolderImpl();
+    underTest.setScmRevisionId("scm_revision_id1");
+
+    expectedException.expect(IllegalStateException.class);
+    expectedException.expectMessage("ScmRevisionId has already been set");
+    underTest.setScmRevisionId("scm_revision_id1");
+  }
+
+  @Test
+  public void getScmRevisionId_returns_empty_if_scmRevisionId_is_not_initialized() {
+    AnalysisMetadataHolderImpl underTest = new AnalysisMetadataHolderImpl();
+
+    assertThat(underTest.getScmRevisionId()).isNotPresent();
+  }
+
+  @Test
+  public void getScmRevisionId_returns_scmRevisionId_if_scmRevisionId_is_initialized() {
+    AnalysisMetadataHolderImpl underTest = new AnalysisMetadataHolderImpl();
+    underTest.setScmRevisionId("scm_revision_id");
+    assertThat(underTest.getScmRevisionId()).isEqualTo(Optional.of("scm_revision_id"));
   }
 }

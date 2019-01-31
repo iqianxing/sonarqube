@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,14 +29,6 @@ public class OrganizationPermissionTest {
   public void fromKey_returns_enum_with_specified_key() {
     for (OrganizationPermission p : OrganizationPermission.values()) {
       assertThat(OrganizationPermission.fromKey(p.getKey())).isEqualTo(p);
-    }
-  }
-
-  @Test
-  public void all_returns_stream_of_values() {
-    assertThat(OrganizationPermission.all()).hasSize(OrganizationPermission.values().length);
-    for (OrganizationPermission permission : OrganizationPermission.values()) {
-      assertThat(OrganizationPermission.all()).contains(permission);
     }
   }
 }

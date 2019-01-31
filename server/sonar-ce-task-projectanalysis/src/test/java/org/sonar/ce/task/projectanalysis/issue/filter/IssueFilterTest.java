@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -56,9 +56,9 @@ public class IssueFilterTest {
 
   static final Component PROJECT = builder(Component.Type.PROJECT, 10).build();
 
-  static final Component COMPONENT_1 = builder(FILE, 1).setKey("File1").setPath(PATH1).build();
-  static final Component COMPONENT_2 = builder(FILE, 2).setKey("File2").setPath(PATH2).build();
-  static final Component COMPONENT_3 = builder(FILE, 3).setKey("File3").setPath(PATH3).build();
+  static final Component COMPONENT_1 = builder(FILE, 1).setKey("File1").setName(PATH1).build();
+  static final Component COMPONENT_2 = builder(FILE, 2).setKey("File2").setName(PATH2).build();
+  static final Component COMPONENT_3 = builder(FILE, 3).setKey("File3").setName(PATH3).build();
 
   static final DefaultIssue ISSUE_1 = new DefaultIssue().setRuleKey(XOO_X1);
   static final DefaultIssue ISSUE_2 = new DefaultIssue().setRuleKey(XOO_X2);

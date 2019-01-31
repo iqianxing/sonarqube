@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@ import * as React from 'react';
 import * as GoogleAnalytics from 'react-ga';
 import { withRouter, WithRouterProps } from 'react-router';
 import { connect } from 'react-redux';
-import { getGlobalSettingValue } from '../../store/rootReducer';
+import { getGlobalSettingValue, Store } from '../../store/rootReducer';
 
 interface StateProps {
   trackingId?: string;
@@ -59,8 +59,11 @@ export class PageTracker extends React.PureComponent<Props> {
   }
 }
 
-const mapStateToProps = (state: any): StateProps => ({
-  trackingId: (getGlobalSettingValue(state, 'sonar.analytics.trackingId') || {}).value
-});
+const mapStateToProps = (state: Store): StateProps => {
+  const trackingId = getGlobalSettingValue(state, 'sonar.analytics.trackingId');
+  return {
+    trackingId: trackingId && trackingId.value
+  };
+};
 
-export default withRouter<{}>(connect<StateProps>(mapStateToProps)(PageTracker));
+export default withRouter(connect(mapStateToProps)(PageTracker));

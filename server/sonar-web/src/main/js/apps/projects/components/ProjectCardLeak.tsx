@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,12 +30,11 @@ import PrivacyBadgeContainer from '../../../components/common/PrivacyBadgeContai
 import { translate, translateWithParameters } from '../../../helpers/l10n';
 import { Project } from '../types';
 import { formatDuration } from '../utils';
-import { Organization } from '../../../app/types';
 import { getProjectUrl } from '../../../helpers/urls';
 
 interface Props {
   height: number;
-  organization: Organization | undefined;
+  organization: T.Organization | undefined;
   project: Project;
 }
 

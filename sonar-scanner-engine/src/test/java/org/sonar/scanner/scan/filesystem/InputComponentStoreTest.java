@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,6 +34,7 @@ import org.sonar.api.batch.fs.InputFile.Type;
 import org.sonar.api.batch.fs.InputPath;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.DefaultInputModule;
+import org.sonar.api.batch.fs.internal.DefaultInputProject;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.scanner.scan.branch.BranchConfiguration;
 
@@ -56,18 +57,18 @@ public class InputComponentStoreTest {
     ProjectDefinition rootDef = ProjectDefinition.create()
       .setKey(rootModuleKey).setBaseDir(rootBaseDir).setWorkDir(temp.newFolder()).addSubProject(moduleDef);
 
-    DefaultInputModule rootModule = TestInputFileBuilder.newDefaultInputModule(rootDef);
+    DefaultInputProject rootProject = TestInputFileBuilder.newDefaultInputProject(rootDef);
     DefaultInputModule subModule = TestInputFileBuilder.newDefaultInputModule(moduleDef);
 
-    InputComponentStore cache = new InputComponentStore(rootModule, mock(BranchConfiguration.class));
-    cache.put(subModule);
+    InputComponentStore store = new InputComponentStore(mock(BranchConfiguration.class));
+    store.put(subModule);
 
     DefaultInputFile fooFile = new TestInputFileBuilder(rootModuleKey, "src/main/java/Foo.java")
       .setModuleBaseDir(rootBaseDir.toPath())
       .setPublish(true)
       .build();
-    cache.put(fooFile);
-    cache.put(new TestInputFileBuilder(subModuleKey, "src/main/java/Bar.java")
+    store.put(rootProject.key(), fooFile);
+    store.put(subModuleKey, new TestInputFileBuilder(rootModuleKey, "src/main/java/Bar.java")
       .setLanguage("bla")
       .setPublish(false)
       .setType(Type.MAIN)
@@ -77,40 +78,32 @@ public class InputComponentStoreTest {
       .setModuleBaseDir(temp.newFolder().toPath())
       .build());
 
-    DefaultInputFile loadedFile = (DefaultInputFile) cache.getFile(subModuleKey, "src/main/java/Bar.java");
+    DefaultInputFile loadedFile = (DefaultInputFile) store.getFile(subModuleKey, "src/main/java/Bar.java");
     assertThat(loadedFile.relativePath()).isEqualTo("src/main/java/Bar.java");
     assertThat(loadedFile.charset()).isEqualTo(StandardCharsets.UTF_8);
 
-    assertThat(cache.filesByModule(rootModuleKey)).hasSize(1);
-    assertThat(cache.filesByModule(subModuleKey)).hasSize(1);
-    assertThat(cache.allFiles()).hasSize(2);
-    for (InputPath inputPath : cache.allFiles()) {
+    assertThat(store.filesByModule(rootModuleKey)).hasSize(1);
+    assertThat(store.filesByModule(subModuleKey)).hasSize(1);
+    assertThat(store.inputFiles()).hasSize(2);
+    for (InputPath inputPath : store.inputFiles()) {
       assertThat(inputPath.relativePath()).startsWith("src/main/java/");
     }
 
     List<InputFile> toPublish = new LinkedList<>();
-    cache.allFilesToPublish().forEach(toPublish::add);
+    store.allFilesToPublish().forEach(toPublish::add);
     assertThat(toPublish).containsExactly(fooFile);
-
-    cache.remove(fooFile);
-    assertThat(cache.allFiles()).hasSize(1);
-
-    cache.removeModule(rootModuleKey);
-    assertThat(cache.filesByModule(rootModuleKey)).hasSize(0);
-    assertThat(cache.filesByModule(subModuleKey)).hasSize(1);
-    assertThat(cache.allFiles()).hasSize(1);
   }
 
   static class InputComponentStoreTester extends InputComponentStore {
     InputComponentStoreTester() throws IOException {
-      super(TestInputFileBuilder.newDefaultInputModule("root", temp.newFolder()), mock(BranchConfiguration.class));
+      super(mock(BranchConfiguration.class));
     }
 
     InputFile addFile(String moduleKey, String relpath, String language) {
       DefaultInputFile file = new TestInputFileBuilder(moduleKey, relpath)
         .setLanguage(language)
         .build();
-      put(file);
+      put(moduleKey, file);
       return file;
     }
   }
@@ -125,9 +118,9 @@ public class InputComponentStoreTest {
     String mod2Key = "mod2";
     tester.addFile(mod2Key, "src/main/groovy/Foo.groovy", "groovy");
 
-    assertThat(tester.getLanguages(mod1Key)).containsExactly("java");
-    assertThat(tester.getLanguages(mod2Key)).containsExactly("groovy");
-    assertThat(tester.getLanguages()).containsExactlyInAnyOrder("java", "groovy");
+    assertThat(tester.languages(mod1Key)).containsExactly("java");
+    assertThat(tester.languages(mod2Key)).containsExactly("groovy");
+    assertThat(tester.languages()).containsExactlyInAnyOrder("java", "groovy");
   }
 
   @Test
@@ -142,6 +135,6 @@ public class InputComponentStoreTest {
 
     assertThat(tester.filesByModule(mod1Key)).containsExactly(mod1File);
     assertThat(tester.filesByModule(mod2Key)).containsExactly(mod2File);
-    assertThat(tester.allFiles()).containsExactlyInAnyOrder(mod1File, mod2File);
+    assertThat(tester.inputFiles()).containsExactlyInAnyOrder(mod1File, mod2File);
   }
 }

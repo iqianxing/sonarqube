@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -121,9 +121,7 @@ import org.sonar.server.platform.WebCoreExtensionsInstaller;
 import org.sonar.server.platform.monitoring.WebSystemInfoModule;
 import org.sonar.server.platform.web.WebPagesFilter;
 import org.sonar.server.platform.web.requestid.HttpRequestIdModule;
-import org.sonar.server.platform.ws.ChangeLogLevelAction;
-import org.sonar.server.platform.ws.ChangeLogLevelClusterService;
-import org.sonar.server.platform.ws.ChangeLogLevelStandaloneService;
+import org.sonar.server.platform.ws.ChangeLogLevelActionModule;
 import org.sonar.server.platform.ws.DbMigrationStatusAction;
 import org.sonar.server.platform.ws.HealthActionModule;
 import org.sonar.server.platform.ws.L10nWs;
@@ -201,10 +199,7 @@ import org.sonar.server.startup.LogServerId;
 import org.sonar.server.telemetry.TelemetryClient;
 import org.sonar.server.telemetry.TelemetryDaemon;
 import org.sonar.server.telemetry.TelemetryDataLoader;
-import org.sonar.server.test.index.TestIndex;
 import org.sonar.server.test.index.TestIndexDefinition;
-import org.sonar.server.test.index.TestIndexer;
-import org.sonar.server.test.ws.CoveredFilesAction;
 import org.sonar.server.test.ws.TestsWs;
 import org.sonar.server.text.MacroInterpreter;
 import org.sonar.server.ui.DeprecatedViews;
@@ -256,11 +251,7 @@ public class PlatformLevel4 extends PlatformLevel {
       MetadataIndex.class,
       EsDbCompatibilityImpl.class);
 
-    addIfCluster(
-      NodeHealthModule.class,
-      ChangeLogLevelClusterService.class);
-    addIfStandalone(
-      ChangeLogLevelStandaloneService.class);
+    addIfCluster(NodeHealthModule.class);
 
     add(
       ClusterVerification.class,
@@ -485,11 +476,7 @@ public class PlatformLevel4 extends PlatformLevel {
 
       // Tests
       TestsWs.class,
-      CoveredFilesAction.class,
-      org.sonar.server.test.ws.ListAction.class,
       TestIndexDefinition.class,
-      TestIndex.class,
-      TestIndexer.class,
 
       // Settings
       PersistentSettings.class,
@@ -513,7 +500,7 @@ public class PlatformLevel4 extends PlatformLevel {
       StatusAction.class,
       MigrateDbAction.class,
       LogsAction.class,
-      ChangeLogLevelAction.class,
+      ChangeLogLevelActionModule.class,
       DbMigrationStatusAction.class,
       HealthActionModule.class,
       SystemWs.class,
@@ -572,7 +559,7 @@ public class PlatformLevel4 extends PlatformLevel {
     addIfStartupLeader(TelemetryDaemon.class, TelemetryClient.class);
 
     // system info
-    addIfCluster(WebSystemInfoModule.forClusterMode()).otherwiseAdd(WebSystemInfoModule.forStandaloneMode());
+    add(WebSystemInfoModule.class);
 
     addAll(level4AddedComponents);
   }

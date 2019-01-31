@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,7 +25,6 @@ import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.source.FileSourceDao;
-import org.sonar.ce.task.projectanalysis.component.Component;
 
 public class SourceLinesDiffImpl implements SourceLinesDiff {
 

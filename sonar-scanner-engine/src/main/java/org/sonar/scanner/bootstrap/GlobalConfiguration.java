@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,12 +19,8 @@
  */
 package org.sonar.scanner.bootstrap;
 
-import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import javax.annotation.concurrent.Immutable;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.sonar.api.CoreProperties;
 import org.sonar.api.config.Encryption;
 import org.sonar.api.config.PropertyDefinitions;
 import org.sonar.scanner.config.DefaultConfiguration;
@@ -32,31 +28,8 @@ import org.sonar.scanner.config.DefaultConfiguration;
 @Immutable
 public class GlobalConfiguration extends DefaultConfiguration {
 
-  private static final Logger LOG = LoggerFactory.getLogger(GlobalConfiguration.class);
-
-  private static final String JDBC_SPECIFIC_MESSAGE = "It will be ignored. There is no longer any DB connection to the SQ database.";
-  /**
-   * A map of dropped properties as key and specific message to display for that property
-   * (what will happen, what should the user do, ...) as a value
-   */
-  private static final Map<String, String> DROPPED_PROPERTIES = ImmutableMap.of(
-    "sonar.jdbc.url", JDBC_SPECIFIC_MESSAGE,
-    "sonar.jdbc.username", JDBC_SPECIFIC_MESSAGE,
-    "sonar.jdbc.password", JDBC_SPECIFIC_MESSAGE);
-
-  private final Map<String, String> serverSideSettings;
-
-  public GlobalConfiguration(PropertyDefinitions propertyDefinitions, Encryption encryption, GlobalAnalysisMode mode,
-    Map<String, String> settings, Map<String, String> serverSideSettings) {
-    super(propertyDefinitions, encryption, mode, settings);
-    this.serverSideSettings = unmodifiableMapWithTrimmedValues(propertyDefinitions, serverSideSettings);
-
-    get(CoreProperties.SERVER_ID).ifPresent(v -> LOG.info("Server id: {}", v));
-    new DroppedPropertyChecker(getProperties(), DROPPED_PROPERTIES).checkDroppedProperties();
-  }
-
-  public Map<String, String> getServerSideSettings() {
-    return serverSideSettings;
+  public GlobalConfiguration(PropertyDefinitions propertyDefinitions, Encryption encryption, Map<String, String> settings) {
+    super(propertyDefinitions, encryption, settings);
   }
 
 }

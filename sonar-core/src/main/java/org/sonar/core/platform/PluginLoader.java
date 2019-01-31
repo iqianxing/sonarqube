@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -50,7 +50,7 @@ public class PluginLoader {
 
   private static final String[] DEFAULT_SHARED_RESOURCES = {"org/sonar/plugins", "com/sonar/plugins", "com/sonarsource/plugins"};
 
-  public static final Version COMPATIBILITY_MODE_MAX_VERSION = Version.create("5.2");
+  private static final Version COMPATIBILITY_MODE_MAX_VERSION = Version.create("5.2");
 
   private final PluginJarExploder jarExploder;
   private final PluginClassloaderFactory classloaderFactory;
@@ -96,15 +96,14 @@ public class PluginLoader {
         def.setSelfFirstStrategy(info.isUseChildFirstClassLoader());
         Version minSqVersion = info.getMinimalSqVersion();
         boolean compatibilityMode = minSqVersion != null && minSqVersion.compareToIgnoreQualifier(COMPATIBILITY_MODE_MAX_VERSION) < 0;
-        def.setCompatibilityMode(compatibilityMode);
         if (compatibilityMode) {
-          Loggers.get(getClass()).debug("API compatibility mode is enabled on plugin {} [{}] " +
-            "(built with API lower than {})",
-            info.getName(), info.getKey(), COMPATIBILITY_MODE_MAX_VERSION);
+          Loggers.get(getClass()).warn("API compatibility mode is no longer supported. In case of error, plugin {} [{}] should package its dependencies.",
+            info.getName(), info.getKey());
         }
       }
     }
     return classloadersByBasePlugin.values();
+
   }
 
   /**

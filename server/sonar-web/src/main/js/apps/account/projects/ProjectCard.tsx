@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,16 +20,16 @@
 import * as React from 'react';
 import { sortBy } from 'lodash';
 import { Link } from 'react-router';
-import ProjectLinkIcon from '../../../components/icons-components/ProjectLinkIcon';
 import DateFromNow from '../../../components/intl/DateFromNow';
 import DateTimeFormatter from '../../../components/intl/DateTimeFormatter';
+import HelpTooltip from '../../../components/controls/HelpTooltip';
 import Level from '../../../components/ui/Level';
+import ProjectLinkIcon from '../../../components/icons-components/ProjectLinkIcon';
 import Tooltip from '../../../components/controls/Tooltip';
 import { translateWithParameters, translate } from '../../../helpers/l10n';
-import { MyProject } from '../../../app/types';
 
 interface Props {
-  project: MyProject;
+  project: T.MyProject;
 }
 
 export default function ProjectCard({ project }: Props) {
@@ -57,6 +57,12 @@ export default function ProjectCard({ project }: Props) {
 
         {project.qualityGate !== undefined && (
           <div className="account-project-quality-gate">
+            {project.qualityGate === 'WARN' && (
+              <HelpTooltip
+                className="little-spacer-right"
+                overlay={translate('quality_gates.conditions.warning.tootlip')}
+              />
+            )}
             <Level level={project.qualityGate} />
           </div>
         )}

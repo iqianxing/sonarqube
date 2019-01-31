@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,21 +20,20 @@
 import { stringify } from 'querystring';
 import * as React from 'react';
 import { Link } from 'react-router';
-import * as PropTypes from 'prop-types';
 import MeasuresOverlay from './components/MeasuresOverlay';
-import { SourceViewerFile, BranchLike } from '../../app/types';
 import QualifierIcon from '../icons-components/QualifierIcon';
 import Dropdown from '../controls/Dropdown';
 import Favorite from '../controls/Favorite';
 import ListIcon from '../icons-components/ListIcon';
 import { ButtonIcon } from '../ui/buttons';
 import { PopupPlacement } from '../ui/popups';
-import { WorkspaceContext } from '../workspace/context';
+import { WorkspaceContextShape } from '../workspace/context';
 import {
   getPathUrlAsString,
   getBranchLikeUrl,
   getComponentIssuesUrl,
-  getBaseUrl
+  getBaseUrl,
+  getCodeUrl
 } from '../../helpers/urls';
 import { collapsedDirFromPath, fileFromPath } from '../../helpers/path';
 import { translate } from '../../helpers/l10n';
@@ -43,8 +42,9 @@ import { formatMeasure } from '../../helpers/measures';
 import { omitNil } from '../../helpers/request';
 
 interface Props {
-  branchLike: BranchLike | undefined;
-  sourceViewerFile: SourceViewerFile;
+  branchLike: T.BranchLike | undefined;
+  openComponent: WorkspaceContextShape['openComponent'];
+  sourceViewerFile: T.SourceViewerFile;
 }
 
 interface State {
@@ -52,12 +52,6 @@ interface State {
 }
 
 export default class SourceViewerHeader extends React.PureComponent<Props, State> {
-  context!: { workspace: WorkspaceContext };
-
-  static contextTypes = {
-    workspace: PropTypes.object.isRequired
-  };
-
   state: State = { measuresOverlay: false };
 
   handleShowMeasuresClick = (event: React.SyntheticEvent<HTMLAnchorElement>) => {
@@ -72,7 +66,7 @@ export default class SourceViewerHeader extends React.PureComponent<Props, State
   openInWorkspace = (event: React.SyntheticEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     const { key } = this.props.sourceViewerFile;
-    this.context.workspace.openComponent({ branchLike: this.props.branchLike, key });
+    this.props.openComponent({ branchLike: this.props.branchLike, key });
   };
 
   render() {
@@ -109,11 +103,7 @@ export default class SourceViewerHeader extends React.PureComponent<Props, State
 
             {subProject != null && (
               <div className="component-name-parent">
-                <a
-                  className="link-with-icon"
-                  href={getPathUrlAsString(getBranchLikeUrl(subProject, this.props.branchLike))}>
-                  <QualifierIcon qualifier="BRC" /> <span>{subProjectName}</span>
-                </a>
+                <QualifierIcon qualifier="BRC" /> <span>{subProjectName}</span>
               </div>
             )}
 
@@ -143,15 +133,13 @@ export default class SourceViewerHeader extends React.PureComponent<Props, State
                 </a>
               </li>
               <li>
-                <a
+                <Link
                   className="js-new-window"
-                  href={getPathUrlAsString({
-                    pathname: '/component',
-                    query: { id: key, ...getBranchLikeQuery(this.props.branchLike) }
-                  })}
-                  target="_blank">
+                  rel="noopener noreferrer"
+                  target="_blank"
+                  to={getCodeUrl(this.props.sourceViewerFile.project, this.props.branchLike, key)}>
                   {translate('component_viewer.new_window')}
-                </a>
+                </Link>
               </li>
               {!workspace && (
                 <li>
@@ -161,7 +149,11 @@ export default class SourceViewerHeader extends React.PureComponent<Props, State
                 </li>
               )}
               <li>
-                <a className="js-raw-source" href={rawSourcesLink} target="_blank">
+                <a
+                  className="js-raw-source"
+                  href={rawSourcesLink}
+                  rel="noopener noreferrer"
+                  target="_blank">
                   {translate('component_viewer.show_raw_source')}
                 </a>
               </li>

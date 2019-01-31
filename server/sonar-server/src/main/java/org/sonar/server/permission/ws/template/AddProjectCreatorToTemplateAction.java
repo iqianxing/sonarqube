@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,8 @@
 package org.sonar.server.permission.ws.template;
 
 import java.util.Optional;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.sonar.api.server.ws.Request;
 import org.sonar.api.server.ws.Response;
 import org.sonar.api.server.ws.WebService;
@@ -30,16 +32,13 @@ import org.sonar.db.permission.template.PermissionTemplateCharacteristicDto;
 import org.sonar.db.permission.template.PermissionTemplateDto;
 import org.sonar.server.permission.ws.PermissionWsSupport;
 import org.sonar.server.permission.ws.PermissionsWsAction;
+import org.sonar.server.permission.ws.RequestValidator;
+import org.sonar.server.permission.ws.WsParameters;
 import org.sonar.server.user.UserSession;
-
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
 
 import static java.util.Objects.requireNonNull;
 import static org.sonar.server.permission.PermissionPrivilegeChecker.checkGlobalAdmin;
-import static org.sonar.server.permission.ws.PermissionRequestValidator.validateProjectPermission;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createProjectPermissionParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createTemplateParameters;
+import static org.sonar.server.permission.ws.WsParameters.createTemplateParameters;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_ORGANIZATION;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_PERMISSION;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_TEMPLATE_ID;
@@ -50,22 +49,27 @@ public class AddProjectCreatorToTemplateAction implements PermissionsWsAction {
   private final PermissionWsSupport wsSupport;
   private final UserSession userSession;
   private final System2 system;
+  private final WsParameters wsParameters;
+  private final RequestValidator requestValidator;
 
-  public AddProjectCreatorToTemplateAction(DbClient dbClient, PermissionWsSupport wsSupport, UserSession userSession, System2 system) {
+  public AddProjectCreatorToTemplateAction(DbClient dbClient, PermissionWsSupport wsSupport, UserSession userSession, System2 system,
+    WsParameters wsParameters, RequestValidator requestValidator) {
     this.dbClient = dbClient;
     this.wsSupport = wsSupport;
     this.userSession = userSession;
     this.system = system;
+    this.wsParameters = wsParameters;
+    this.requestValidator = requestValidator;
   }
 
-  private static AddProjectCreatorToTemplateRequest toWsRequest(Request request) {
+  private AddProjectCreatorToTemplateRequest toWsRequest(Request request) {
     AddProjectCreatorToTemplateRequest wsRequest = AddProjectCreatorToTemplateRequest.builder()
       .setPermission(request.mandatoryParam(PARAM_PERMISSION))
       .setTemplateId(request.param(PARAM_TEMPLATE_ID))
       .setOrganization(request.param(PARAM_ORGANIZATION))
       .setTemplateName(request.param(PARAM_TEMPLATE_NAME))
       .build();
-    validateProjectPermission(wsRequest.getPermission());
+    requestValidator.validateProjectPermission(wsRequest.getPermission());
     return wsRequest;
   }
 
@@ -79,7 +83,7 @@ public class AddProjectCreatorToTemplateAction implements PermissionsWsAction {
       .setHandler(this);
 
     createTemplateParameters(action);
-    createProjectPermissionParameter(action);
+    wsParameters.createProjectPermissionParameter(action);
   }
 
   @Override

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,6 @@ import * as React from 'react';
 import DeleteForm from './DeleteForm';
 import EditMembers from './EditMembers';
 import Form from './Form';
-import { Group } from '../../../app/types';
 import ActionsDropdown, {
   ActionsDropdownItem,
   ActionsDropdownDivider
@@ -30,7 +29,7 @@ import { translate } from '../../../helpers/l10n';
 import { omitNil } from '../../../helpers/request';
 
 interface Props {
-  group: Group;
+  group: T.Group;
   onDelete: (name: string) => Promise<void>;
   onEdit: (data: { description?: string; id: number; name?: string }) => Promise<void>;
   onEditMembers: () => void;

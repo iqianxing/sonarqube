@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,6 @@ import * as React from 'react';
 import { Helmet } from 'react-helmet';
 import { connect } from 'react-redux';
 import { withRouter, WithRouterProps } from 'react-router';
-import * as PropTypes from 'prop-types';
 import * as key from 'keymaster';
 import { keyBy } from 'lodash';
 import BulkChange from './BulkChange';
@@ -51,25 +50,38 @@ import FiltersHeader from '../../../components/common/FiltersHeader';
 import SearchBox from '../../../components/controls/SearchBox';
 import { searchRules, getRulesApp } from '../../../api/rules';
 import { searchQualityProfiles, Profile } from '../../../api/quality-profiles';
-import { getCurrentUser, getMyOrganizations } from '../../../store/rootReducer';
+import {
+  getCurrentUser,
+  getLanguages,
+  getMyOrganizations,
+  Store,
+  getAppState
+} from '../../../store/rootReducer';
 import { translate } from '../../../helpers/l10n';
+import { hasPrivateAccess } from '../../../helpers/organizations';
+import {
+  addSideBarClass,
+  addWhitePageClass,
+  removeSideBarClass,
+  removeWhitePageClass
+} from '../../../helpers/pages';
 import { RawQuery } from '../../../helpers/query';
 import { scrollToElement } from '../../../helpers/scrolling';
-import { Paging, Rule, RuleActivation, Organization, CurrentUser } from '../../../app/types';
 import '../../../components/search-navigator.css';
 import '../styles.css';
-import { hasPrivateAccess } from '../../../helpers/organizations';
 
 const PAGE_SIZE = 100;
 const LIMIT_BEFORE_LOAD_MORE = 5;
 
 interface StateToProps {
-  currentUser: CurrentUser;
-  userOrganizations: Organization[];
+  appState: T.AppState;
+  currentUser: T.CurrentUser;
+  languages: T.Languages;
+  userOrganizations: T.Organization[];
 }
 
 interface OwnProps extends WithRouterProps {
-  organization: Organization | undefined;
+  organization: T.Organization | undefined;
 }
 
 type Props = OwnProps & StateToProps;
@@ -80,23 +92,17 @@ interface State {
   facets?: Facets;
   loading: boolean;
   openFacets: OpenFacets;
-  openRule?: Rule;
-  paging?: Paging;
+  openRule?: T.Rule;
+  paging?: T.Paging;
   query: Query;
   referencedProfiles: { [profile: string]: Profile };
   referencedRepositories: { [repository: string]: { key: string; language: string; name: string } };
-  rules: Rule[];
+  rules: T.Rule[];
   selected?: string;
 }
 
-// TODO redirect to default organization's rules page
-
 export class App extends React.PureComponent<Props, State> {
   mounted = false;
-
-  static contextTypes = {
-    organizationsEnabled: PropTypes.bool
-  };
 
   constructor(props: Props) {
     super(props);
@@ -112,12 +118,8 @@ export class App extends React.PureComponent<Props, State> {
 
   componentDidMount() {
     this.mounted = true;
-    document.body.classList.add('white-page');
-    document.documentElement.classList.add('white-page');
-    const footer = document.getElementById('footer');
-    if (footer) {
-      footer.classList.add('page-footer-with-sidebar');
-    }
+    addWhitePageClass();
+    addSideBarClass();
     this.attachShortcuts();
     this.fetchInitialData();
   }
@@ -149,14 +151,8 @@ export class App extends React.PureComponent<Props, State> {
 
   componentWillUnmount() {
     this.mounted = false;
-    // $FlowFixMe
-    document.body.classList.remove('white-page');
-    // $FlowFixMe
-    document.documentElement.classList.remove('white-page');
-    const footer = document.getElementById('footer');
-    if (footer) {
-      footer.classList.remove('page-footer-with-sidebar');
-    }
+    removeWhitePageClass();
+    removeSideBarClass();
     this.detachShortcuts();
   }
 
@@ -182,7 +178,7 @@ export class App extends React.PureComponent<Props, State> {
 
   detachShortcuts = () => key.deleteScope('coding-rules');
 
-  getOpenRule = (props: Props, rules: Rule[]) => {
+  getOpenRule = (props: Props, rules: T.Rule[]) => {
     const open = getOpen(props.location.query);
     return open && rules.find(rule => rule.key === open);
   };
@@ -435,7 +431,7 @@ export class App extends React.PureComponent<Props, State> {
   handleReset = () => this.props.router.push({ pathname: this.props.location.pathname });
 
   /** Tries to take rule by index, or takes the last one  */
-  pickRuleAround = (rules: Rule[], selectedIndex: number | undefined) => {
+  pickRuleAround = (rules: T.Rule[], selectedIndex: number | undefined) => {
     if (selectedIndex === undefined || rules.length === 0) {
       return undefined;
     }
@@ -521,7 +517,7 @@ export class App extends React.PureComponent<Props, State> {
                       onFilterChange={this.handleFilterChange}
                       openFacets={this.state.openFacets}
                       organization={organization}
-                      organizationsEnabled={this.context.organizationsEnabled}
+                      organizationsEnabled={this.props.appState.organizationsEnabled}
                       query={this.state.query}
                       referencedProfiles={this.state.referencedProfiles}
                       referencedRepositories={this.state.referencedRepositories}
@@ -544,6 +540,7 @@ export class App extends React.PureComponent<Props, State> {
                   ) : (
                     this.state.paging && (
                       <BulkChange
+                        languages={this.props.languages}
                         organization={organization}
                         query={this.state.query}
                         referencedProfiles={this.state.referencedProfiles}
@@ -564,7 +561,7 @@ export class App extends React.PureComponent<Props, State> {
             <div className="layout-page-main-inner">
               {this.state.openRule ? (
                 <RuleDetails
-                  allowCustomRules={!this.context.organizationsEnabled}
+                  allowCustomRules={!this.props.appState.organizationsEnabled}
                   canWrite={this.state.canWrite}
                   hideQualityProfiles={hideQualityProfiles}
                   onActivate={this.handleRuleActivate}
@@ -611,7 +608,7 @@ export class App extends React.PureComponent<Props, State> {
   }
 }
 
-function parseActives(rawActives: { [rule: string]: RuleActivation[] }) {
+function parseActives(rawActives: { [rule: string]: T.RuleActivation[] }) {
   const actives: Actives = {};
   for (const [rule, activations] of Object.entries(rawActives)) {
     actives[rule] = {};
@@ -634,9 +631,11 @@ function parseFacets(rawFacets: { property: string; values: { count: number; val
   return facets;
 }
 
-const mapStateToProps = (state: any) => ({
+const mapStateToProps = (state: Store) => ({
+  appState: getAppState(state),
   currentUser: getCurrentUser(state),
+  languages: getLanguages(state),
   userOrganizations: getMyOrganizations(state)
 });
 
-export default withRouter(connect<StateToProps, {}, OwnProps>(mapStateToProps)(App));
+export default withRouter(connect(mapStateToProps)(App));

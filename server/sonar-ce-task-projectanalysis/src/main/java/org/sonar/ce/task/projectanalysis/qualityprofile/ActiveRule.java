@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,15 +31,17 @@ public class ActiveRule {
   private final RuleKey ruleKey;
   private final String severity;
   private final Map<String, String> params;
-  private final long createdAt;
   private final String pluginKey;
+  private final long updatedAt;
+  private final String qProfileKey;
 
-  public ActiveRule(RuleKey ruleKey, String severity, Map<String, String> params, long createdAt, @Nullable String pluginKey) {
+  public ActiveRule(RuleKey ruleKey, String severity, Map<String, String> params, long updatedAt, @Nullable String pluginKey, @Nullable String qProfileKey) {
     this.ruleKey = ruleKey;
     this.severity = severity;
     this.pluginKey = pluginKey;
     this.params = ImmutableMap.copyOf(params);
-    this.createdAt = createdAt;
+    this.updatedAt = updatedAt;
+    this.qProfileKey = qProfileKey;
   }
 
   public RuleKey getRuleKey() {
@@ -54,12 +56,17 @@ public class ActiveRule {
     return params;
   }
 
-  public long getCreatedAt() {
-    return createdAt;
+  public long getUpdatedAt() {
+    return updatedAt;
   }
 
   @CheckForNull
   public String getPluginKey() {
     return pluginKey;
+  }
+
+  @CheckForNull
+  public String getQProfileKey() {
+    return qProfileKey;
   }
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,7 +22,6 @@ import * as classNames from 'classnames';
 import DeleteBranchModal from './DeleteBranchModal';
 import LeakPeriodForm from './LeakPeriodForm';
 import RenameBranchModal from './RenameBranchModal';
-import { BranchLike } from '../../../app/types';
 import BranchStatus from '../../../components/common/BranchStatus';
 import BranchIcon from '../../../components/icons-components/BranchIcon';
 import {
@@ -40,7 +39,7 @@ import ActionsDropdown, {
 } from '../../../components/controls/ActionsDropdown';
 
 interface Props {
-  branchLike: BranchLike;
+  branchLike: T.BranchLike;
   component: string;
   isOrphan?: boolean;
   onChange: () => void;
@@ -173,8 +172,8 @@ export default class BranchRow extends React.PureComponent<Props, State> {
             <div className="outline-badge spacer-left">{translate('branches.main_branch')}</div>
           )}
         </td>
-        <td className="thin nowrap text-right">
-          <BranchStatus branchLike={branchLike} helpTooltipClassName="table-cell-doc" />
+        <td className="thin nowrap">
+          <BranchStatus branchLike={branchLike} />
         </td>
         <td className="thin nowrap text-right big-spacer-left">
           {branchLike.analysisDate && <DateFromNow date={branchLike.analysisDate} />}

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,18 +18,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import { Notification } from '../../../app/types';
 import Checkbox from '../../../components/controls/Checkbox';
 import { translate, hasMessage } from '../../../helpers/l10n';
 
 interface Props {
-  onAdd: (n: Notification) => void;
-  onRemove: (n: Notification) => void;
+  onAdd: (n: T.Notification) => void;
+  onRemove: (n: T.Notification) => void;
   channels: string[];
   checkboxId: (type: string, channel: string) => string;
   project?: boolean;
   types: string[];
-  notifications: Notification[];
+  notifications: T.Notification[];
 }
 
 export default class NotificationsList extends React.PureComponent<Props> {

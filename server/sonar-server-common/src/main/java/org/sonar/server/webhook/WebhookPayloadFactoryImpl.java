@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,7 +31,6 @@ import org.sonar.api.platform.Server;
 import org.sonar.api.server.ServerSide;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.text.JsonWriter;
-import org.sonar.server.project.Project;
 import org.sonar.server.qualitygate.Condition;
 import org.sonar.server.qualitygate.EvaluatedCondition;
 import org.sonar.server.qualitygate.EvaluatedQualityGate;
@@ -155,9 +154,7 @@ public class WebhookPayloadFactoryImpl implements WebhookPayloadFactory {
       evaluatedCondition.getValue().ifPresent(t -> writer.prop("value", t));
       writer
         .prop(PROPERTY_STATUS, evaluatedCondition.getStatus().name())
-        .prop("onLeakPeriod", condition.isOnLeakPeriod())
-        .prop("errorThreshold", condition.getErrorThreshold().orElse(null))
-        .prop("warningThreshold", condition.getWarningThreshold().orElse(null))
+        .prop("errorThreshold", condition.getErrorThreshold())
         .endObject();
     }
     writer

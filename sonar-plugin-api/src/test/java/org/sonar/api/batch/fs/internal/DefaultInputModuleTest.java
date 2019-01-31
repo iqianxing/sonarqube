@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,6 +21,9 @@ package org.sonar.api.batch.fs.internal;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -30,39 +33,50 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 public class DefaultInputModuleTest {
 
+  private static final String FILE_1 = "file1";
+  private static final String TEST_1 = "test1";
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
 
   @Test
-  public void testGetters() throws IOException {
+  public void check_getters() throws IOException {
     ProjectDefinition def = ProjectDefinition.create();
-    def.setKey("projectKey");
-    def.setName("projectName");
+    def.setKey("moduleKey");
     File baseDir = temp.newFolder();
+    Path src = baseDir.toPath().resolve(FILE_1);
+    Files.createFile(src);
+    Path test = baseDir.toPath().resolve(TEST_1);
+    Files.createFile(test);
     def.setBaseDir(baseDir);
-    def.setVersion("version");
-    def.setDescription("desc");
     File workDir = temp.newFolder();
     def.setWorkDir(workDir);
-    def.setSources("file1");
-    def.setTests("test1");
+    def.setSources(FILE_1);
+    def.setTests(TEST_1);
     DefaultInputModule module = new DefaultInputModule(def);
 
-    assertThat(module.key()).isEqualTo("projectKey");
-    assertThat(module.getName()).isEqualTo("projectName");
-    assertThat(module.getOriginalName()).isEqualTo("projectName");
+    assertThat(module.key()).isEqualTo("moduleKey");
     assertThat(module.definition()).isEqualTo(def);
     assertThat(module.getBranch()).isNull();
     assertThat(module.getBaseDir()).isEqualTo(baseDir.toPath());
-    assertThat(module.getKeyWithBranch()).isEqualTo("projectKey");
-    assertThat(module.getVersion()).isEqualTo("version");
-    assertThat(module.getOriginalVersion()).isEqualTo("version");
-    assertThat(module.getDescription()).isEqualTo("desc");
+    assertThat(module.getKeyWithBranch()).isEqualTo("moduleKey");
     assertThat(module.getWorkDir()).isEqualTo(workDir.toPath());
-
-    assertThat(module.properties()).hasSize(6);
+    assertThat(module.getEncoding()).isEqualTo(Charset.defaultCharset());
+    assertThat(module.getSourceDirsOrFiles()).containsExactlyInAnyOrder(src);
+    assertThat(module.getTestDirsOrFiles()).containsExactlyInAnyOrder(test);
+    assertThat(module.getEncoding()).isEqualTo(Charset.defaultCharset());
 
     assertThat(module.isFile()).isFalse();
+  }
+
+  @Test
+  public void working_directory_should_be_hidden() throws IOException {
+    ProjectDefinition def = ProjectDefinition.create();
+    File workDir = temp.newFolder(".sonar");
+    def.setWorkDir(workDir);
+    File baseDir = temp.newFolder();
+    def.setBaseDir(baseDir);
+    DefaultInputModule module = new DefaultInputModule(def);
+    assertThat(workDir.isHidden()).isTrue();
   }
 
 }

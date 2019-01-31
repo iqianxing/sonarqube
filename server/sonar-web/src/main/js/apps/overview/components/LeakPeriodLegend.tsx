@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,26 +18,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
+import { injectIntl, InjectedIntlProps } from 'react-intl';
 import DateFromNow from '../../../components/intl/DateFromNow';
 import DateFormatter, { longFormatterOption } from '../../../components/intl/DateFormatter';
 import DateTimeFormatter from '../../../components/intl/DateTimeFormatter';
 import Tooltip from '../../../components/controls/Tooltip';
-import { getPeriodDate, getPeriodLabel, Period, PeriodMode } from '../../../helpers/periods';
+import { getPeriodDate, getPeriodLabel } from '../../../helpers/periods';
 import { translateWithParameters } from '../../../helpers/l10n';
 import { differenceInDays } from '../../../helpers/dates';
 
 interface Props {
-  period: Period;
+  period: T.Period;
 }
 
-export default class LeakPeriodLegend extends React.PureComponent<Props> {
-  static contextTypes = {
-    intl: PropTypes.object.isRequired
-  };
-
+export class LeakPeriodLegend extends React.PureComponent<Props & InjectedIntlProps> {
   formatDate = (date: string) => {
-    return this.context.intl.formatDate(date, longFormatterOption);
+    return this.props.intl.formatDate(date, longFormatterOption);
   };
 
   render() {
@@ -47,7 +43,7 @@ export default class LeakPeriodLegend extends React.PureComponent<Props> {
       return null;
     }
 
-    if (period.mode === PeriodMode.Days) {
+    if (period.mode === 'days') {
       return (
         <div className="overview-legend overview-legend-spaced-line">
           {translateWithParameters('overview.new_code_period_x', leakPeriodLabel)}
@@ -63,7 +59,7 @@ export default class LeakPeriodLegend extends React.PureComponent<Props> {
     const formattedDateFunction = (formattedLeakPeriodDate: string) => (
       <span>
         {translateWithParameters(
-          period.mode === PeriodMode.PreviousAnalysis
+          period.mode === 'previous_analysis'
             ? 'overview.previous_analysis_on_x'
             : 'overview.started_on_x',
           formattedLeakPeriodDate
@@ -89,7 +85,7 @@ export default class LeakPeriodLegend extends React.PureComponent<Props> {
             {fromNow => (
               <span className="note">
                 {translateWithParameters(
-                  period.mode === PeriodMode.PreviousAnalysis
+                  period.mode === 'previous_analysis'
                     ? 'overview.previous_analysis_x'
                     : 'overview.started_x',
                   fromNow
@@ -102,3 +98,5 @@ export default class LeakPeriodLegend extends React.PureComponent<Props> {
     );
   }
 }
+
+export default injectIntl(LeakPeriodLegend);

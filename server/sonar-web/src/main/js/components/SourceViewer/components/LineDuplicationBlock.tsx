@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,6 @@
  */
 import * as React from 'react';
 import * as classNames from 'classnames';
-import { SourceLine } from '../../../app/types';
 import Tooltip from '../../controls/Tooltip';
 import Toggler from '../../controls/Toggler';
 import { translate } from '../../../helpers/l10n';
@@ -27,7 +26,7 @@ import { translate } from '../../../helpers/l10n';
 interface Props {
   duplicated: boolean;
   index: number;
-  line: SourceLine;
+  line: T.SourceLine;
   onPopupToggle: (x: { index?: number; line: number; name: string; open?: boolean }) => void;
   popupOpen: boolean;
   renderDuplicationPopup: (index: number, line: number) => JSX.Element;
@@ -64,29 +63,27 @@ export default class LineDuplicationBlock extends React.PureComponent<Props> {
       'source-line-duplicated': duplicated
     });
 
-    const cell = <div className="source-line-bar" />;
-
     return duplicated ? (
-      <td
-        className={className}
-        data-index={index}
-        data-line-number={line.line}
-        onClick={this.handleClick}
-        // eslint-disable-next-line jsx-a11y/no-noninteractive-element-to-interactive-role
-        role="button"
-        tabIndex={0}>
+      <td className={className} data-index={index} data-line-number={line.line}>
         <Toggler
           onRequestClose={this.closePopup}
           open={popupOpen}
           overlay={this.props.renderDuplicationPopup(index, line.line)}>
-          <Tooltip overlay={translate('source_viewer.tooltip.duplicated_block')} placement="right">
-            {cell}
+          <Tooltip
+            overlay={popupOpen ? undefined : translate('source_viewer.tooltip.duplicated_block')}
+            placement="right">
+            <div
+              className="source-line-bar"
+              onClick={this.handleClick}
+              role="button"
+              tabIndex={0}
+            />
           </Tooltip>
         </Toggler>
       </td>
     ) : (
       <td className={className} data-index={index} data-line-number={line.line}>
-        {cell}
+        <div className="source-line-bar" />
       </td>
     );
   }

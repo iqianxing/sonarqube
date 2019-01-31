@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,17 +19,32 @@
  */
 package org.sonar.db.alm;
 
+import java.util.List;
 import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.apache.ibatis.annotations.Param;
 
 public interface AlmAppInstallMapper {
 
   @CheckForNull
-  String selectInstallId(@Param("almId") String almId, @Param("ownerId") String ownerId);
+  AlmAppInstallDto selectByOwnerId(@Param("almId") String almId, @Param("ownerId") String ownerId);
 
-  void insert(@Param("uuid") String uuid, @Param("almId") String almId, @Param("ownerId") String ownerId, @Param("installId") String installId, @Param("now") long now);
+  @CheckForNull
+  AlmAppInstallDto selectByInstallationId(@Param("almId") String almId, @Param("installId") String installId);
 
-  int update(@Param("almId") String almId, @Param("ownerId") String ownerId, @Param("installId") String installId, @Param("now") long now);
+  @CheckForNull
+  AlmAppInstallDto selectByUuid(@Param("uuid") String uuid);
+
+  @CheckForNull
+  AlmAppInstallDto selectByOrganizationUuid(@Param("almId") String almId, @Param("organizationUuid") String organizationUuid);
+
+  List<AlmAppInstallDto> selectUnboundByUserExternalId(@Param("userExternalId") String userExternalId);
+
+  void insert(@Param("uuid") String uuid, @Param("almId") String almId, @Param("ownerId") String ownerId,
+    @Nullable @Param("isOwnerUser") Boolean isOwnerUser, @Param("installId") String installId, @Nullable @Param("userExternalId") String userExternalId, @Param("now") long now);
+
+  int update(@Param("almId") String almId, @Param("ownerId") String ownerId,
+    @Nullable @Param("isOwnerUser") Boolean isOwnerUser, @Param("installId") String installId, @Nullable @Param("userExternalId") String userExternalId, @Param("now") long now);
 
   void delete(@Param("almId") String almId, @Param("ownerId") String ownerId);
 }

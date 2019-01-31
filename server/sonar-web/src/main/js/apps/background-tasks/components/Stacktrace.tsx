@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,11 +21,10 @@ import * as React from 'react';
 import { getTask } from '../../../api/ce';
 import { translate } from '../../../helpers/l10n';
 import Modal from '../../../components/controls/Modal';
-import { Task } from '../types';
 
 interface Props {
   onClose: () => void;
-  task: Task;
+  task: Pick<T.Task, 'componentName' | 'errorMessage' | 'id' | 'type'>;
 }
 
 interface State {

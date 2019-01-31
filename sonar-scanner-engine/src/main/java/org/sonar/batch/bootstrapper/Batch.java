@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,6 +21,7 @@ package org.sonar.batch.bootstrapper;
 
 import com.google.common.base.Throwables;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -36,11 +37,9 @@ import org.sonar.scanner.bootstrap.GlobalContainer;
  */
 public final class Batch {
 
-  private boolean started = false;
   private LoggingConfiguration loggingConfig;
   private List<Object> components;
   private Map<String, String> globalProperties = new HashMap<>();
-  private GlobalContainer bootstrapContainer;
 
   private Batch(Builder builder) {
     components = new ArrayList<>();
@@ -65,12 +64,15 @@ public final class Batch {
   }
 
   public synchronized Batch execute() {
+    return doExecute(this.globalProperties, this.components);
+  }
+
+  public synchronized Batch doExecute(Map<String, String> scannerProperties, List<Object> components) {
     configureLogging();
-    doStart();
     try {
-      doExecuteTask(globalProperties);
-    } finally {
-      doStop();
+      GlobalContainer.create(scannerProperties, components).execute();
+    } catch (RuntimeException e) {
+      throw handleException(e);
     }
     return this;
   }
@@ -81,22 +83,6 @@ public final class Batch {
    */
   @Deprecated
   public synchronized Batch start() {
-    if (started) {
-      throw new IllegalStateException("Scanner Engine is already started");
-    }
-    configureLogging();
-    return doStart();
-  }
-
-  private Batch doStart() {
-    try {
-      bootstrapContainer = GlobalContainer.create(globalProperties, components);
-      bootstrapContainer.startComponents();
-    } catch (RuntimeException e) {
-      throw handleException(e);
-    }
-    this.started = true;
-
     return this;
   }
 
@@ -106,24 +92,11 @@ public final class Batch {
    */
   @Deprecated
   public Batch executeTask(Map<String, String> analysisProperties, Object... components) {
-    checkStarted();
-    configureTaskLogging(analysisProperties);
-    return doExecuteTask(analysisProperties, components);
-  }
-
-  private Batch doExecuteTask(Map<String, String> analysisProperties, Object... components) {
-    try {
-      bootstrapContainer.executeTask(analysisProperties, components);
-    } catch (RuntimeException e) {
-      throw handleException(e);
-    }
-    return this;
-  }
-
-  private void checkStarted() {
-    if (!started) {
-      throw new IllegalStateException("Scanner engine is not started. Unable to execute task.");
-    }
+    Map<String, String> mergedProps = new HashMap<>(this.globalProperties);
+    mergedProps.putAll(analysisProperties);
+    List<Object> mergedComponents = new ArrayList<>(this.components);
+    mergedComponents.addAll(Arrays.asList(components));
+    return doExecute(mergedProps, mergedComponents);
   }
 
   private RuntimeException handleException(RuntimeException t) {
@@ -146,30 +119,11 @@ public final class Batch {
    */
   @Deprecated
   public synchronized void stop() {
-    checkStarted();
-    configureLogging();
-    doStop();
-  }
-
-  private void doStop() {
-    try {
-      bootstrapContainer.stopComponents();
-    } catch (RuntimeException e) {
-      throw handleException(e);
-    }
-    this.started = false;
   }
 
   private void configureLogging() {
     if (loggingConfig != null) {
       loggingConfig.setProperties(globalProperties);
-      LoggingConfigurator.apply(loggingConfig);
-    }
-  }
-
-  private void configureTaskLogging(Map<String, String> taskProperties) {
-    if (loggingConfig != null) {
-      loggingConfig.setProperties(taskProperties, globalProperties);
       LoggingConfigurator.apply(loggingConfig);
     }
   }

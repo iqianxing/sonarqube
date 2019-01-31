@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -69,14 +69,32 @@ select:invalid {
   outline: none;
 }
 
-input[type='text'].invalid,
-input[type='password'].invalid,
-input[type='email'].invalid,
-input[type='search'].invalid,
-input[type='date'].invalid,
-input[type='number'].invalid,
-textarea.invalid,
-select.invalid {
+input::placeholder,
+textarea::placeholder {
+  color: var(--secondFontColor);
+}
+
+input[type='text'].is-valid,
+input[type='password'].is-valid,
+input[type='email'].is-valid,
+input[type='search'].is-valid,
+input[type='date'].is-valid,
+input[type='number'].is-valid,
+textarea.is-valid,
+select.is-valid,
+.is-valid > .Select-control {
+  border-color: var(--green);
+}
+
+input[type='text'].is-invalid,
+input[type='password'].is-invalid,
+input[type='email'].is-invalid,
+input[type='search'].is-invalid,
+input[type='date'].is-invalid,
+input[type='number'].is-invalid,
+textarea.is-invalid,
+select.is-invalid,
+.is-invalid > .Select-control {
   border-color: var(--red);
 }
 
@@ -158,6 +176,10 @@ textarea.input-super-large {
   background-color: transparent !important;
 }
 
+.input-clear {
+  background-color: transparent !important;
+}
+
 .input-code {
   font-family: Consolas, 'Liberation Mono', Menlo, Courier, monospace;
   font-size: var(--smallFontSize);
@@ -166,10 +188,6 @@ textarea.input-super-large {
 em.mandatory {
   color: #990000;
   font-style: italic;
-}
-
-label[for] {
-  cursor: pointer;
 }
 
 .form-field {
@@ -232,8 +250,8 @@ label[for] {
 }
 
 .radio-toggle input[type='radio']:disabled + label {
-  color: #bbb;
-  border-color: #ddd;
-  background: #ebebeb;
+  color: var(--disableGrayText);
+  border-color: var(--disableGrayBorder);
+  background: var(--disableGrayBg);
   cursor: not-allowed;
 }

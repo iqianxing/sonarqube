@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@ import org.sonar.api.batch.fs.InputFile;
  */
 public class SensorStrategy {
 
-  private boolean global = false;
+  private boolean global = true;
 
   public boolean isGlobal() {
     return global;

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,8 @@
 package org.sonar.ce.task.projectanalysis.qualitygate;
 
 import com.google.common.base.MoreObjects;
-import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-import org.sonar.ce.task.projectanalysis.metric.Metric;
 import org.sonar.ce.task.projectanalysis.metric.Metric;
 
 import static java.util.Objects.hash;
@@ -33,7 +31,7 @@ import static java.util.Objects.requireNonNull;
 public class Condition {
 
   public enum Operator {
-    EQUALS("EQ"), NOT_EQUALS("NE"), GREATER_THAN("GT"), LESS_THAN("LT");
+    GREATER_THAN("GT"), LESS_THAN("LT");
 
     private final String dbValue;
 
@@ -48,20 +46,14 @@ public class Condition {
 
   private final Metric metric;
   private final Operator operator;
-  @CheckForNull
-  private final String warningThreshold;
-  @CheckForNull
   private final String errorThreshold;
-  private final boolean hasPeriod;
+  private final boolean useVariation;
 
-  public Condition(Metric metric, String operator,
-    @Nullable String errorThreshold, @Nullable String warningThreshold,
-    boolean hasPeriod) {
+  public Condition(Metric metric, String operator, String errorThreshold) {
     this.metric = requireNonNull(metric);
     this.operator = parseFromDbValue(requireNonNull(operator));
-    this.hasPeriod = hasPeriod;
+    this.useVariation = metric.getKey().startsWith("new_");
     this.errorThreshold = errorThreshold;
-    this.warningThreshold = warningThreshold;
   }
 
   private static Operator parseFromDbValue(String str) {
@@ -77,20 +69,14 @@ public class Condition {
     return metric;
   }
 
-  public boolean hasPeriod() {
-    return hasPeriod;
+  public boolean useVariation() {
+    return useVariation;
   }
 
   public Operator getOperator() {
     return operator;
   }
 
-  @CheckForNull
-  public String getWarningThreshold() {
-    return warningThreshold;
-  }
-
-  @CheckForNull
   public String getErrorThreshold() {
     return errorThreshold;
   }
@@ -104,22 +90,19 @@ public class Condition {
       return false;
     }
     Condition that = (Condition) o;
-    return java.util.Objects.equals(metric, that.metric)
-      && java.util.Objects.equals(hasPeriod, that.hasPeriod);
+    return java.util.Objects.equals(metric, that.metric);
   }
 
   @Override
   public int hashCode() {
-    return hash(metric, hasPeriod);
+    return hash(metric);
   }
 
   @Override
   public String toString() {
     return MoreObjects.toStringHelper(this)
       .add("metric", metric)
-      .add("hasPeriod", hasPeriod)
       .add("operator", operator)
-      .add("warningThreshold", warningThreshold)
       .add("errorThreshold", errorThreshold)
       .toString();
   }

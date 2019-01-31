@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,10 +22,11 @@ import AlertSuccessIcon from '../../../components/icons-components/AlertSuccessI
 import { ReportStatus, subscribe, unsubscribe } from '../../../api/report';
 import { translate, translateWithParameters } from '../../../helpers/l10n';
 import { Button } from '../../../components/ui/buttons';
+import { isLoggedIn } from '../../../helpers/users';
 
 interface Props {
   component: string;
-  currentUser: { email?: string };
+  currentUser: T.CurrentUser;
   status: ReportStatus;
 }
 
@@ -116,7 +117,7 @@ export default class Subscription extends React.PureComponent<Props, State> {
   );
 
   render() {
-    const hasEmail = !!this.props.currentUser.email;
+    const hasEmail = isLoggedIn(this.props.currentUser) && !!this.props.currentUser.email;
     const { subscribed } = this.state;
 
     let inner;

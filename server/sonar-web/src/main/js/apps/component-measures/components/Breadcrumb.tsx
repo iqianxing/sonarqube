@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,11 +20,10 @@
 import * as React from 'react';
 import Tooltip from '../../../components/controls/Tooltip';
 import { collapsePath, limitComponentName } from '../../../helpers/path';
-import { ComponentMeasure } from '../../../app/types';
 
 interface Props {
   canBrowse: boolean;
-  component: ComponentMeasure;
+  component: T.ComponentMeasure;
   isLast: boolean;
   handleSelect: (component: string) => void;
 }

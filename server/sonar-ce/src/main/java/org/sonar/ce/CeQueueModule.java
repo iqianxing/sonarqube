@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,6 @@
  */
 package org.sonar.ce;
 
-import org.sonar.ce.monitoring.CEQueueStatusImpl;
 import org.sonar.ce.monitoring.CeTasksMBeanImpl;
 import org.sonar.ce.queue.CeQueueInitializer;
 import org.sonar.ce.queue.InternalCeQueueImpl;
@@ -33,7 +32,6 @@ public class CeQueueModule extends Module {
       InternalCeQueueImpl.class,
 
       // queue monitoring
-      CEQueueStatusImpl.class,
       CeTasksMBeanImpl.class,
 
       // init queue state and queue processing

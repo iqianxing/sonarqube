@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,6 +28,17 @@ it('should match snapshot', () => {
     name: 'Foo',
     url: 'http://example.com',
     type: 'foo'
+  };
+
+  expect(shallow(<MetaLink link={link} />)).toMatchSnapshot();
+});
+
+it('should render dangerous links as plaintext', () => {
+  const link = {
+    id: '1',
+    name: 'Dangerous',
+    url: 'javascript:alert("hi")',
+    type: 'dangerous'
   };
 
   expect(shallow(<MetaLink link={link} />)).toMatchSnapshot();

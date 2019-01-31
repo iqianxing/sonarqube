@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,7 @@
  */
 package org.sonar.ce.task.projectanalysis.language;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 import org.junit.Test;
 import org.sonar.api.resources.Language;
 

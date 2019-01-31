@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -44,9 +44,9 @@ import org.sonar.server.exceptions.ForbiddenException;
 import org.sonar.server.exceptions.UnauthorizedException;
 import org.sonar.server.issue.IssueFieldsSetter;
 import org.sonar.server.issue.IssueFinder;
-import org.sonar.server.issue.WebIssueStorage;
 import org.sonar.server.issue.IssueUpdater;
 import org.sonar.server.issue.TestIssueChangePostProcessor;
+import org.sonar.server.issue.WebIssueStorage;
 import org.sonar.server.issue.index.IssueIndexer;
 import org.sonar.server.issue.index.IssueIteratorFactory;
 import org.sonar.server.notification.NotificationManager;
@@ -59,13 +59,13 @@ import org.sonar.server.ws.TestResponse;
 import org.sonar.server.ws.WsActionTester;
 
 import static java.util.Collections.singletonList;
+import static java.util.Optional.ofNullable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.sonar.api.web.UserRole.ISSUE_ADMIN;
-import static org.sonar.core.util.Protobuf.setNullable;
 import static org.sonar.core.util.stream.MoreCollectors.join;
 import static org.sonar.db.component.ComponentTesting.newFileDto;
 
@@ -178,12 +178,12 @@ public class SetTagsActionTest {
   }
 
   @Test
-  public void fail_when_bad_tag_format() {
+  public void fail_when_tag_use_bad_format() {
     IssueDto issueDto = db.issues().insertIssue(newIssue().setTags(singletonList("old-tag")));
     logIn(issueDto);
 
     expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("Tag 'pol op' is invalid. Rule tags accept only the characters: a-z, 0-9, '+', '-', '#', '.'");
+    expectedException.expectMessage("Tags 'pol op' are invalid. Rule tags accept only the characters: a-z, 0-9, '+', '-', '#', '.'");
 
     call(issueDto.getKey(), "pol op");
   }
@@ -227,7 +227,7 @@ public class SetTagsActionTest {
 
   private TestResponse call(@Nullable String issueKey, String... tags) {
     TestRequest request = ws.newRequest();
-    setNullable(issueKey, issue -> request.setParam("issue", issue));
+    ofNullable(issueKey).ifPresent(issue -> request.setParam("issue", issue));
     if (tags.length > 0) {
       request.setParam("tags", Arrays.stream(tags).collect(join(Joiner.on(","))));
     }

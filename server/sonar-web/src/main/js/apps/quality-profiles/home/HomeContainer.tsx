@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,7 +28,6 @@ interface Props {
   actions: Actions;
   languages: Array<{ key: string; name: string }>;
   location: { query: { [p: string]: string } };
-  onRequestFail: (reason: any) => void;
   organization: string | null;
   profiles: Profile[];
   updateProfiles: () => Promise<void>;

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,11 +27,9 @@ import LineDuplications from './LineDuplications';
 import LineDuplicationBlock from './LineDuplicationBlock';
 import LineIssuesIndicator from './LineIssuesIndicator';
 import LineCode from './LineCode';
-import { BranchLike, Issue, LinearIssueLocation, SourceLine } from '../../../app/types';
 
 interface Props {
-  branchLike: BranchLike | undefined;
-  componentKey: string;
+  branchLike: T.BranchLike | undefined;
   displayAllIssues?: boolean;
   displayCoverage: boolean;
   displayDuplications: boolean;
@@ -41,28 +39,27 @@ interface Props {
   displayLocationMarkers?: boolean;
   duplications: number[];
   duplicationsCount: number;
-  filtered: boolean | undefined;
   highlighted: boolean;
   highlightedLocationMessage: { index: number; text: string | undefined } | undefined;
   highlightedSymbols: string[] | undefined;
-  issueLocations: LinearIssueLocation[];
+  issueLocations: T.LinearIssueLocation[];
   issuePopup: { issue: string; name: string } | undefined;
-  issues: Issue[];
+  issues: T.Issue[];
   last: boolean;
-  line: SourceLine;
+  line: T.SourceLine;
   linePopup: { index?: number; line: number; name: string } | undefined;
-  loadDuplications: (line: SourceLine) => void;
+  loadDuplications: (line: T.SourceLine) => void;
   onLinePopupToggle: (x: { index?: number; line: number; name: string; open?: boolean }) => void;
-  onIssueChange: (issue: Issue) => void;
+  onIssueChange: (issue: T.Issue) => void;
   onIssuePopupToggle: (issueKey: string, popupName: string, open?: boolean) => void;
-  onIssuesClose: (line: SourceLine) => void;
+  onIssuesClose: (line: T.SourceLine) => void;
   onIssueSelect: (issueKey: string) => void;
-  onIssuesOpen: (line: SourceLine) => void;
+  onIssuesOpen: (line: T.SourceLine) => void;
   onIssueUnselect: () => void;
   onLocationSelect: ((x: number) => void) | undefined;
   onSymbolClick: (symbols: string[]) => void;
   openIssues: boolean;
-  previousLine: SourceLine | undefined;
+  previousLine: T.SourceLine | undefined;
   renderDuplicationPopup: (index: number, line: number) => JSX.Element;
   scroll?: (element: HTMLElement) => void;
   secondaryIssueLocations: Array<{
@@ -101,17 +98,10 @@ export default class Line extends React.PureComponent<Props> {
   };
 
   render() {
-    const {
-      displayCoverage,
-      duplications,
-      duplicationsCount,
-      filtered,
-      issuePopup,
-      line
-    } = this.props;
+    const { displayCoverage, duplications, duplicationsCount, issuePopup, line } = this.props;
     const className = classNames('source-line', {
       'source-line-highlighted': this.props.highlighted,
-      'source-line-filtered': filtered === true,
+      'source-line-filtered': line.isNew,
       'source-line-filtered-dark':
         displayCoverage &&
         (line.coverageStatus === 'uncovered' || line.coverageStatus === 'partially-covered'),
@@ -121,8 +111,6 @@ export default class Line extends React.PureComponent<Props> {
     return (
       <tr className={className} data-line-number={line.line}>
         <LineNumber
-          branchLike={this.props.branchLike}
-          componentKey={this.props.componentKey}
           line={line}
           onPopupToggle={this.props.onLinePopupToggle}
           popupOpen={this.isPopupOpen('line-number')}
@@ -135,15 +123,7 @@ export default class Line extends React.PureComponent<Props> {
           previousLine={this.props.previousLine}
         />
 
-        {this.props.displayCoverage && (
-          <LineCoverage
-            branchLike={this.props.branchLike}
-            componentKey={this.props.componentKey}
-            line={line}
-            onPopupToggle={this.props.onLinePopupToggle}
-            popupOpen={this.isPopupOpen('coverage')}
-          />
-        )}
+        {this.props.displayCoverage && <LineCoverage line={line} />}
 
         {this.props.displayDuplications && (
           <LineDuplications line={line} onClick={this.props.loadDuplications} />

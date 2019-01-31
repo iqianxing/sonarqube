@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,8 +19,8 @@
  */
 package org.sonar.ce.task.projectanalysis.qualityprofile;
 
-import com.google.common.base.Optional;
 import java.util.Collections;
+import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -37,6 +37,7 @@ public class ActiveRulesHolderImplTest {
   private static final long SOME_DATE = 1_000L;
 
   static final RuleKey RULE_KEY = RuleKey.of("squid", "S001");
+  private static final String QP_KEY = "qp1";
 
   @Rule
   public ExpectedException thrown = ExpectedException.none();
@@ -52,7 +53,7 @@ public class ActiveRulesHolderImplTest {
 
   @Test
   public void get_active_rule() {
-    underTest.set(asList(new ActiveRule(RULE_KEY, Severity.BLOCKER, Collections.emptyMap(), SOME_DATE, PLUGIN_KEY)));
+    underTest.set(asList(new ActiveRule(RULE_KEY, Severity.BLOCKER, Collections.emptyMap(), SOME_DATE, PLUGIN_KEY, QP_KEY)));
 
     Optional<ActiveRule> activeRule = underTest.get(RULE_KEY);
     assertThat(activeRule.isPresent()).isTrue();
@@ -65,7 +66,7 @@ public class ActiveRulesHolderImplTest {
     thrown.expect(IllegalStateException.class);
     thrown.expectMessage("Active rules have already been initialized");
 
-    underTest.set(asList(new ActiveRule(RULE_KEY, Severity.BLOCKER, Collections.emptyMap(), 1_000L, PLUGIN_KEY)));
+    underTest.set(asList(new ActiveRule(RULE_KEY, Severity.BLOCKER, Collections.emptyMap(), SOME_DATE, PLUGIN_KEY, QP_KEY)));
     underTest.set(Collections.emptyList());
 
   }
@@ -84,7 +85,7 @@ public class ActiveRulesHolderImplTest {
     thrown.expectMessage("Active rule must not be declared multiple times: squid:S001");
 
     underTest.set(asList(
-      new ActiveRule(RULE_KEY, Severity.BLOCKER, Collections.emptyMap(), 1_000L, PLUGIN_KEY),
-      new ActiveRule(RULE_KEY, Severity.MAJOR, Collections.emptyMap(), 1_000L, PLUGIN_KEY)));
+      new ActiveRule(RULE_KEY, Severity.BLOCKER, Collections.emptyMap(), SOME_DATE, PLUGIN_KEY, QP_KEY),
+      new ActiveRule(RULE_KEY, Severity.MAJOR, Collections.emptyMap(), SOME_DATE, PLUGIN_KEY, QP_KEY)));
   }
 }

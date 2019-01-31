@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,7 +34,7 @@ import org.sonar.server.qualitygate.QualityGateFinder;
 import org.sonarqube.ws.Qualitygates.ListWsResponse;
 import org.sonarqube.ws.Qualitygates.ListWsResponse.QualityGate;
 
-import static org.sonar.core.util.Protobuf.setNullable;
+import static java.util.Optional.ofNullable;
 import static org.sonar.core.util.stream.MoreCollectors.toList;
 import static org.sonar.server.ws.WsUtils.writeProtobuf;
 
@@ -88,7 +88,7 @@ public class ListAction implements QualityGatesWsAction {
           .setActions(wsSupport.getActions(organization, qualityGate, defaultQualityGate))
           .build())
         .collect(toList()));
-    setNullable(defaultId, builder::setDefault);
+    ofNullable(defaultId).ifPresent(builder::setDefault);
     return builder.build();
   }
 

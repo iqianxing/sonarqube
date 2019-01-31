@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -50,8 +50,11 @@ import org.sonar.ce.CeTaskCommonsModule;
 import org.sonar.ce.StandaloneCeDistributedInformation;
 import org.sonar.ce.async.SynchronousAsyncExecution;
 import org.sonar.ce.cleaning.CeCleaningModule;
+import org.sonar.ce.cleaning.NoopCeCleaningSchedulerImpl;
 import org.sonar.ce.db.ReadOnlyPropertiesDao;
 import org.sonar.ce.logging.CeProcessLogging;
+import org.sonar.ce.monitoring.CEQueueStatusImpl;
+import org.sonar.ce.monitoring.DistributedCEQueueStatusImpl;
 import org.sonar.ce.platform.CECoreExtensionsInstaller;
 import org.sonar.ce.platform.ComputeEngineExtensionInstaller;
 import org.sonar.ce.platform.DatabaseCompatibility;
@@ -59,6 +62,7 @@ import org.sonar.ce.queue.CeQueueCleaner;
 import org.sonar.ce.queue.PurgeCeActivities;
 import org.sonar.ce.task.projectanalysis.ProjectAnalysisTaskModule;
 import org.sonar.ce.task.projectanalysis.analysis.ProjectConfigurationFactory;
+import org.sonar.ce.task.projectanalysis.issue.AdHocRuleCreator;
 import org.sonar.ce.task.projectanalysis.notification.ReportAnalysisFailureNotificationModule;
 import org.sonar.ce.taskprocessor.CeProcessingScheduler;
 import org.sonar.ce.taskprocessor.CeTaskProcessorModule;
@@ -77,7 +81,6 @@ import org.sonar.core.timemachine.Periods;
 import org.sonar.core.util.UuidFactoryImpl;
 import org.sonar.db.DBSessionsImpl;
 import org.sonar.db.DaoModule;
-import org.sonar.db.DatabaseChecker;
 import org.sonar.db.DbClient;
 import org.sonar.db.DefaultDatabase;
 import org.sonar.db.MyBatis;
@@ -141,13 +144,11 @@ import org.sonar.server.qualitygate.QualityGateEvaluatorImpl;
 import org.sonar.server.qualitygate.QualityGateFinder;
 import org.sonar.server.qualityprofile.index.ActiveRuleIndexer;
 import org.sonar.server.rule.DefaultRuleFinder;
-import org.sonar.server.rule.ExternalRuleCreator;
 import org.sonar.server.rule.index.RuleIndex;
 import org.sonar.server.rule.index.RuleIndexer;
 import org.sonar.server.setting.DatabaseSettingLoader;
 import org.sonar.server.setting.DatabaseSettingsEnabler;
 import org.sonar.server.setting.ThreadLocalSettings;
-import org.sonar.server.test.index.TestIndexer;
 import org.sonar.server.user.index.UserIndex;
 import org.sonar.server.user.index.UserIndexer;
 import org.sonar.server.util.OkHttpClientProvider;
@@ -161,6 +162,7 @@ import static org.sonar.core.extension.CoreExtensionsInstaller.noAdditionalSideF
 import static org.sonar.core.extension.PlatformLevelPredicates.hasPlatformLevel;
 import static org.sonar.core.extension.PlatformLevelPredicates.hasPlatformLevel4OrNone;
 import static org.sonar.process.ProcessProperties.Property.CLUSTER_ENABLED;
+import static org.sonar.process.ProcessProperties.Property.SONARCLOUD_ENABLED;
 
 public class ComputeEngineContainerImpl implements ComputeEngineContainer {
 
@@ -280,7 +282,6 @@ public class ComputeEngineContainerImpl implements ComputeEngineContainer {
       WebServerImpl.class,
       LogbackHelper.class,
       DefaultDatabase.class,
-      DatabaseChecker.class,
       MyBatis.class,
       PurgeProfiler.class,
       ServerFileSystemImpl.class,
@@ -370,7 +371,7 @@ public class ComputeEngineContainerImpl implements ComputeEngineContainer {
       XMLRuleParser.class,
       DefaultRuleFinder.class,
       RulesDefinitionXmlLoader.class,
-      ExternalRuleCreator.class,
+      AdHocRuleCreator.class,
       RuleIndexer.class,
 
       // languages
@@ -423,9 +424,6 @@ public class ComputeEngineContainerImpl implements ComputeEngineContainer {
       EmailNotificationChannel.class,
       ReportAnalysisFailureNotificationModule.class,
 
-      // Tests
-      TestIndexer.class,
-
       // System
       ServerLogging.class,
 
@@ -452,21 +450,33 @@ public class ComputeEngineContainerImpl implements ComputeEngineContainer {
       WebhookModule.class,
 
       QualityGateFinder.class,
-      QualityGateEvaluatorImpl.class,
+      QualityGateEvaluatorImpl.class
 
-      // cleaning
-      CeCleaningModule.class);
+    );
 
-    if (props.valueAsBoolean(CLUSTER_ENABLED.getKey())) {
+    if (props.valueAsBoolean(SONARCLOUD_ENABLED.getKey())) {
+      // no cleaning job on sonarcloud and no distributed information
       container.add(
+        NoopCeCleaningSchedulerImpl.class,
+        StandaloneCeDistributedInformation.class,
+        CEQueueStatusImpl.class);
+    } else if (props.valueAsBoolean(CLUSTER_ENABLED.getKey())) {
+      container.add(
+        CeCleaningModule.class,
+
         // system health
         CeDistributedInformationImpl.class,
 
         // system info
         DbSection.class,
-        ProcessInfoProvider.class);
+        ProcessInfoProvider.class,
+
+        DistributedCEQueueStatusImpl.class);
     } else {
-      container.add(StandaloneCeDistributedInformation.class);
+      container.add(
+        CeCleaningModule.class,
+        StandaloneCeDistributedInformation.class,
+        CEQueueStatusImpl.class);
     }
   }
 

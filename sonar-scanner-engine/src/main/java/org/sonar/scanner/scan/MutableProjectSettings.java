@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,38 +22,30 @@ package org.sonar.scanner.scan;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import org.sonar.api.batch.bootstrap.ProjectReactor;
 import org.sonar.api.config.Settings;
-import org.sonar.api.utils.MessageException;
-import org.sonar.scanner.bootstrap.GlobalAnalysisMode;
-import org.sonar.scanner.bootstrap.MutableGlobalSettings;
-import org.sonar.scanner.repository.ProjectRepositories;
+import org.sonar.scanner.bootstrap.GlobalConfiguration;
 
 import static java.util.Objects.requireNonNull;
 
 /**
- * @deprecated since 6.5 {@link ProjectSettings} used to be mutable, so keep a mutable copy for backward compatibility.
+ * @deprecated since 6.5 {@link ProjectConfiguration} used to be mutable, so keep a mutable copy for backward compatibility.
  */
 @Deprecated
 public class MutableProjectSettings extends Settings {
 
-  private final GlobalAnalysisMode mode;
   private final Map<String, String> properties = new HashMap<>();
 
-  public MutableProjectSettings(ProjectReactor reactor, MutableGlobalSettings mutableGlobalSettings, ProjectRepositories projectRepositories, GlobalAnalysisMode mode) {
-    super(mutableGlobalSettings.getDefinitions(), mutableGlobalSettings.getEncryption());
-    this.mode = mode;
-    addProperties(mutableGlobalSettings.getProperties());
-    addProperties(projectRepositories.settings(reactor.getRoot().getKeyWithBranch()));
-    addProperties(reactor.getRoot().properties());
+  public MutableProjectSettings(GlobalConfiguration globalConfig) {
+    super(globalConfig.getDefinitions(), globalConfig.getEncryption());
+    addProperties(globalConfig.getProperties());
+  }
+
+  public void complete(ProjectConfiguration projectConfig) {
+    addProperties(projectConfig.getProperties());
   }
 
   @Override
   protected Optional<String> get(String key) {
-    if (mode.isIssues() && key.endsWith(".secured") && !key.contains(".license")) {
-      throw MessageException.of("Access to the secured property '" + key
-        + "' is not possible in issues mode. The SonarQube plugin which requires this property must be deactivated in issues mode.");
-    }
     return Optional.ofNullable(properties.get(key));
   }
 

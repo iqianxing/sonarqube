@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,6 +22,12 @@ import { shallow } from 'enzyme';
 import Tooltip, { TooltipInner } from '../Tooltip';
 
 jest.useFakeTimers();
+jest.mock('react-dom', () => {
+  const actual = require.requireActual('react-dom');
+  return Object.assign({}, actual, {
+    findDOMNode: () => undefined
+  });
+});
 
 it('should render', () => {
   expect(
@@ -52,14 +58,31 @@ it('should open & close', () => {
   wrapper.find('#tooltip').simulate('mouseenter');
   jest.runOnlyPendingTimers();
   wrapper.update();
-  expect(wrapper).toMatchSnapshot();
+  expect(wrapper.find('TooltipPortal').exists()).toBe(true);
   expect(onShow).toBeCalled();
 
   wrapper.find('#tooltip').simulate('mouseleave');
   jest.runOnlyPendingTimers();
   wrapper.update();
-  expect(wrapper).toMatchSnapshot();
+  expect(wrapper.find('TooltipPortal').exists()).toBe(false);
   expect(onHide).toBeCalled();
+});
+
+it('should not open when mouse goes away quickly', () => {
+  const onShow = jest.fn();
+  const onHide = jest.fn();
+  const wrapper = shallow(
+    <TooltipInner onHide={onHide} onShow={onShow} overlay={<span id="overlay" />}>
+      <div id="tooltip" />
+    </TooltipInner>
+  );
+
+  wrapper.find('#tooltip').simulate('mouseenter');
+  wrapper.find('#tooltip').simulate('mouseleave');
+  jest.runOnlyPendingTimers();
+  wrapper.update();
+
+  expect(wrapper.find('TooltipPortal').exists()).toBe(false);
 });
 
 it('should not render tooltip without overlay', () => {

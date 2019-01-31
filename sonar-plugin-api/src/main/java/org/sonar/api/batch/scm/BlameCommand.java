@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,18 +19,15 @@
  */
 package org.sonar.api.batch.scm;
 
-import org.sonar.api.batch.ScannerSide;
-import org.sonar.api.batch.InstantiationStrategy;
+import java.util.List;
+import org.sonar.api.scanner.ScannerSide;
 import org.sonar.api.batch.fs.FileSystem;
 import org.sonar.api.batch.fs.InputFile;
-
-import java.util.List;
 
 /**
  * This class should be implemented by SCM providers.
  * @since 5.0
  */
-@InstantiationStrategy(InstantiationStrategy.PER_BATCH)
 @ScannerSide
 public abstract class BlameCommand {
 

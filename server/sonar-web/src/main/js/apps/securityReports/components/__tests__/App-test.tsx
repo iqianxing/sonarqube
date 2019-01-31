@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -41,6 +41,8 @@ jest.mock('../../../../api/security-reports', () => ({
     return Promise.resolve({
       categories: [
         {
+          activeRules: 1,
+          totalRules: 1,
           category: 'a1',
           vulnerabilities: 2,
           vulnerabiliyRating: 5,
@@ -50,7 +52,19 @@ jest.mock('../../../../api/security-reports', () => ({
           distribution
         },
         {
+          activeRules: 1,
+          totalRules: 1,
           category: 'a2',
+          vulnerabilities: 3,
+          vulnerabiliyRating: 3,
+          toReviewSecurityHotspots: 8,
+          openSecurityHotspots: 100,
+          wontFixSecurityHotspots: 10
+        },
+        {
+          activeRules: 0,
+          totalRules: 1,
+          category: 'a3',
           vulnerabilities: 3,
           vulnerabiliyRating: 3,
           toReviewSecurityHotspots: 8,
@@ -64,15 +78,13 @@ jest.mock('../../../../api/security-reports', () => ({
 
 import * as React from 'react';
 import { shallow } from 'enzyme';
-import { Component } from '../../../../app/types';
-import App from '../App';
+import { App } from '../App';
 import { waitAndUpdate } from '../../../../helpers/testUtils';
 
 const getSecurityHotspots = require('../../../../api/security-reports')
   .getSecurityHotspots as jest.Mock<any>;
 
-const component = { key: 'foo', name: 'Foo', qualifier: 'TRK' } as Component;
-const context = { router: { push: jest.fn() } };
+const component = { key: 'foo', name: 'Foo', qualifier: 'TRK' } as T.Component;
 const location = { pathname: 'foo', query: {} };
 const locationWithCWE = { pathname: 'foo', query: { showCWE: 'true' } };
 const owaspParams = { type: 'owasp_top_10' };
@@ -84,16 +96,27 @@ beforeEach(() => {
 });
 
 it('renders error on wrong type parameters', () => {
-  const wrapper = shallow(<App component={component} location={location} params={wrongParams} />, {
-    context
-  });
+  const wrapper = shallow(
+    <App
+      component={component}
+      location={location}
+      params={wrongParams}
+      router={{ push: jest.fn() }}
+    />
+  );
   expect(wrapper).toMatchSnapshot();
 });
 
-it('renders owaspTop10', () => {
-  const wrapper = shallow(<App component={component} location={location} params={owaspParams} />, {
-    context
-  });
+it('renders owaspTop10', async () => {
+  const wrapper = shallow(
+    <App
+      component={component}
+      location={location}
+      params={owaspParams}
+      router={{ push: jest.fn() }}
+    />
+  );
+  await waitAndUpdate(wrapper);
   expect(getSecurityHotspots).toBeCalledWith({
     project: 'foo',
     standard: 'owaspTop10',
@@ -105,8 +128,12 @@ it('renders owaspTop10', () => {
 
 it('renders with cwe', () => {
   const wrapper = shallow(
-    <App component={component} location={locationWithCWE} params={owaspParams} />,
-    { context }
+    <App
+      component={component}
+      location={locationWithCWE}
+      params={owaspParams}
+      router={{ push: jest.fn() }}
+    />
   );
   expect(getSecurityHotspots).toBeCalledWith({
     project: 'foo',
@@ -118,9 +145,14 @@ it('renders with cwe', () => {
 });
 
 it('handle checkbox for cwe display', async () => {
-  const wrapper = shallow(<App component={component} location={location} params={owaspParams} />, {
-    context
-  });
+  const wrapper = shallow(
+    <App
+      component={component}
+      location={location}
+      params={owaspParams}
+      router={{ push: jest.fn() }}
+    />
+  );
   expect(getSecurityHotspots).toBeCalledWith({
     project: 'foo',
     standard: 'owaspTop10',
@@ -142,9 +174,14 @@ it('handle checkbox for cwe display', async () => {
 });
 
 it('renders sansTop25', () => {
-  const wrapper = shallow(<App component={component} location={location} params={sansParams} />, {
-    context
-  });
+  const wrapper = shallow(
+    <App
+      component={component}
+      location={location}
+      params={sansParams}
+      router={{ push: jest.fn() }}
+    />
+  );
   expect(getSecurityHotspots).toBeCalledWith({
     project: 'foo',
     standard: 'sansTop25',

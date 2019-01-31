@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -32,13 +32,16 @@ import org.sonar.api.config.Configuration;
  * runtime.
  *
  * @since 3.5
+ * @deprecated since 7.6
  */
+@Deprecated
 @ScannerSide
 public class FileExclusions {
-  private final Configuration settings;
 
-  public FileExclusions(Configuration settings) {
-    this.settings = settings;
+  private final Configuration config;
+
+  public FileExclusions(Configuration config) {
+    this.config = config;
   }
 
   public String[] sourceInclusions() {
@@ -50,7 +53,7 @@ public class FileExclusions {
   }
 
   private String[] inclusions(String propertyKey) {
-    return Arrays.stream(settings.getStringArray(propertyKey))
+    return Arrays.stream(config.getStringArray(propertyKey))
       .map(StringUtils::trim)
       .filter(s -> !"**/*".equals(s))
       .filter(s -> !"file:**/*".equals(s))
@@ -66,8 +69,8 @@ public class FileExclusions {
   }
 
   private String[] exclusions(String globalExclusionsProperty, String exclusionsProperty) {
-    String[] globalExclusions = settings.getStringArray(globalExclusionsProperty);
-    String[] exclusions = settings.getStringArray(exclusionsProperty);
+    String[] globalExclusions = config.getStringArray(globalExclusionsProperty);
+    String[] exclusions = config.getStringArray(exclusionsProperty);
     return Stream.concat(Arrays.stream(globalExclusions), Arrays.stream(exclusions))
       .map(StringUtils::trim)
       .toArray(String[]::new);

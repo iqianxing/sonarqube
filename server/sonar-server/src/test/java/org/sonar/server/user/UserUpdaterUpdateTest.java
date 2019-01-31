@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -36,8 +36,7 @@ import org.sonar.db.property.PropertyDto;
 import org.sonar.db.property.PropertyQuery;
 import org.sonar.db.user.GroupDto;
 import org.sonar.db.user.UserDto;
-import org.sonar.db.user.UserTesting;
-import org.sonar.server.authentication.LocalAuthentication;
+import org.sonar.server.authentication.CredentialsLocalAuthentication;
 import org.sonar.server.es.EsTester;
 import org.sonar.server.exceptions.BadRequestException;
 import org.sonar.server.organization.DefaultOrganizationProvider;
@@ -55,6 +54,7 @@ import static org.assertj.core.api.Assertions.tuple;
 import static org.assertj.core.data.MapEntry.entry;
 import static org.mockito.Mockito.mock;
 import static org.sonar.api.CoreProperties.DEFAULT_ISSUE_ASSIGNEE;
+import static org.sonar.db.user.UserTesting.newExternalUser;
 import static org.sonar.db.user.UserTesting.newLocalUser;
 import static org.sonar.db.user.UserTesting.newUserDto;
 
@@ -81,8 +81,8 @@ public class UserUpdaterUpdateTest {
   private DefaultOrganizationProvider defaultOrganizationProvider = TestDefaultOrganizationProvider.from(db);
   private TestOrganizationFlags organizationFlags = TestOrganizationFlags.standalone();
   private MapSettings settings = new MapSettings();
-  private LocalAuthentication localAuthentication = new LocalAuthentication(db.getDbClient());
-  private UserUpdater underTest = new UserUpdater(newUserNotifier, dbClient, userIndexer, organizationFlags, defaultOrganizationProvider, organizationUpdater,
+  private CredentialsLocalAuthentication localAuthentication = new CredentialsLocalAuthentication(db.getDbClient());
+  private UserUpdater underTest = new UserUpdater(system2, newUserNotifier, dbClient, userIndexer, organizationFlags, defaultOrganizationProvider, organizationUpdater,
     new DefaultGroupFinder(dbClient), settings.asConfig(), localAuthentication);
 
   @Test
@@ -117,7 +117,7 @@ public class UserUpdaterUpdateTest {
 
   @Test
   public void update_user_external_identity_when_user_was_not_local() {
-    UserDto user = db.users().insertUser(UserTesting.newExternalUser(DEFAULT_LOGIN, "Marius", "marius@email.com"));
+    UserDto user = db.users().insertUser(newExternalUser(DEFAULT_LOGIN, "Marius", "marius@email.com"));
     createDefaultGroup();
 
     underTest.updateAndCommit(session, user, new UpdateUser()
@@ -172,23 +172,50 @@ public class UserUpdaterUpdateTest {
   }
 
   @Test
-  public void update_only_login() {
-    UserDto oldUser = db.users().insertUser(newLocalUser(DEFAULT_LOGIN, "Marius", "marius@lesbronzes.fr"));
+  public void update_only_login_of_local_account() {
+    UserDto user = db.users().insertUser(newLocalUser(DEFAULT_LOGIN, "Marius", "marius@lesbronzes.fr"));
     createDefaultGroup();
 
-    underTest.updateAndCommit(session, oldUser, new UpdateUser()
+    underTest.updateAndCommit(session, user, new UpdateUser()
       .setLogin("new_login"), u -> {
       });
 
     assertThat(dbClient.userDao().selectByLogin(session, DEFAULT_LOGIN)).isNull();
-    UserDto dto = dbClient.userDao().selectByUuid(session, oldUser.getUuid());
-    assertThat(dto.getLogin()).isEqualTo("new_login");
+    UserDto userReloaded = dbClient.userDao().selectByUuid(session, user.getUuid());
+    assertThat(userReloaded.getLogin()).isEqualTo("new_login");
+    assertThat(userReloaded.getExternalIdentityProvider()).isEqualTo("sonarqube");
+    assertThat(userReloaded.getExternalLogin()).isEqualTo("new_login");
+    assertThat(userReloaded.getExternalId()).isEqualTo("new_login");
     // Following fields has not changed
-    assertThat(dto.getName()).isEqualTo(oldUser.getName());
-    assertThat(dto.getEmail()).isEqualTo(oldUser.getEmail());
-    assertThat(dto.getScmAccountsAsList()).containsAll(oldUser.getScmAccountsAsList());
-    assertThat(dto.getSalt()).isEqualTo(oldUser.getSalt());
-    assertThat(dto.getCryptedPassword()).isEqualTo(oldUser.getCryptedPassword());
+    assertThat(userReloaded.isLocal()).isTrue();
+    assertThat(userReloaded.getName()).isEqualTo(user.getName());
+    assertThat(userReloaded.getEmail()).isEqualTo(user.getEmail());
+    assertThat(userReloaded.getScmAccountsAsList()).containsAll(user.getScmAccountsAsList());
+    assertThat(userReloaded.getSalt()).isEqualTo(user.getSalt());
+    assertThat(userReloaded.getCryptedPassword()).isEqualTo(user.getCryptedPassword());
+  }
+
+  @Test
+  public void update_only_login_of_external_account() {
+    UserDto user = db.users().insertUser(newExternalUser(DEFAULT_LOGIN, "Marius", "marius@lesbronzes.fr"));
+    createDefaultGroup();
+
+    underTest.updateAndCommit(session, user, new UpdateUser()
+      .setLogin("new_login"), u -> {
+    });
+
+    assertThat(dbClient.userDao().selectByLogin(session, DEFAULT_LOGIN)).isNull();
+    UserDto userReloaded = dbClient.userDao().selectByUuid(session, user.getUuid());
+    assertThat(userReloaded.getLogin()).isEqualTo("new_login");
+    // Following fields has not changed
+    assertThat(userReloaded.isLocal()).isFalse();
+    assertThat(userReloaded.getExternalLogin()).isEqualTo(user.getExternalLogin());
+    assertThat(userReloaded.getExternalId()).isEqualTo(user.getExternalId());
+    assertThat(userReloaded.getName()).isEqualTo(user.getName());
+    assertThat(userReloaded.getEmail()).isEqualTo(user.getEmail());
+    assertThat(userReloaded.getScmAccountsAsList()).containsAll(user.getScmAccountsAsList());
+    assertThat(userReloaded.getSalt()).isEqualTo(user.getSalt());
+    assertThat(userReloaded.getCryptedPassword()).isEqualTo(user.getCryptedPassword());
   }
 
   @Test
@@ -218,8 +245,7 @@ public class UserUpdaterUpdateTest {
       new PropertyDto().setKey(DEFAULT_ISSUE_ASSIGNEE).setValue(oldUser.getLogin()),
       new PropertyDto().setKey(DEFAULT_ISSUE_ASSIGNEE).setValue(oldUser.getLogin()).setResourceId(project1.getId()),
       new PropertyDto().setKey(DEFAULT_ISSUE_ASSIGNEE).setValue(oldUser.getLogin()).setResourceId(project2.getId()),
-      new PropertyDto().setKey(DEFAULT_ISSUE_ASSIGNEE).setValue("another login").setResourceId(anotherProject.getId())
-      );
+      new PropertyDto().setKey(DEFAULT_ISSUE_ASSIGNEE).setValue("another login").setResourceId(anotherProject.getId()));
     userIndexer.indexOnStartup(null);
 
     underTest.updateAndCommit(session, oldUser, new UpdateUser()
@@ -232,8 +258,7 @@ public class UserUpdaterUpdateTest {
         tuple("new_login", null),
         tuple("new_login", project1.getId()),
         tuple("new_login", project2.getId()),
-        tuple("another login", anotherProject.getId())
-      );
+        tuple("another login", anotherProject.getId()));
   }
 
   @Test
@@ -354,7 +379,7 @@ public class UserUpdaterUpdateTest {
 
   @Test
   public void update_only_external_id() {
-    UserDto user = db.users().insertUser(UserTesting.newExternalUser(DEFAULT_LOGIN, "Marius", "marius@email.com")
+    UserDto user = db.users().insertUser(newExternalUser(DEFAULT_LOGIN, "Marius", "marius@email.com")
       .setExternalId("1234")
       .setExternalLogin("john.smith")
       .setExternalIdentityProvider("github"));
@@ -370,7 +395,7 @@ public class UserUpdaterUpdateTest {
 
   @Test
   public void update_only_external_login() {
-    UserDto user = db.users().insertUser(UserTesting.newExternalUser(DEFAULT_LOGIN, "Marius", "marius@email.com")
+    UserDto user = db.users().insertUser(newExternalUser(DEFAULT_LOGIN, "Marius", "marius@email.com")
       .setExternalId("ABCD")
       .setExternalLogin("john")
       .setExternalIdentityProvider("github"));
@@ -386,7 +411,7 @@ public class UserUpdaterUpdateTest {
 
   @Test
   public void update_only_external_identity_provider() {
-    UserDto user = db.users().insertUser(UserTesting.newExternalUser(DEFAULT_LOGIN, "Marius", "marius@email.com")
+    UserDto user = db.users().insertUser(newExternalUser(DEFAULT_LOGIN, "Marius", "marius@email.com")
       .setExternalId("ABCD")
       .setExternalLogin("john")
       .setExternalIdentityProvider("github"));
@@ -402,7 +427,7 @@ public class UserUpdaterUpdateTest {
 
   @Test
   public void does_not_update_user_when_no_change() {
-    UserDto user = UserTesting.newExternalUser(DEFAULT_LOGIN, "Marius", "marius@email.com")
+    UserDto user = newExternalUser(DEFAULT_LOGIN, "Marius", "marius@email.com")
       .setScmAccounts(asList("ma1", "ma2"));
     db.users().insertUser(user);
     createDefaultGroup();
@@ -419,7 +444,7 @@ public class UserUpdaterUpdateTest {
 
   @Test
   public void does_not_update_user_when_no_change_and_scm_account_reordered() {
-    UserDto user = UserTesting.newExternalUser(DEFAULT_LOGIN, "Marius", "marius@email.com")
+    UserDto user = newExternalUser(DEFAULT_LOGIN, "Marius", "marius@email.com")
       .setScmAccounts(asList("ma1", "ma2"));
     db.users().insertUser(user);
     createDefaultGroup();

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,10 +21,12 @@ package org.sonar.scanner.report;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.LinkedList;
 import java.util.Map.Entry;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import javax.annotation.Nullable;
+import org.sonar.api.batch.fs.internal.AbstractProjectOrModule;
 import org.sonar.api.batch.fs.internal.DefaultInputModule;
 import org.sonar.api.batch.fs.internal.InputModuleHierarchy;
 import org.sonar.api.batch.scm.ScmProvider;
@@ -37,8 +39,8 @@ import org.sonar.scanner.cpd.CpdSettings;
 import org.sonar.scanner.protocol.output.ScannerReport;
 import org.sonar.scanner.protocol.output.ScannerReport.Metadata.BranchType;
 import org.sonar.scanner.protocol.output.ScannerReportWriter;
-import org.sonar.scanner.rule.ModuleQProfiles;
 import org.sonar.scanner.rule.QProfile;
+import org.sonar.scanner.rule.QualityProfiles;
 import org.sonar.scanner.scan.ScanProperties;
 import org.sonar.scanner.scan.branch.BranchConfiguration;
 import org.sonar.scanner.scm.ScmConfiguration;
@@ -48,7 +50,7 @@ public class MetadataPublisher implements ReportPublisherStep {
   private static final Logger LOG = Loggers.get(MetadataPublisher.class);
 
   private final ScanProperties properties;
-  private final ModuleQProfiles qProfiles;
+  private final QualityProfiles qProfiles;
   private final ProjectAnalysisInfo projectAnalysisInfo;
   private final InputModuleHierarchy moduleHierarchy;
   private final CpdSettings cpdSettings;
@@ -59,7 +61,7 @@ public class MetadataPublisher implements ReportPublisherStep {
   private final ScmConfiguration scmConfiguration;
 
   public MetadataPublisher(ProjectAnalysisInfo projectAnalysisInfo, InputModuleHierarchy moduleHierarchy, ScanProperties properties,
-    ModuleQProfiles qProfiles, CpdSettings cpdSettings, ScannerPluginRepository pluginRepository, BranchConfiguration branchConfiguration,
+    QualityProfiles qProfiles, CpdSettings cpdSettings, ScannerPluginRepository pluginRepository, BranchConfiguration branchConfiguration,
     @Nullable ScmConfiguration scmConfiguration) {
     this.projectAnalysisInfo = projectAnalysisInfo;
     this.moduleHierarchy = moduleHierarchy;
@@ -72,19 +74,19 @@ public class MetadataPublisher implements ReportPublisherStep {
   }
 
   public MetadataPublisher(ProjectAnalysisInfo projectAnalysisInfo, InputModuleHierarchy moduleHierarchy, ScanProperties properties,
-    ModuleQProfiles qProfiles, CpdSettings cpdSettings, ScannerPluginRepository pluginRepository, BranchConfiguration branchConfiguration) {
+    QualityProfiles qProfiles, CpdSettings cpdSettings, ScannerPluginRepository pluginRepository, BranchConfiguration branchConfiguration) {
     this(projectAnalysisInfo, moduleHierarchy, properties, qProfiles, cpdSettings, pluginRepository, branchConfiguration, null);
   }
 
   @Override
   public void publish(ScannerReportWriter writer) {
-    DefaultInputModule rootProject = moduleHierarchy.root();
+    AbstractProjectOrModule rootProject = moduleHierarchy.root();
     ScannerReport.Metadata.Builder builder = ScannerReport.Metadata.newBuilder()
       .setAnalysisDate(projectAnalysisInfo.analysisDate().getTime())
       // Here we want key without branch
       .setProjectKey(rootProject.key())
       .setCrossProjectDuplicationActivated(cpdSettings.isCrossProjectDuplicationEnabled())
-      .setRootComponentRef(rootProject.batchId());
+      .setRootComponentRef(rootProject.scannerId());
 
     properties.organizationKey().ifPresent(builder::setOrganizationKey);
 
@@ -99,18 +101,35 @@ public class MetadataPublisher implements ReportPublisherStep {
     }
 
     for (QProfile qp : qProfiles.findAll()) {
-      builder.getMutableQprofilesPerLanguage().put(qp.getLanguage(), ScannerReport.Metadata.QProfile.newBuilder()
+      builder.putQprofilesPerLanguage(qp.getLanguage(), ScannerReport.Metadata.QProfile.newBuilder()
         .setKey(qp.getKey())
         .setLanguage(qp.getLanguage())
         .setName(qp.getName())
         .setRulesUpdatedAt(qp.getRulesUpdatedAt().getTime()).build());
     }
     for (Entry<String, ScannerPlugin> pluginEntry : pluginRepository.getPluginsByKey().entrySet()) {
-      builder.getMutablePluginsByKey().put(pluginEntry.getKey(), ScannerReport.Metadata.Plugin.newBuilder()
+      builder.putPluginsByKey(pluginEntry.getKey(), ScannerReport.Metadata.Plugin.newBuilder()
         .setKey(pluginEntry.getKey())
         .setUpdatedAt(pluginEntry.getValue().getUpdatedAt()).build());
     }
+
+    addModulesRelativePaths(builder);
+
     writer.writeMetadata(builder.build());
+  }
+
+  private void addModulesRelativePaths(ScannerReport.Metadata.Builder builder) {
+    LinkedList<DefaultInputModule> queue = new LinkedList<>();
+    queue.add(moduleHierarchy.root());
+
+    while (!queue.isEmpty()) {
+      DefaultInputModule module = queue.removeFirst();
+      queue.addAll(moduleHierarchy.children(module));
+      String relativePath = moduleHierarchy.relativePathToRoot(module);
+      if (relativePath != null) {
+        builder.putModulesProjectRelativePathByKey(module.key(), relativePath);
+      }
+    }
   }
 
   private void addScmInformation(ScannerReport.Metadata.Builder builder) {
@@ -134,9 +153,9 @@ public class MetadataPublisher implements ReportPublisherStep {
     builder.setBranchName(branchConfiguration.branchName());
     BranchType branchType = toProtobufBranchType(branchConfiguration.branchType());
     builder.setBranchType(branchType);
-    String branchTarget = branchConfiguration.branchTarget();
-    if (branchTarget != null) {
-      builder.setMergeBranchName(branchTarget);
+    String referenceBranch = branchConfiguration.longLivingSonarReferenceBranch();
+    if (referenceBranch != null) {
+      builder.setMergeBranchName(referenceBranch);
     }
     if (branchType == BranchType.PULL_REQUEST) {
       builder.setPullRequestKey(branchConfiguration.pullRequestKey());

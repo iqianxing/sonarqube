@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,19 +19,8 @@
  */
 import { lazyLoad } from '../../components/lazyLoad';
 
-const routes = [
-  {
-    component: lazyLoad(() => import('./components/QualityGatesApp')),
-    childRoutes: [
-      {
-        indexRoute: { component: lazyLoad(() => import('./components/Intro')) }
-      },
-      {
-        path: 'show/:id',
-        component: lazyLoad(() => import('./components/DetailsApp'))
-      }
-    ]
-  }
-];
+const App = lazyLoad(() => import('./components/App'));
+
+const routes = [{ indexRoute: { component: App } }, { path: 'show/:id', component: App }];
 
 export default routes;

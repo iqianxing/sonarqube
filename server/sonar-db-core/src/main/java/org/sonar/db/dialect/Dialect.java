@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,68 +19,59 @@
  */
 package org.sonar.db.dialect;
 
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
 import java.util.List;
+import org.sonar.api.utils.MessageException;
 
 public interface Dialect {
 
-  /**
-   * @return the sonar dialect Id to be matched with the sonar.jdbc.dialect property when provided
-   */
   String getId();
 
   /**
-   * Used to autodetect a dialect for a given driver URL
-   *
-   * @param jdbcConnectionURL a jdbc driver url such as jdbc:mysql://localhost:3306/sonar
-   * @return true if the dialect supports surch url
+   * Used to autodetect dialect from connection URL
    */
-  boolean matchesJdbcURL(String jdbcConnectionURL);
+  boolean matchesJdbcUrl(String jdbcConnectionURL);
 
-  /**
-   * @since 2.13
-   */
   String getDefaultDriverClassName();
 
   List<String> getConnectionInitStatements();
 
-  /**
-   * @since 2.14
-   */
   String getTrueSqlValue();
 
-  /**
-   * @since 2.14
-   */
   String getFalseSqlValue();
 
   String getSqlFromDual();
 
   /**
    * Query used to validate the jdbc connection.
-   *
-   * @since 3.2
    */
   String getValidationQuery();
 
   /**
    * Fetch size to be used when scrolling large result sets.
-   *
-   * @since 5.0
    */
   int getScrollDefaultFetchSize();
 
   /**
    * Fetch size to scroll one row at a time. It sounds strange because obviously value is 1 in most cases,
    * but it's different on MySQL...
-   *
-   * @since 5.0
    */
   int getScrollSingleRowFetchSize();
 
   /**
    * Indicates whether DB migration can be perform on the DB vendor implementation associated with the current dialect.
-   *
-   * @return a boolean
    */
   boolean supportsMigration();
+
+  boolean supportsUpsert();
+
+  /**
+   * This method is called when connecting for the first
+   * time to the database.
+   *
+   * @throws MessageException when validation error must be displayed to user
+   * @throws SQLException in case of error to run the validations
+   */
+  void init(DatabaseMetaData metaData) throws SQLException;
 }

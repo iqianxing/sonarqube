@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,16 +20,27 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import OrganizationNavigationHeader from '../OrganizationNavigationHeader';
-import { Visibility } from '../../../../app/types';
 
 it('renders', () => {
   expect(
     shallow(
       <OrganizationNavigationHeader
+        organization={{ key: 'foo', name: 'Foo', projectVisibility: 'public' }}
+        organizations={[]}
+      />
+    )
+  ).toMatchSnapshot();
+});
+
+it('renders with alm integration', () => {
+  expect(
+    shallow(
+      <OrganizationNavigationHeader
         organization={{
+          alm: { key: 'github', url: 'https://github.com/foo' },
           key: 'foo',
           name: 'Foo',
-          projectVisibility: Visibility.Public
+          projectVisibility: 'public'
         }}
         organizations={[]}
       />
@@ -38,16 +49,16 @@ it('renders', () => {
 });
 
 it('renders dropdown', () => {
-  const organizations = [
-    { isAdmin: true, key: 'org1', name: 'org1', projectVisibility: Visibility.Public },
-    { isAdmin: false, key: 'org2', name: 'org2', projectVisibility: Visibility.Public }
+  const organizations: T.Organization[] = [
+    { actions: { admin: true }, key: 'org1', name: 'org1', projectVisibility: 'public' },
+    { actions: { admin: false }, key: 'org2', name: 'org2', projectVisibility: 'public' }
   ];
   const wrapper = shallow(
     <OrganizationNavigationHeader
       organization={{
         key: 'foo',
         name: 'Foo',
-        projectVisibility: Visibility.Public
+        projectVisibility: 'public'
       }}
       organizations={organizations}
     />

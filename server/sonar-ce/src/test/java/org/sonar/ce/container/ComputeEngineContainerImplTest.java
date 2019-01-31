@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -97,33 +97,33 @@ public class ComputeEngineContainerImplTest {
       assertThat(picoContainer.getComponentAdapters())
         .hasSize(
           CONTAINER_ITSELF
-            + 70 // level 4
+            + 69 // level 4
             + 6 // content of CeConfigurationModule
             + 4 // content of CeQueueModule
             + 3 // content of CeHttpModule
             + 3 // content of CeTaskCommonsModule
             + 4 // content of ProjectAnalysisTaskModule
-            + 7 // content of CeTaskProcessorModule
+            + 9 // content of CeTaskProcessorModule
             + 3 // content of ReportAnalysisFailureNotificationModule
             + 3 // CeCleaningModule + its content
             + 4 // WebhookModule
             + 1 // CeDistributedInformation
-      );
+        );
       assertThat(picoContainer.getParent().getComponentAdapters()).hasSize(
         CONTAINER_ITSELF
           + 8 // level 3
       );
       assertThat(picoContainer.getParent().getParent().getComponentAdapters()).hasSize(
         CONTAINER_ITSELF
-          + 17 // MigrationConfigurationModule
+          + 20 // MigrationConfigurationModule
           + 17 // level 2
       );
       assertThat(picoContainer.getParent().getParent().getParent().getComponentAdapters()).hasSize(
         COMPONENTS_IN_LEVEL_1_AT_CONSTRUCTION
-          + 27 // level 1
-          + 56 // content of DaoModule
+          + 26 // level 1
+          + 60 // content of DaoModule
           + 3 // content of EsModule
-          + 54 // content of CorePropertyDefinitions
+          + 53 // content of CorePropertyDefinitions
           + 1 // StopFlagContainer
       );
       assertThat(
@@ -150,7 +150,9 @@ public class ComputeEngineContainerImplTest {
     Properties properties = ProcessProperties.defaults();
     File homeDir = tempFolder.newFolder();
     File dataDir = new File(homeDir, "data");
+    dataDir.mkdirs();
     File tmpDir = new File(homeDir, "tmp");
+    tmpDir.mkdirs();
     properties.setProperty(PATH_HOME.getKey(), homeDir.getAbsolutePath());
     properties.setProperty(PATH_DATA.getKey(), dataDir.getAbsolutePath());
     properties.setProperty(PATH_TEMP.getKey(), tmpDir.getAbsolutePath());

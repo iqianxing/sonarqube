@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,6 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import { OrganizationNavigationMenu } from '../OrganizationNavigationMenuContainer';
-import { Visibility } from '../../../../app/types';
 import { isCurrentUserMemberOf, hasPrivateAccess } from '../../../../helpers/organizations';
 
 jest.mock('../../../../helpers/organizations', () => ({
@@ -28,10 +27,10 @@ jest.mock('../../../../helpers/organizations', () => ({
   hasPrivateAccess: jest.fn().mockReturnValue(true)
 }));
 
-const organization = {
+const organization: T.Organization = {
   key: 'foo',
   name: 'Foo',
-  projectVisibility: Visibility.Public
+  projectVisibility: 'public'
 };
 
 const loggedInUser = {
@@ -65,7 +64,7 @@ it('renders for admin', () => {
       <OrganizationNavigationMenu
         currentUser={loggedInUser}
         location={{ pathname: '' }}
-        organization={{ ...organization, canAdmin: true }}
+        organization={{ ...organization, actions: { admin: true } }}
         userOrganizations={[organization]}
       />
     )

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,11 +20,7 @@
 import * as React from 'react';
 import QGWidget from './QGWidget';
 import LoginForm from './LoginForm';
-import {
-  getMeasuresAndMeta,
-  MeasureComponent
-} from '../../../../../sonar-web/src/main/js/api/measures';
-import { Metric } from '../../../../../sonar-web/src/main/js/app/types';
+import { getMeasuresAndMeta } from '../../../../../sonar-web/src/main/js/api/measures';
 import { Settings } from '../utils';
 
 interface Props {
@@ -32,9 +28,9 @@ interface Props {
 }
 
 interface State {
-  component?: MeasureComponent;
+  component?: T.ComponentMeasure;
   loading: boolean;
-  metrics?: Metric[];
+  metrics?: T.Metric[];
   unauthorized: boolean;
 }
 export default class Widget extends React.PureComponent<Props, State> {

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,11 +22,10 @@ import Step from './Step';
 import LanguageForm from './LanguageForm';
 import AnalysisCommand from './commands/AnalysisCommand';
 import { translate } from '../../../helpers/l10n';
-import { Component } from '../../../app/types';
 import { LanguageConfig } from '../utils';
 
 interface Props {
-  component?: Component;
+  component?: T.Component;
   displayRowLayout?: boolean;
   onFinish?: (projectKey?: string) => void;
   onReset?: () => void;

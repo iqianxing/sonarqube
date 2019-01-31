@@ -11,13 +11,16 @@ exports[`SearchResultEntry should render 1`] = `
     result={
       Object {
         "highlights": Object {},
+        "longestTerm": "",
         "page": Object {
           "content": "",
-          "order": -1,
+          "navTitle": undefined,
           "relativeName": "foo/bar",
           "text": "Foobar is a universal variable understood to represent whatever is being discussed.",
           "title": "Foobar",
+          "url": "/foo/bar",
         },
+        "query": "",
       }
     }
   />
@@ -25,17 +28,45 @@ exports[`SearchResultEntry should render 1`] = `
     result={
       Object {
         "highlights": Object {},
+        "longestTerm": "",
         "page": Object {
           "content": "",
-          "order": -1,
+          "navTitle": undefined,
           "relativeName": "foo/bar",
           "text": "Foobar is a universal variable understood to represent whatever is being discussed.",
           "title": "Foobar",
+          "url": "/foo/bar",
         },
+        "query": "",
       }
     }
   />
 </Link>
+`;
+
+exports[`SearchResultText should correctly extract exact matches 1`] = `
+<div
+  className="note"
+>
+  <SearchResultTokens
+    tokens={
+      Array [
+        Object {
+          "marked": false,
+          "text": "Foobar is a universal ",
+        },
+        Object {
+          "marked": true,
+          "text": "variable understood",
+        },
+        Object {
+          "marked": false,
+          "text": " to represent whatever is being discussed.",
+        },
+      ]
+    }
+  />
+</div>
 `;
 
 exports[`SearchResultText should render with highlights 1`] = `
@@ -101,25 +132,13 @@ exports[`SearchResultTitle should render with highlights 1`] = `
 `;
 
 exports[`SearchResultTokens should render 1`] = `
-<React.Fragment>
-  <React.Fragment
-    key="0"
-  >
-    Foobar is a 
-  </React.Fragment>
-  <React.Fragment
+<Fragment>
+  Foobar is a 
+  <mark
     key="1"
   >
-    <mark
-      key="1"
-    >
-      universal
-    </mark>
-  </React.Fragment>
-  <React.Fragment
-    key="2"
-  >
-     variable understood to represent whatever is being discussed.
-  </React.Fragment>
-</React.Fragment>
+    universal
+  </mark>
+   variable understood to represent whatever is being discussed.
+</Fragment>
 `;

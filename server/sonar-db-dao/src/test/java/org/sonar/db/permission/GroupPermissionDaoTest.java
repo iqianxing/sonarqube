@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -47,9 +47,7 @@ import static org.sonar.api.security.DefaultGroups.ANYONE;
 import static org.sonar.api.web.UserRole.ADMIN;
 import static org.sonar.api.web.UserRole.ISSUE_ADMIN;
 import static org.sonar.api.web.UserRole.USER;
-import static org.sonar.core.permission.GlobalPermissions.PROVISIONING;
 import static org.sonar.core.permission.GlobalPermissions.SCAN_EXECUTION;
-import static org.sonar.core.permission.GlobalPermissions.SYSTEM_ADMIN;
 import static org.sonar.db.permission.OrganizationPermission.ADMINISTER;
 import static org.sonar.db.permission.OrganizationPermission.PROVISION_PROJECTS;
 import static org.sonar.db.permission.OrganizationPermission.SCAN;
@@ -126,15 +124,16 @@ public class GroupPermissionDaoTest {
   }
 
   @Test
-  public void selectGroupNamesByQuery_is_ordered_by_group_names() {
+  public void selectGroupNamesByQuery_is_ordered_by_permissions_then_by_group_names() {
     OrganizationDto organizationDto = db.organizations().insert();
     GroupDto group2 = db.users().insertGroup(organizationDto, "Group-2");
     GroupDto group3 = db.users().insertGroup(organizationDto, "Group-3");
     GroupDto group1 = db.users().insertGroup(organizationDto, "Group-1");
     db.users().insertPermissionOnAnyone(organizationDto, SCAN);
+    db.users().insertPermissionOnGroup(group3, SCAN);
 
     assertThat(underTest.selectGroupNamesByQuery(dbSession, newQuery().setOrganizationUuid(organizationDto.getUuid()).build()))
-      .containsExactly(ANYONE, group1.getName(), group2.getName(), group3.getName());
+      .containsExactly(ANYONE, group3.getName(), group1.getName(), group2.getName());
   }
 
   @Test
@@ -219,11 +218,11 @@ public class GroupPermissionDaoTest {
     ComponentDto project = db.components().insertPrivateProject();
     ComponentDto anotherProject = db.components().insertPrivateProject();
 
-    db.users().insertProjectPermissionOnGroup(group1, SCAN_EXECUTION, project);
-    db.users().insertProjectPermissionOnGroup(group1, PROVISIONING, project);
+    db.users().insertProjectPermissionOnGroup(group1, SCAN.getKey(), project);
+    db.users().insertProjectPermissionOnGroup(group1, PROVISION_PROJECTS.getKey(), project);
 
-    db.users().insertProjectPermissionOnGroup(group1, SYSTEM_ADMIN, anotherProject);
-    db.users().insertProjectPermissionOnGroup(group3, SCAN_EXECUTION, anotherProject);
+    db.users().insertProjectPermissionOnGroup(group1, ADMIN, anotherProject);
+    db.users().insertProjectPermissionOnGroup(group3, UserRole.SCAN, anotherProject);
     db.users().insertPermissionOnGroup(group2, SCAN);
 
     PermissionQuery.Builder builderOnComponent = newQuery().setComponentUuid(project.uuid());
@@ -290,13 +289,13 @@ public class GroupPermissionDaoTest {
 
     assertThat(underTest.selectByGroupIds(dbSession, organizationDto.getUuid(), asList(group3.getId()), null))
       .extracting(GroupPermissionDto::getGroupId, GroupPermissionDto::getRole, GroupPermissionDto::getResourceId)
-      .containsOnly(tuple(group3.getId(), SYSTEM_ADMIN, null));
+      .containsOnly(tuple(group3.getId(), ADMINISTER.getKey(), null));
 
     assertThat(underTest.selectByGroupIds(dbSession, organizationDto.getUuid(), asList(ANYONE_ID), null))
       .extracting(GroupPermissionDto::getGroupId, GroupPermissionDto::getRole, GroupPermissionDto::getResourceId)
       .containsOnly(
-        tuple(0, SCAN_EXECUTION, null),
-        tuple(0, PROVISIONING, null));
+        tuple(0, SCAN.getKey(), null),
+        tuple(0, PROVISION_PROJECTS.getKey(), null));
 
     assertThat(underTest.selectByGroupIds(dbSession, organizationDto.getUuid(), asList(group1.getId(), group2.getId(), ANYONE_ID), null)).hasSize(3);
     assertThat(underTest.selectByGroupIds(dbSession, organizationDto.getUuid(), asList(MISSING_ID), null)).isEmpty();

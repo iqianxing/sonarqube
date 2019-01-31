@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -39,7 +39,7 @@ import org.sonarqube.ws.Organizations.AddMemberWsResponse;
 import org.sonarqube.ws.Organizations.User;
 
 import static com.google.common.base.Strings.emptyToNull;
-import static org.sonar.core.util.Protobuf.setNullable;
+import static java.util.Optional.ofNullable;
 import static org.sonar.db.user.GroupMembershipQuery.IN;
 import static org.sonar.server.organization.ws.OrganizationsWsSupport.PARAM_LOGIN;
 import static org.sonar.server.organization.ws.OrganizationsWsSupport.PARAM_ORGANIZATION;
@@ -127,7 +127,7 @@ public class AddMemberAction implements OrganizationsWsAction {
       .setLogin(user.getLogin())
       .setName(user.getName())
       .setGroupCount(groups);
-    setNullable(emptyToNull(user.getEmail()), text -> wsUser.setAvatar(avatarResolver.create(user)));
+    ofNullable(emptyToNull(user.getEmail())).ifPresent(text -> wsUser.setAvatar(avatarResolver.create(user)));
     response.setUser(wsUser);
     return response.build();
   }

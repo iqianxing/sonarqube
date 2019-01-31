@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -92,6 +92,7 @@ public class BulkUpdateKeyAction implements ProjectsWsAction {
         PARAM_DRY_RUN,
         PARAM_PROJECT, PARAM_FROM, PARAM_TO,
         PARAM_PROJECT_ID, PARAM_PROJECT)
+      .setDeprecatedSince("7.6")
       .setSince("6.1")
       .setPost(true)
       .setResponseExample(getClass().getResource("bulk_update_key-example.json"))

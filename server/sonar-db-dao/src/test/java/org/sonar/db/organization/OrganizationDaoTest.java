@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -647,7 +647,7 @@ public class OrganizationDaoTest {
   @Test
   public void getDefaultTemplates_is_case_sensitive() {
     insertOrganization(ORGANIZATION_DTO_1);
-    underTest.setDefaultTemplates(dbSession, ORGANIZATION_DTO_1.getUuid(), new DefaultTemplates().setProjectUuid(PERMISSION_1).setViewUuid(PERMISSION_2));
+    underTest.setDefaultTemplates(dbSession, ORGANIZATION_DTO_1.getUuid(), new DefaultTemplates().setProjectUuid(PERMISSION_1).setApplicationsUuid(PERMISSION_2));
 
     assertThat(underTest.getDefaultTemplates(dbSession, ORGANIZATION_DTO_1.getUuid().toUpperCase(Locale.ENGLISH)))
       .isEmpty();
@@ -682,7 +682,7 @@ public class OrganizationDaoTest {
     expectedException.expect(NullPointerException.class);
     expectedException.expectMessage("defaultTemplates.project can't be null");
 
-    underTest.setDefaultTemplates(dbSession, "uuid", new DefaultTemplates().setViewUuid(PERMISSION_1));
+    underTest.setDefaultTemplates(dbSession, "uuid", new DefaultTemplates().setApplicationsUuid(PERMISSION_1));
   }
 
   @Test
@@ -1002,129 +1002,6 @@ public class OrganizationDaoTest {
   }
 
   @Test
-  public void countTeamsByMembers_on_zero_orgs() {
-    assertThat(underTest.countTeamsByMembers(dbSession))
-      .extracting(KeyLongValue::getKey, KeyLongValue::getValue)
-      .containsExactlyInAnyOrder(
-        tuple("0", 0L),
-        tuple("1", 0L),
-        tuple("2-4", 0L),
-        tuple("5-9", 0L),
-        tuple("10-24", 0L),
-        tuple("+25", 0L));
-  }
-
-  @Test
-  public void countTeamsByMembers() {
-    UserDto user1 = db.users().insertUser();
-    UserDto user2 = db.users().insertUser();
-    UserDto user3 = db.users().insertUser();
-    OrganizationDto org1 = db.organizations().insert();
-    db.organizations().addMember(org1, user1, user2, user3);
-    OrganizationDto org2 = db.organizations().insert();
-    db.organizations().addMember(org2, user1);
-    OrganizationDto org3 = db.organizations().insert();
-    db.organizations().addMember(org3, user1, user2);
-
-    assertThat(underTest.countTeamsByMembers(dbSession))
-      .extracting(KeyLongValue::getKey, KeyLongValue::getValue)
-      .containsExactlyInAnyOrder(
-        tuple("0", 0L),
-        tuple("1", 1L),
-        tuple("2-4", 2L),
-        tuple("5-9", 0L),
-        tuple("10-24", 0L),
-        tuple("+25", 0L));
-  }
-
-  @Test
-  public void countTeamsByProjects_on_zero_projects() {
-    assertThat(underTest.countTeamsByProjects(dbSession))
-      .extracting(KeyLongValue::getKey, KeyLongValue::getValue)
-      .containsExactlyInAnyOrder(
-        tuple("0", 0L),
-        tuple("1", 0L),
-        tuple("2-4", 0L),
-        tuple("5-9", 0L),
-        tuple("10-24", 0L),
-        tuple("+25", 0L));
-  }
-
-  @Test
-  public void countTeamsByProjects() {
-    OrganizationDto org1 = db.organizations().insert();
-    db.components().insertPrivateProject(org1);
-    OrganizationDto org2 = db.organizations().insert();
-    db.components().insertPrivateProject(org2);
-    db.components().insertPrivateProject(org2);
-    OrganizationDto org3 = db.organizations().insert();
-    db.components().insertPrivateProject(org3);
-    db.components().insertPrivateProject(org3);
-    db.components().insertPrivateProject(org3);
-
-    assertThat(underTest.countTeamsByProjects(dbSession))
-      .extracting(KeyLongValue::getKey, KeyLongValue::getValue)
-      .containsExactlyInAnyOrder(
-        tuple("0", 0L),
-        tuple("1", 1L),
-        tuple("2-4", 2L),
-        tuple("5-9", 0L),
-        tuple("10-24", 0L),
-        tuple("+25", 0L));
-  }
-
-  @Test
-  public void countTeamsByNclocRanges() {
-    MetricDto ncloc = db.measures().insertMetric(m -> m.setKey(CoreMetrics.NCLOC_KEY));
-
-    OrganizationDto org1 = db.organizations().insert();
-    // project with highest ncloc in non-main branch
-    ComponentDto project1 = db.components().insertMainBranch(org1);
-    ComponentDto project1Branch = db.components().insertProjectBranch(project1);
-    db.measures().insertLiveMeasure(project1, ncloc, m -> m.setValue(1_000.0));
-    db.measures().insertLiveMeasure(project1Branch, ncloc, m -> m.setValue(110_000.0));
-    // project with only main branch
-    ComponentDto project2 = db.components().insertMainBranch(org1);
-    db.measures().insertLiveMeasure(project2, ncloc, m -> m.setValue(400_000.0));
-
-    OrganizationDto org2 = db.organizations().insert();
-    // project with highest ncloc in main branch
-    ComponentDto project3 = db.components().insertMainBranch(org2);
-    ComponentDto project3Branch = db.components().insertProjectBranch(project3);
-    db.measures().insertLiveMeasure(project3, ncloc, m -> m.setValue(5_800_000.0));
-    db.measures().insertLiveMeasure(project3Branch, ncloc, m -> m.setValue(25_000.0));
-
-    assertThat(underTest.countTeamsByNclocRanges(dbSession))
-      .extracting(KeyLongValue::getKey, KeyLongValue::getValue)
-      .containsExactlyInAnyOrder(
-        tuple("100K", 0L),
-        tuple("500K", 1L),
-        tuple("1M", 0L),
-        tuple("2M", 0L),
-        tuple("5M", 0L),
-        tuple("10M", 1L),
-        tuple("20M", 0L),
-        tuple("50M", 0L),
-        tuple("+50M", 0L));
-  }
-
-  @Test
-  public void countTeamsByNclocRanges_on_zero_orgs() {
-    assertThat(underTest.countTeamsByNclocRanges(dbSession))
-      .extracting(KeyLongValue::getKey, KeyLongValue::getValue)
-      .containsExactlyInAnyOrder(
-        tuple("100K", 0L),
-        tuple("500K", 0L),
-        tuple("1M", 0L),
-        tuple("2M", 0L),
-        tuple("5M", 0L),
-        tuple("10M", 0L),
-        tuple("20M", 0L),
-        tuple("50M", 0L),
-        tuple("+50M", 0L));
-  }
-
-  @Test
   public void selectOrganizationsWithNcloc_on_zero_orgs() {
     assertThat(underTest.selectOrganizationsWithNcloc(dbSession, new ArrayList<>()))
       .isEmpty();
@@ -1221,7 +1098,8 @@ public class OrganizationDaoTest {
           "      kee," +
           "      name," +
           "      default_perm_template_project," +
-          "      default_perm_template_view," +
+          "      default_perm_template_app," +
+          "      default_perm_template_port," +
           "      new_project_private," +
           "      guarded," +
           "      default_quality_gate_uuid," +
@@ -1241,6 +1119,7 @@ public class OrganizationDaoTest {
           "      ?," +
           "      ?," +
           "      ?," +
+          "      ?," +
           "      ?" +
           "    )")) {
       preparedStatement.setString(1, organizationUuid);
@@ -1248,12 +1127,13 @@ public class OrganizationDaoTest {
       preparedStatement.setString(3, organizationUuid);
       preparedStatement.setString(4, project);
       preparedStatement.setString(5, view);
-      preparedStatement.setBoolean(6, false);
+      preparedStatement.setString(6, view);
       preparedStatement.setBoolean(7, false);
-      preparedStatement.setString(8, "1");
-      preparedStatement.setString(9, FREE.name());
-      preparedStatement.setLong(10, 1000L);
-      preparedStatement.setLong(11, 2000L);
+      preparedStatement.setBoolean(8, false);
+      preparedStatement.setString(9, "1");
+      preparedStatement.setString(10, FREE.name());
+      preparedStatement.setLong(11, 1000L);
+      preparedStatement.setLong(12, 2000L);
       preparedStatement.execute();
     } catch (SQLException e) {
       throw new RuntimeException("dirty insert failed", e);
@@ -1261,7 +1141,7 @@ public class OrganizationDaoTest {
   }
 
   private void setDefaultTemplate(OrganizationDto organizationDto1, @Nullable String project, @Nullable String view) {
-    underTest.setDefaultTemplates(dbSession, organizationDto1.getUuid(), new DefaultTemplates().setProjectUuid(project).setViewUuid(view));
+    underTest.setDefaultTemplates(dbSession, organizationDto1.getUuid(), new DefaultTemplates().setProjectUuid(project).setApplicationsUuid(view));
     dbSession.commit();
   }
 
@@ -1302,7 +1182,6 @@ public class OrganizationDaoTest {
       " subscription as \"subscription\"," +
       " created_at as \"createdAt\", updated_at as \"updatedAt\"," +
       " default_perm_template_project as \"projectDefaultPermTemplate\"," +
-      " default_perm_template_view as \"viewDefaultPermTemplate\"," +
       " default_quality_gate_uuid as \"defaultQualityGateUuid\" " +
       " from organizations");
     assertThat(rows).hasSize(1);
@@ -1331,7 +1210,7 @@ public class OrganizationDaoTest {
     assertThat(optional).isNotEmpty();
     DefaultTemplates defaultTemplates = optional.get();
     assertThat(defaultTemplates.getProjectUuid()).isEqualTo(expectedProject);
-    assertThat(defaultTemplates.getViewUuid()).isEqualTo(expectedView);
+    assertThat(defaultTemplates.getApplicationsUuid()).isEqualTo(expectedView);
   }
 
   private void verifyOrganizationUpdatedAt(String organization, Long updatedAt) {

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -78,6 +78,8 @@ public class RuleTesting {
       .setConfigKey("configKey_" + randomAlphanumeric(5))
       .setSeverity(Severity.ALL.get(nextInt(Severity.ALL.size())))
       .setIsTemplate(false)
+      .setIsExternal(false)
+      .setIsAdHoc(false)
       .setSystemTags(newHashSet("tag_" + randomAlphanumeric(5), "tag_" + randomAlphanumeric(5)))
       .setLanguage("lang_" + randomAlphanumeric(3))
       .setGapDescription("gapDescription_" + randomAlphanumeric(5))
@@ -101,6 +103,10 @@ public class RuleTesting {
       .setNoteUserUuid("noteUserUuid_" + randomAlphanumeric(5))
       .setNoteCreatedAt(System.currentTimeMillis() - 200)
       .setNoteUpdatedAt(System.currentTimeMillis() - 150)
+      .setAdHocName("adHocName_" + randomAlphanumeric(5))
+      .setAdHocDescription("adHocDescription_" + randomAlphanumeric(5))
+      .setAdHocSeverity(Severity.ALL.get(nextInt(Severity.ALL.size())))
+      .setAdHocType(RuleType.values()[nextInt(RuleType.values().length - 1)])
       .setCreatedAt(System.currentTimeMillis() - 100)
       .setUpdatedAt(System.currentTimeMillis() - 50);
   }

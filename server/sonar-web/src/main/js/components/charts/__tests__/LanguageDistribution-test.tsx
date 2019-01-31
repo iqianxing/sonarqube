@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,7 +26,7 @@ it('renders', () => {
     shallow(
       <LanguageDistribution
         distribution="java=1734;js=845;cpp=73;<null>=15"
-        languages={[{ key: 'java', name: 'Java' }, { key: 'js', name: 'JavaScript' }]}
+        languages={{ java: { key: 'java', name: 'Java' }, js: { key: 'js', name: 'JavaScript' } }}
         width={100}
       />
     )

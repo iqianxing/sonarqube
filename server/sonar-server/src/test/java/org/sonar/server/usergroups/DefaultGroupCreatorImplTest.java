@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -57,7 +57,7 @@ public class DefaultGroupCreatorImplTest {
   public void fail_with_IAE_when_default_group_already_exist() {
     OrganizationDto organizationDto = db.organizations().insert();
     PermissionTemplateDto permissionTemplate = db.permissionTemplates().insertTemplate();
-    db.organizations().setDefaultTemplates(organizationDto, permissionTemplate.getUuid(), null);
+    db.organizations().setDefaultTemplates(organizationDto, permissionTemplate.getUuid(), null, null);
     db.users().insertGroup(organizationDto, "Members");
 
     expectedException.expect(IllegalArgumentException.class);

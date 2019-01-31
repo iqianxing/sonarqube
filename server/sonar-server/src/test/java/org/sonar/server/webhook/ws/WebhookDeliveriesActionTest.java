@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -41,7 +41,7 @@ import org.sonarqube.ws.Webhooks;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonar.db.component.ComponentTesting.newPrivateProjectDto;
-import static org.sonar.db.webhook.WebhookDbTesting.newDto;
+import static org.sonar.db.webhook.WebhookDeliveryTesting.newDto;
 import static org.sonar.test.JsonAssert.assertJson;
 
 public class WebhookDeliveriesActionTest {

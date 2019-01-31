@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,8 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-import { shallow, ShallowRendererProps, ShallowWrapper, ReactWrapper } from 'enzyme';
-import { IntlProvider } from 'react-intl';
+import { ShallowWrapper, ReactWrapper } from 'enzyme';
+import { InjectedRouter } from 'react-router';
+import { Location } from 'history';
+import { EditionKey } from '../apps/marketplace/utils';
 
 export const mockEvent = {
   target: { blur() {} },
@@ -51,11 +53,19 @@ export function submit(element: ShallowWrapper | ReactWrapper): void {
 }
 
 export function change(element: ShallowWrapper | ReactWrapper, value: string, event = {}): void {
-  element.simulate('change', {
-    target: { value },
-    currentTarget: { value },
-    ...event
-  });
+  // `type()` returns a component constructor for a composite element and string for DOM nodes
+  if (typeof element.type() === 'function') {
+    element.prop<Function>('onChange')(value);
+    // TODO find out if `root` is a public api
+    // https://github.com/airbnb/enzyme/blob/master/packages/enzyme/src/ReactWrapper.js#L109
+    (element as any).root().update();
+  } else {
+    element.simulate('change', {
+      target: { value },
+      currentTarget: { value },
+      ...event
+    });
+  }
 }
 
 export function keydown(keyCode: number): void {
@@ -92,6 +102,22 @@ export function resizeWindowTo(width?: number, height?: number) {
   window.dispatchEvent(resizeEvent);
 }
 
+export function scrollTo({ left = 0, top = 0 }) {
+  Object.defineProperty(window, 'pageYOffset', { value: top });
+  Object.defineProperty(window, 'pageXOffset', { value: left });
+  const resizeEvent = new Event('scroll');
+  window.dispatchEvent(resizeEvent);
+}
+
+export function setNodeRect({ width = 50, height = 50, left = 0, top = 0 }) {
+  const { findDOMNode } = require('react-dom');
+  const element = document.createElement('div');
+  Object.defineProperty(element, 'getBoundingClientRect', {
+    value: () => ({ width, height, left, top })
+  });
+  findDOMNode.mockReturnValue(element);
+}
+
 export function doAsync(fn?: Function): Promise<void> {
   return new Promise(resolve => {
     setImmediate(() => {
@@ -103,14 +129,82 @@ export function doAsync(fn?: Function): Promise<void> {
   });
 }
 
-// Create the IntlProvider to retrieve context for wrapping around.
-const intlProvider = new IntlProvider({ locale: 'en' }, {});
-const { intl } = intlProvider.getChildContext();
-export function shallowWithIntl(node: React.ReactElement<any>, options: ShallowRendererProps = {}) {
-  return shallow(node, { ...options, context: { intl, ...options.context } });
-}
-
 export async function waitAndUpdate(wrapper: ShallowWrapper<any, any> | ReactWrapper<any, any>) {
   await new Promise(setImmediate);
   wrapper.update();
+}
+
+export function mockLocation(overrides = {}): Location {
+  return {
+    action: 'PUSH',
+    key: 'key',
+    pathname: '/path',
+    query: {},
+    search: '',
+    state: {},
+    ...overrides
+  };
+}
+
+export function mockRouter(overrides: { push?: Function; replace?: Function } = {}) {
+  return {
+    createHref: jest.fn(),
+    createPath: jest.fn(),
+    go: jest.fn(),
+    goBack: jest.fn(),
+    goForward: jest.fn(),
+    isActive: jest.fn(),
+    push: jest.fn(),
+    replace: jest.fn(),
+    setRouteLeaveHook: jest.fn(),
+    ...overrides
+  } as InjectedRouter;
+}
+
+export function mockAppState(overrides = {}): T.AppState {
+  return {
+    defaultOrganization: 'foo',
+    edition: EditionKey.community,
+    productionDatabase: true,
+    qualifiers: ['TRK'],
+    settings: {},
+    version: '1.0',
+    ...overrides
+  };
+}
+
+export function mockComponent(overrides = {}): T.Component {
+  return {
+    breadcrumbs: [],
+    key: 'my-project',
+    name: 'MyProject',
+    organization: 'foo',
+    qualifier: 'TRK',
+    qualityGate: { isDefault: true, key: '30', name: 'Sonar way' },
+    qualityProfiles: [
+      {
+        deleted: false,
+        key: 'my-qp',
+        language: 'ts',
+        name: 'Sonar way'
+      }
+    ],
+    tags: [],
+    ...overrides
+  };
+}
+
+export function mockCurrentUser(overrides = {}): T.CurrentUser {
+  return {
+    isLoggedIn: true,
+    ...overrides
+  };
+}
+
+export function mockOrganization(overrides = {}): T.Organization {
+  return {
+    key: 'foo',
+    name: 'Foo',
+    ...overrides
+  };
 }

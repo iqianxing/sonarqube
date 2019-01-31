@@ -1,5 +1,6 @@
 ---
 title: Short-lived Branches
+url: /branches/short-lived-branches/
 ---
 
 <!-- sonarqube -->
@@ -29,7 +30,7 @@ Modified files are determined based on the checksum of each file on the sonar.br
 
 ## New Code Period
 
-The ephemeral nature of short-lived branches means no explicit New Code Period is necessary; it's all new code. 
+The ephemeral nature of short-lived branches means the New Code Period is implicit; everything changed in the branch is new code.
 
 ## Settings and Quality Profiles on Branches
 
@@ -37,6 +38,6 @@ Branch settings and quality profiles default to those set for the master branch,
 
 ## Known Limitations
 
-* Only the number of bugs, code smells, vulnerabilities and files are computed. As a consequence, you have no way to get a Quality Gate status as such on short-lived branch.
+* Only the issue-focused, hard-coded quality gate is available on a short-lived branch.
 * You cannot connect SonarLint to a short-lived branch.
 * Analysis of a short-lived branch based on another short-lived branch is not supported.

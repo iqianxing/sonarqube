@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,7 +17,6 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-/* eslint-disable camelcase */
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import ComponentsList from '../ComponentsList';
@@ -48,6 +47,7 @@ it('should renders correctly', () => {
         metrics={METRICS}
         onClick={jest.fn()}
         rootComponent={COMPONENTS[0]}
+        view="tree"
       />
     )
   ).toMatchSnapshot();
@@ -62,6 +62,7 @@ it('should renders empty', () => {
         metrics={METRICS}
         onClick={jest.fn()}
         rootComponent={COMPONENTS[0]}
+        view="tree"
       />
     )
   ).toMatchSnapshot();
@@ -76,6 +77,7 @@ it('should renders with multiple measures', () => {
         metrics={METRICS}
         onClick={jest.fn()}
         rootComponent={COMPONENTS[0]}
+        view="tree"
       />
     )
   ).toMatchSnapshot();

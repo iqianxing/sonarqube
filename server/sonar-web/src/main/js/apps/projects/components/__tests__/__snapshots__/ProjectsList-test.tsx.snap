@@ -11,7 +11,9 @@ exports[`renders 1`] = `
     scrollingResetTimeInterval={150}
     serverHeight={0}
     serverWidth={0}
-  />
+  >
+    <Component />
+  </WindowScroller>
 </div>
 `;
 
@@ -19,13 +21,9 @@ exports[`renders different types of "no projects" 1`] = `
 <div
   className="projects-list"
 >
-  <EmptyInstance
-    currentUser={
-      Object {
-        "isLoggedIn": true,
-      }
-    }
-  />
+  <ContextConsumer>
+    <Component />
+  </ContextConsumer>
 </div>
 `;
 
@@ -41,6 +39,8 @@ exports[`renders different types of "no projects" 3`] = `
 <div
   className="projects-list"
 >
-  <Connect(NoFavoriteProjects) />
+  <ContextConsumer>
+    <Component />
+  </ContextConsumer>
 </div>
 `;

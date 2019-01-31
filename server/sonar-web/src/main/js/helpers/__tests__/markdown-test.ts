@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,7 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-import { getFrontMatter, separateFrontMatter } from '../markdown';
+import { getFrontMatter, separateFrontMatter, filterContent } from '../markdown';
+import { isSonarCloud } from '../system';
+
+jest.mock('../system', () => ({
+  getInstance: () => 'SonarQube',
+  isSonarCloud: jest.fn().mockReturnValue(false)
+}));
 
 it('returns parsed frontmatter of one item', () => {
   expect(
@@ -104,4 +110,54 @@ it('returns full content when frontmatter has bad formatting', () => {
     some content here`;
 
   expect(separateFrontMatter(content)).toEqual({ content, frontmatter: {} });
+});
+
+it('replaces {instance}', () => {
+  expect(
+    filterContent('This is {instance} content. It replaces all {instance}{instance} messages')
+  ).toBe('This is SonarQube content. It replaces all SonarQubeSonarQube messages');
+});
+
+it('should cut sonarqube/sonarcloud/static content', () => {
+  const content = `
+This text has inline text for <!-- sonarqube -->SonarQube<!-- /sonarqube --><!-- sonarcloud -->SonarCloud<!-- /sonarcloud -->. Donec sed nulla magna.
+
+<!-- sonarqube -->
+This is text for SonarQube, multi-line. Consectetur adipiscing elit. Duis dignissim nulla at massa iaculis interdum.
+Aenean sit amet lacus a tortor ullamcorper interdum. Donec sed nulla magna.
+<!-- /sonarqube -->
+
+<!-- sonarcloud -->
+This is text for SonarCloud, multi-line. In hac habitasse platea dictumst. Duis sagittis semper sapien nec tempor. Nullam vehicula nisi vitae nisi interdum aliquam. Mauris volutpat nunc non fermentum rhoncus. Aenean laoreet, orci vitae tempor bibendum,
+metus nisl euismod neque, vitae euismod nibh nisl eu velit. Vivamus luctus suscipit elit vel semper.
+<!-- /sonarcloud -->
+
+<!-- static -->
+This is static text.
+<!-- /static -->
+
+<!-- sonarqube -->
+This is text for SonarQube, single line.
+<!-- /sonarqube -->
+
+* In hac habitasse
+* Duis sagittis semper sapien nec tempor
+<!-- sonarqube -->* This is a bullet point for SonarQube<!-- /sonarqube -->
+<!-- sonarcloud -->* This is a bullet point for SonarCloud<!-- /sonarcloud -->
+* Platea dictumst
+
+Duis sagittis semper sapien nec tempor. Nullam vehicula nisi vitae nisi interdum aliquam.
+
+| Parameter Name        | Description |
+| --------------------- | ------------------ |
+| sonar.pullrequest.github.repository | SLUG of the GitHub Repo |
+<!-- sonarqube -->
+| sonar.pullrequest.github.endpoint | The API url for your GitHub instance. |
+<!-- /sonarqube -->
+`;
+
+  expect(filterContent(content)).toMatchSnapshot();
+
+  (isSonarCloud as jest.Mock).mockReturnValueOnce(true);
+  expect(filterContent(content)).toMatchSnapshot();
 });

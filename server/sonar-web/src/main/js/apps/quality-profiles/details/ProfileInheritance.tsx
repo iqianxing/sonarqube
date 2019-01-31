@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,7 +27,6 @@ import { Button } from '../../../components/ui/buttons';
 import { translate } from '../../../helpers/l10n';
 
 interface Props {
-  onRequestFail: (reason: any) => void;
   organization: string | null;
   profile: Profile;
   profiles: Profile[];
@@ -65,7 +64,7 @@ export default class ProfileInheritance extends React.PureComponent<Props, State
   }
 
   componentDidUpdate(prevProps: Props) {
-    if (prevProps.profile !== this.props.profile) {
+    if (prevProps.profile.key !== this.props.profile.key) {
       this.loadData();
     }
   }
@@ -104,7 +103,12 @@ export default class ProfileInheritance extends React.PureComponent<Props, State
   };
 
   handleParentChange = () => {
-    this.props.updateProfiles();
+    this.props.updateProfiles().then(
+      () => {
+        this.loadData();
+      },
+      () => {}
+    );
     this.closeForm();
   };
 
@@ -192,7 +196,6 @@ export default class ProfileInheritance extends React.PureComponent<Props, State
           <ChangeParentForm
             onChange={this.handleParentChange}
             onClose={this.closeForm}
-            onRequestFail={this.props.onRequestFail}
             profile={profile}
             profiles={profiles.filter(p => p !== profile && p.language === profile.language)}
           />

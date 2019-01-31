@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@ package org.sonar.server.organization;
 
 import org.sonar.api.ce.ComputeEngineSide;
 import org.sonar.api.server.ServerSide;
-import org.sonar.process.MessageException;
+import org.sonar.api.utils.MessageException;
 
 import static java.util.Objects.requireNonNull;
 
@@ -57,10 +57,12 @@ public interface BillingValidations {
   class Organization {
     private final String key;
     private final String uuid;
+    private final String name;
 
-    public Organization(String key, String uuid) {
+    public Organization(String key, String uuid, String name) {
       this.key = requireNonNull(key, "Organization key cannot be null");
       this.uuid = requireNonNull(uuid, "Organization uuid cannot be null");
+      this.name = requireNonNull(name, "Organization name cannot be null");
     }
 
     public String getKey() {
@@ -69,6 +71,10 @@ public interface BillingValidations {
 
     public String getUuid() {
       return uuid;
+    }
+
+    public String getName() {
+      return name;
     }
   }
 

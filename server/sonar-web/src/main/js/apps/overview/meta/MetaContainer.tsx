@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,7 +18,6 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import MetaKey from './MetaKey';
 import MetaOrganizationKey from './MetaOrganizationKey';
@@ -29,49 +28,40 @@ import MetaSize from './MetaSize';
 import MetaTags from './MetaTags';
 import BadgesModal from '../badges/BadgesModal';
 import AnalysesList from '../events/AnalysesList';
-import {
-  Visibility,
-  Component,
-  Metric,
-  BranchLike,
-  CurrentUser,
-  Organization,
-  MeasureEnhanced
-} from '../../../app/types';
-import { History } from '../../../api/time-machine';
 import { translate } from '../../../helpers/l10n';
 import { hasPrivateAccess } from '../../../helpers/organizations';
 import {
   getCurrentUser,
   getMyOrganizations,
-  getOrganizationByKey
+  getOrganizationByKey,
+  Store,
+  getAppState
 } from '../../../store/rootReducer';
 import PrivacyBadgeContainer from '../../../components/common/PrivacyBadgeContainer';
 
 interface StateToProps {
-  currentUser: CurrentUser;
-  organization?: Organization;
-  userOrganizations: Organization[];
+  appState: T.AppState;
+  currentUser: T.CurrentUser;
+  organization?: T.Organization;
+  userOrganizations: T.Organization[];
 }
 
 interface OwnProps {
-  branchLike?: BranchLike;
-  component: Component;
-  history?: History;
-  measures?: MeasureEnhanced[];
-  metrics?: { [key: string]: Metric };
+  branchLike?: T.BranchLike;
+  component: T.Component;
+  history?: {
+    [metric: string]: Array<{ date: Date; value?: string }>;
+  };
+  measures?: T.MeasureEnhanced[];
+  metrics?: { [key: string]: T.Metric };
   onComponentChange: (changes: {}) => void;
 }
 
 type Props = OwnProps & StateToProps;
 
 export class Meta extends React.PureComponent<Props> {
-  static contextTypes = {
-    organizationsEnabled: PropTypes.bool
-  };
-
   renderQualityInfos() {
-    const { organizationsEnabled } = this.context;
+    const { organizationsEnabled } = this.props.appState;
     const { component, currentUser, organization, userOrganizations } = this.props;
     const { qualifier, qualityProfiles, qualityGate } = component;
     const isProject = qualifier === 'TRK';
@@ -84,7 +74,7 @@ export class Meta extends React.PureComponent<Props> {
     }
 
     return (
-      <div className="overview-meta-card">
+      <div className="overview-meta-card" id="overview-meta-quality-gate">
         {qualityGate && (
           <MetaQualityGate
             organization={organizationsEnabled ? component.organization : undefined}
@@ -105,13 +95,13 @@ export class Meta extends React.PureComponent<Props> {
   }
 
   render() {
-    const { organizationsEnabled } = this.context;
+    const { organizationsEnabled } = this.props.appState;
     const { branchLike, component, measures, metrics, organization } = this.props;
     const { qualifier, description, visibility } = component;
 
     const isProject = qualifier === 'TRK';
     const isApp = qualifier === 'APP';
-    const isPrivate = visibility === Visibility.Private;
+    const isPrivate = visibility === 'private';
     return (
       <div className="overview-meta">
         <div className="overview-meta-card">
@@ -170,10 +160,11 @@ export class Meta extends React.PureComponent<Props> {
   }
 }
 
-const mapStateToProps = (state: any, { component }: OwnProps) => ({
+const mapStateToProps = (state: Store, { component }: OwnProps) => ({
+  appState: getAppState(state),
   currentUser: getCurrentUser(state),
   organization: getOrganizationByKey(state, component.organization),
   userOrganizations: getMyOrganizations(state)
 });
 
-export default connect<StateToProps, {}, OwnProps>(mapStateToProps)(Meta);
+export default connect(mapStateToProps)(Meta);

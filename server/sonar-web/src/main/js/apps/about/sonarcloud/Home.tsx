@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,103 +18,334 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import { Link } from 'react-router';
-import SonarCloudPage from './SonarCloudPage';
-import Pricing from './Pricing';
-import StartUsing from './StartUsing';
-import { isLoggedIn } from '../../../app/types';
-import ChevronRightIcon from '../../../components/icons-components/ChevronRightcon';
-import './style.css';
+import Helmet from 'react-helmet';
+import { FixedNavBar, TopNavBar } from './components/NavBars';
+import FeaturedProjects from './components/FeaturedProjects';
+import Footer from './components/Footer';
+import { Languages } from './components/Languages';
+import LoginButtons from './components/LoginButtons';
+import Statistics from './components/Statistics';
+import { requestHomepageData, HomepageData, FeaturedProject } from './utils';
+import { addWhitePageClass, removeWhitePageClass } from '../../../helpers/pages';
+import { getBaseUrl } from '../../../helpers/urls';
+import './new_style.css';
 
-export default function Home() {
-  return (
-    <SonarCloudPage>
-      {({ currentUser }) => (
-        <div className="page page-limited sc-page">
-          <h1 className="sc-page-title">Continuous Code Quality Online</h1>
-          <p className="sc-page-subtitle">
-            Analyze the quality of your source code to detect bugs, vulnerabilities <br />
-            and code smells throughout the development process.
-          </p>
+interface State {
+  data?: HomepageData;
+}
 
-          <ul className="sc-features-list">
-            <li className="sc-feature">
-              <h2 className="sc-feature-title">Built on SonarQube</h2>
-              <p className="sc-feature-description">
-                The broadly used code review tool to detect bugs, code smells and vulnerability
-                issues.
-              </p>
-            </li>
+export default class Home extends React.PureComponent<{}, State> {
+  state: State = {};
 
-            <li className="sc-feature">
-              <h2 className="sc-feature-title">17 languages</h2>
-              <p className="sc-feature-description">
-                Java, JS, C#, C/C++, Objective-C, TypeScript, Python, Go, ABAP, PL/SQL, T-SQL and
-                more.
-              </p>
-            </li>
+  componentDidMount() {
+    addWhitePageClass();
+    this.fetchData();
+  }
 
-            <li className="sc-feature">
-              <h2 className="sc-feature-title">Thousands of rules</h2>
-              <p className="sc-feature-description">
-                Track down hard-to-find bugs and quality issues thanks to powerful static code
-                analyzers.
-              </p>
-            </li>
+  componentWillUnmount() {
+    removeWhitePageClass();
+  }
 
-            <li className="sc-feature">
-              <h2 className="sc-feature-title">Cloud CI Integrations</h2>
-              <p className="sc-feature-description">
-                Schedule the execution of an analysis from Cloud CI engines: Travis, VSTS, AppVeyor
-                and more.
-              </p>
-            </li>
+  fetchData = () => {
+    requestHomepageData()
+      .then(data => this.setState({ data }))
+      .catch(() => {
+        /* Fail silently */
+      });
+  };
 
-            <li className="sc-feature">
-              <h2 className="sc-feature-title">Deep code analysis</h2>
-              <p className="sc-feature-description">
-                Explore all your source files, whether in branches or pull requests, to reach a
-                green quality gate and promote the build.
-              </p>
-            </li>
+  render() {
+    const { data } = this.state;
 
-            <li className="sc-feature">
-              <h2 className="sc-feature-title">Fast and Scalable</h2>
-              <p className="sc-feature-description">Scale on-demand as your projects grow.</p>
-            </li>
-          </ul>
-
-          <Pricing />
-
-          {!isLoggedIn(currentUser) && <StartUsing />}
-
-          <div className="sc-narrow-container text-center">
-            <h2 className="sc-feature-title">Explore open source projects on SonarCloud</h2>
-            <p className="sc-feature-description">
-              SonarCloud offers free analysis for open source projects. <br />
-              It is public and open to anyone who wants to browse the service.
-            </p>
-          </div>
-
-          <div className="sc-narrow-container text-center">
-            <Link className="sc-browse" to="/explore/projects">
-              Browse
-            </Link>
-          </div>
-
-          <div className="sc-narrow-container sc-news">
-            <h2 className="sc-news-title">News</h2>
-            <ChevronRightIcon className="big-spacer-left" fill="#cfd3d7" />
-            <a
-              className="sc-news-link big-spacer-left"
-              href="https://blog.sonarsource.com/product/SonarCloud"
-              rel="noopener noreferrer"
-              target="_blank">
-              See all
-            </a>
+    return (
+      <div className="global-container">
+        <div className="page-wrapper">
+          <div className="page-container sc-page">
+            <Helmet title="SonarCloud | Clean Code, Rockstar Status">
+              <meta
+                content="Enhance your workflow with continuous code quality, SonarCloud automatically analyzes and decorates pull requests on GitHub, Bitbucket and Azure DevOps on major languages."
+                name="description"
+              />
+            </Helmet>
+            <FixedNavBar />
+            <PageBackgroundHeader />
+            <TopNavBar />
+            <PageTitle />
+            <EnhanceWorkflow />
+            <Functionality />
+            <Languages />
+            <Stats data={data} />
+            <Projects featuredProjects={(data && data.featuredProjects) || []} />
           </div>
         </div>
-      )}
-    </SonarCloudPage>
+        <Footer />
+      </div>
+    );
+  }
+}
+
+function PageBackgroundHeader() {
+  return (
+    <div className="sc-header-background">
+      <div className="sc-background-start" />
+      <div className="sc-background-end" />
+      <div className="sc-background-center">
+        <img alt="" height="418px" src={`${getBaseUrl()}/images/sonarcloud/home-header.svg`} />
+      </div>
+    </div>
+  );
+}
+
+function PageTitle() {
+  return (
+    <div className="sc-section sc-columns big-spacer-top">
+      <div className="sc-column sc-column-half display-flex-center">
+        <div>
+          <h1 className="sc-title-orange big-spacer-top">Clean Code</h1>
+          <h1 className="sc-spacer-bottom">Rockstar Status</h1>
+          <h5 className="sc-big-spacer-bottom sc-regular-weight">
+            Eliminate bugs and vulnerabilities.
+            <br />
+            Champion quality code in your projects.
+          </h5>
+          <div>
+            <h6>Go ahead! Analyze your repo:</h6>
+            <LoginButtons />
+            <p className="sc-mention sc-regular-weight big-spacer-top">
+              Free for Open-Source Projects
+            </p>
+          </div>
+        </div>
+      </div>
+      <div className="sc-column sc-column-half text-right">
+        <img
+          alt=""
+          src={`${getBaseUrl()}/images/sonarcloud/home-header-people.png`}
+          width="430px"
+        />
+      </div>
+    </div>
+  );
+}
+
+function EnhanceWorkflow() {
+  return (
+    <div className="sc-section sc-columns">
+      <div className="sc-column sc-column-full">
+        <h3 className="sc-big-spacer-bottom">
+          Enhance Your Workflow
+          <br />
+          with Continuous Code Quality
+        </h3>
+        <img
+          alt=""
+          className="sc-big-spacer-bottom"
+          src={`${getBaseUrl()}/images/sonarcloud/home-branch.png`}
+          srcSet={`${getBaseUrl()}/images/sonarcloud/home-branch.png 1x, ${getBaseUrl()}/images/sonarcloud/home-branch@2x.png 2x`}
+        />
+        <h5 className="spacer-bottom">Maximize your throughput and only release clean code</h5>
+        <h6 className="sc-big-spacer-bottom sc-regular-weight">
+          SonarCloud automatically analyzes branches and decorates pull requests
+        </h6>
+      </div>
+    </div>
+  );
+}
+
+function Functionality() {
+  return (
+    <div className="position-relative">
+      <div className="sc-functionality-background">
+        <div className="sc-background-center">
+          <img
+            alt=""
+            height="300px"
+            src={`${getBaseUrl()}/images/sonarcloud/home-grey-background.svg`}
+          />
+        </div>
+      </div>
+      <div className="sc-functionality-container">
+        <div className="sc-section">
+          <h3 className="sc-big-spacer-bottom text-center">
+            Functionality
+            <br />
+            that Fits Your Projects
+          </h3>
+          <div className="sc-columns">
+            <div className="sc-column sc-column-small big-spacer-top">
+              <h6 className="sc-regular-weight spacer-bottom">Easy to Use</h6>
+              <p>
+                With just a few clicks you’re up and running right where your code lives. Immediate
+                access to the latest features and enhancements.
+              </p>
+              <div className="sc-separator" />
+              <span className="big-spacer-bottom sc-with-icon">
+                <img
+                  alt=""
+                  className="big-spacer-right"
+                  src={`${getBaseUrl()}/images/sonarcloud/scale.svg`}
+                />{' '}
+                Scale on-demand as your projects grow.
+              </span>
+              <span className="sc-with-icon">
+                <img
+                  alt=""
+                  className="big-spacer-right"
+                  src={`${getBaseUrl()}/images/sonarcloud/stop.svg`}
+                />{' '}
+                No contracts, stop/start anytime.
+              </span>
+            </div>
+            <div className="sc-column sc-column-big big-spacer-top">
+              <img
+                alt=""
+                className="sc-rounded-img"
+                src={`${getBaseUrl()}/images/sonarcloud/home-easy-to-use.png`}
+                srcSet={`${getBaseUrl()}/images/sonarcloud/home-easy-to-use.png 1x, ${getBaseUrl()}/images/sonarcloud/home-easy-to-use@2x.png 2x`}
+              />
+            </div>
+          </div>
+          <div className="sc-columns">
+            <div className="sc-column sc-column-big">
+              <img
+                alt=""
+                className="sc-rounded-img"
+                src={`${getBaseUrl()}/images/sonarcloud/home-open-transparent.png`}
+                srcSet={`${getBaseUrl()}/images/sonarcloud/home-open-transparent.png 1x, ${getBaseUrl()}/images/sonarcloud/home-open-transparent@2x.png 2x`}
+              />
+            </div>
+            <div className="sc-column sc-column-small">
+              <div>
+                <h6 className="sc-regular-weight spacer-bottom">Open and Transparent</h6>
+                <p className="big-spacer-bottom">
+                  Project dashboards keep teams and stakeholders informed on code quality and
+                  releasability.
+                </p>
+                <p>Display project badges and show your communities you’re all about awesome.</p>
+                <img
+                  alt=""
+                  className="big-spacer-top"
+                  src={`${getBaseUrl()}/images/project_badges/sonarcloud-black.svg`}
+                  width="200px"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="sc-columns">
+            <div className="sc-column sc-column-full big-spacer-bottom">
+              <div>
+                <h6 className="sc-regular-weight spacer-bottom">Effective Collaboration</h6>
+
+                <p className="sc-with-inline-icon">
+                  Use
+                  <img
+                    alt="SonarCloud"
+                    src={`${getBaseUrl()}/images/sonarcloud/sonarcloud-logo-text-only.svg`}
+                  />
+                  with your team, share best practices and have fun writing quality code!
+                </p>
+                <br />
+                <p className="sc-with-inline-icon">
+                  Connect with
+                  <img
+                    alt="SonarCloud"
+                    src={`${getBaseUrl()}/images/sonarcloud/sonarlint-logo.svg`}
+                  />
+                  and get real-time notifications in your IDE as you work.
+                </p>
+                <div className="big-spacer-top">
+                  <img
+                    alt=""
+                    className="big-spacer-top huge-spacer-bottom"
+                    src={`${getBaseUrl()}/images/sonarcloud/ide.svg`}
+                    width="216px"
+                  />
+                </div>
+                <img alt="" src={`${getBaseUrl()}/images/sonarcloud/collab.svg`} width="540px" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div className="sc-functionality-background sc-functionality-background-bottom">
+        <div className="sc-background-center">
+          <img
+            alt=""
+            height="140px"
+            src={`${getBaseUrl()}/images/sonarcloud/home-background-grey-bottom.svg`}
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
+
+interface StatsProps {
+  data?: HomepageData;
+}
+
+function Stats({ data }: StatsProps) {
+  return (
+    <div className="sc-section sc-columns">
+      <div className="sc-column sc-column-full">
+        <h3>
+          Over 3,000 Projects
+          <br />
+          Continuously Analyzed
+        </h3>
+        {data && (
+          <Statistics
+            statistics={[
+              { icon: 'rules', text: 'Static analysis rules checked', value: data.rules },
+              { icon: 'locs', text: 'Lines of code analyzed', value: data.publicLoc },
+              {
+                icon: 'pull-request',
+                text: 'Pull Requests decorated/week',
+                value: data.newPullRequests7d
+              },
+              {
+                icon: 'open-source',
+                text: 'Open-source projects inspected',
+                value: data.publicProjects
+              }
+            ]}
+          />
+        )}
+      </div>
+    </div>
+  );
+}
+
+interface ProjectsProps {
+  featuredProjects: FeaturedProject[];
+}
+
+function Projects({ featuredProjects }: ProjectsProps) {
+  return (
+    <div className="sc-section sc-columns">
+      <div className="sc-column sc-column-full">
+        {featuredProjects.length > 0 && (
+          <>
+            <h6 className="big-spacer-bottom">
+              Transparency makes sense
+              <br />
+              and that’s why the trend is growing.
+            </h6>
+            <p>
+              Check out these open-source projects showing users
+              <br />
+              their commitment to quality.
+            </p>
+            <FeaturedProjects projects={featuredProjects} />
+          </>
+        )}
+        <h6 className="spacer-bottom">
+          Come join the fun, it’s entirely free for open-source projects!
+        </h6>
+        <div className="sc-spacer-bottom">
+          <LoginButtons />
+        </div>
+      </div>
+    </div>
   );
 }

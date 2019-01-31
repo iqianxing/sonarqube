@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,25 +18,23 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import Helmet from 'react-helmet';
 import { connect } from 'react-redux';
 import MarketplaceContext, { defaultPendingPlugins } from './MarketplaceContext';
 import SettingsNav from './nav/settings/SettingsNav';
-import { getAppState } from '../../store/rootReducer';
+import { getAppState, Store } from '../../store/rootReducer';
 import { getSettingsNavigation } from '../../api/nav';
-import { setAdminPages } from '../../store/appState/duck';
+import { setAdminPages } from '../../store/appState';
 import { translate } from '../../helpers/l10n';
-import { Extension, AppState } from '../types';
 import { PluginPendingResult, getPendingPlugins } from '../../api/plugins';
 import handleRequiredAuthorization from '../utils/handleRequiredAuthorization';
 
 interface StateProps {
-  appState: Pick<AppState, 'adminPages' | 'organizationsEnabled'>;
+  appState: Pick<T.AppState, 'adminPages' | 'canAdmin' | 'organizationsEnabled'>;
 }
 
 interface DispatchToProps {
-  setAdminPages: (adminPages: Extension[]) => void;
+  setAdminPages: (adminPages: T.Extension[]) => void;
 }
 
 interface OwnProps {
@@ -51,18 +49,13 @@ interface State {
 
 class AdminContainer extends React.PureComponent<Props, State> {
   mounted = false;
-
-  static contextTypes = {
-    canAdmin: PropTypes.bool.isRequired
-  };
-
   state: State = {
     pendingPlugins: defaultPendingPlugins
   };
 
   componentDidMount() {
     this.mounted = true;
-    if (!this.context.canAdmin) {
+    if (!this.props.appState.canAdmin) {
       handleRequiredAuthorization();
     } else {
       this.fetchNavigationSettings();
@@ -121,7 +114,7 @@ class AdminContainer extends React.PureComponent<Props, State> {
   }
 }
 
-const mapStateToProps = (state: any): StateProps => ({
+const mapStateToProps = (state: Store): StateProps => ({
   appState: getAppState(state)
 });
 
@@ -129,7 +122,7 @@ const mapDispatchToProps: DispatchToProps = {
   setAdminPages
 };
 
-export default connect<StateProps, DispatchToProps, OwnProps>(
+export default connect(
   mapStateToProps,
   mapDispatchToProps
 )(AdminContainer);

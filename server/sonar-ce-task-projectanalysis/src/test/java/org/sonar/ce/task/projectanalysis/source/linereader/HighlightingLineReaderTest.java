@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -39,8 +39,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.sonar.api.utils.log.LoggerLevel.WARN;
+import static org.sonar.api.utils.log.LoggerLevel.DEBUG;
 import static org.sonar.ce.task.projectanalysis.component.ReportComponent.builder;
+import static org.sonar.ce.task.projectanalysis.source.linereader.LineReader.Data.HIGHLIGHTING;
 import static org.sonar.db.protobuf.DbFileSources.Data.newBuilder;
 import static org.sonar.scanner.protocol.output.ScannerReport.SyntaxHighlightingRule.HighlightingType.ANNOTATION;
 import static org.sonar.scanner.protocol.output.ScannerReport.SyntaxHighlightingRule.HighlightingType.COMMENT;
@@ -82,7 +83,7 @@ public class HighlightingLineReaderTest {
     HighlightingLineReader highlightingLineReader = newReader(Collections.emptyMap());
 
     DbFileSources.Line.Builder lineBuilder = newBuilder().addLinesBuilder().setLine(1);
-    highlightingLineReader.read(lineBuilder);
+    assertThat(highlightingLineReader.read(lineBuilder)).isEmpty();
 
     assertThat(lineBuilder.hasHighlighting()).isFalse();
   }
@@ -92,7 +93,7 @@ public class HighlightingLineReaderTest {
     HighlightingLineReader highlightingLineReader = newReader(of(
       newSingleLineTextRangeWithExpectingLabel(LINE_1, RANGE_LABEL_1), ANNOTATION));
 
-    highlightingLineReader.read(line1);
+    assertThat(highlightingLineReader.read(line1)).isEmpty();
 
     assertThat(line1.getHighlighting()).isEqualTo(RANGE_LABEL_1 + ",a");
   }
@@ -104,10 +105,10 @@ public class HighlightingLineReaderTest {
       newSingleLineTextRangeWithExpectingLabel(LINE_2, RANGE_LABEL_2), COMMENT,
       newSingleLineTextRangeWithExpectingLabel(LINE_4, RANGE_LABEL_3), CONSTANT));
 
-    highlightingLineReader.read(line1);
-    highlightingLineReader.read(line2);
-    highlightingLineReader.read(line3);
-    highlightingLineReader.read(line4);
+    assertThat(highlightingLineReader.read(line1)).isEmpty();
+    assertThat(highlightingLineReader.read(line2)).isEmpty();
+    assertThat(highlightingLineReader.read(line3)).isEmpty();
+    assertThat(highlightingLineReader.read(line4)).isEmpty();
 
     assertThat(line1.getHighlighting()).isEqualTo(RANGE_LABEL_1 + ",a");
     assertThat(line2.getHighlighting()).isEqualTo(RANGE_LABEL_2 + ",cd");
@@ -145,7 +146,7 @@ public class HighlightingLineReaderTest {
 
   private DbFileSources.Line.Builder addSourceLine(HighlightingLineReader highlightingLineReader, int line, String source) {
     DbFileSources.Line.Builder lineBuilder = sourceData.addLinesBuilder().setSource(source).setLine(line);
-    highlightingLineReader.read(lineBuilder);
+    assertThat(highlightingLineReader.read(lineBuilder)).isEmpty();
     return lineBuilder;
   }
 
@@ -170,7 +171,7 @@ public class HighlightingLineReaderTest {
       newSingleLineTextRangeWithExpectingLabel(LINE_1, RANGE_LABEL_1), ANNOTATION,
       newSingleLineTextRangeWithExpectingLabel(LINE_1, RANGE_LABEL_2), COMMENT));
 
-    highlightingLineReader.read(line1);
+    assertThat(highlightingLineReader.read(line1)).isEmpty();
 
     assertThat(line1.getHighlighting()).isEqualTo(RANGE_LABEL_1 + ",a;" + RANGE_LABEL_2 + ",cd");
   }
@@ -185,10 +186,10 @@ public class HighlightingLineReaderTest {
 
     HighlightingLineReader highlightingLineReader = newReader(of(textRange, ANNOTATION));
 
-    highlightingLineReader.read(line1);
+    assertThat(highlightingLineReader.read(line1)).isEmpty();
     DbFileSources.Line.Builder line2 = sourceData.addLinesBuilder().setSource("line 2").setLine(2);
-    highlightingLineReader.read(line2);
-    highlightingLineReader.read(line3);
+    assertThat(highlightingLineReader.read(line2)).isEmpty();
+    assertThat(highlightingLineReader.read(line3)).isEmpty();
 
     assertThat(line1.getHighlighting()).isEqualTo(RANGE_LABEL_1 + ",a");
     assertThat(line2.getHighlighting()).isEqualTo(RANGE_LABEL_2 + ",a");
@@ -215,10 +216,10 @@ public class HighlightingLineReaderTest {
       textRange2, HIGHLIGHTING_STRING,
       textRange3, COMMENT));
 
-    highlightingLineReader.read(line1);
-    highlightingLineReader.read(line2);
-    highlightingLineReader.read(line3);
-    highlightingLineReader.read(line4);
+    assertThat(highlightingLineReader.read(line1)).isEmpty();
+    assertThat(highlightingLineReader.read(line2)).isEmpty();
+    assertThat(highlightingLineReader.read(line3)).isEmpty();
+    assertThat(highlightingLineReader.read(line4)).isEmpty();
 
     assertThat(line1.getHighlighting()).isEqualTo(RANGE_LABEL_1 + ",a");
     assertThat(line2.getHighlighting()).isEqualTo(RANGE_LABEL_2 + ",a;" + RANGE_LABEL_2 + ",s;" + RANGE_LABEL_5 + ",cd");
@@ -234,9 +235,9 @@ public class HighlightingLineReaderTest {
 
     HighlightingLineReader highlightingLineReader = newReader(of(textRange, ANNOTATION));
 
-    highlightingLineReader.read(line1);
-    highlightingLineReader.read(line2);
-    highlightingLineReader.read(line3);
+    assertThat(highlightingLineReader.read(line1)).isEmpty();
+    assertThat(highlightingLineReader.read(line2)).isEmpty();
+    assertThat(highlightingLineReader.read(line3)).isEmpty();
 
     assertThat(line1.getHighlighting()).isEqualTo(RANGE_LABEL_1 + ",a");
     // Nothing should be set on line 2
@@ -253,39 +254,46 @@ public class HighlightingLineReaderTest {
       textRange1, HighlightingType.ANNOTATION,
       newSingleLineTextRangeWithExpectingLabel(LINE_2, RANGE_LABEL_1), HIGHLIGHTING_STRING));
 
-    highlightingLineReader.read(line1);
-    highlightingLineReader.read(line2);
+    LineReader.ReadError readErrorLine1 = new LineReader.ReadError(HIGHLIGHTING, LINE_1);
+    assertThat(highlightingLineReader.read(line1)).contains(readErrorLine1);
+    assertThat(highlightingLineReader.read(line2)).contains(readErrorLine1);
 
     assertNoHighlighting();
-    assertThat(logTester.logs(WARN)).isNotEmpty();
+    assertThat(logTester.logs(DEBUG)).isNotEmpty();
   }
 
   @Test
   public void keep_existing_processed_highlighting_when_range_offset_converter_throw_RangeOffsetConverterException() {
     TextRange textRange2 = newTextRange(LINE_2, LINE_2);
     doThrow(RangeOffsetConverterException.class).when(rangeOffsetConverter).offsetToString(textRange2, LINE_2, DEFAULT_LINE_LENGTH);
+    TextRange textRange3 = newTextRange(LINE_3, LINE_3);
 
     HighlightingLineReader highlightingLineReader = newReader(of(
       newSingleLineTextRangeWithExpectingLabel(LINE_1, RANGE_LABEL_1), ANNOTATION,
-      textRange2, HIGHLIGHTING_STRING));
+      textRange2, HIGHLIGHTING_STRING,
+      textRange3, COMMENT));
 
-    highlightingLineReader.read(line1);
-    highlightingLineReader.read(line2);
+    assertThat(highlightingLineReader.read(line1)).isEmpty();
+    LineReader.ReadError readErrorLine2 = new LineReader.ReadError(HIGHLIGHTING, LINE_2);
+    assertThat(highlightingLineReader.read(line2)).contains(readErrorLine2);
+    assertThat(highlightingLineReader.read(line3)).contains(readErrorLine2);
 
     assertThat(line1.hasHighlighting()).isTrue();
     assertThat(line2.hasHighlighting()).isFalse();
-    assertThat(logTester.logs(WARN)).isNotEmpty();
+    assertThat(line3.hasHighlighting()).isFalse();
+    assertThat(logTester.logs(DEBUG)).isNotEmpty();
   }
 
   @Test
-  public void display_file_key_in_warning_when_range_offset_converter_throw_RangeOffsetConverterException() {
+  public void display_file_key_in_debug_when_range_offset_converter_throw_RangeOffsetConverterException() {
     TextRange textRange1 = newTextRange(LINE_1, LINE_1);
     doThrow(RangeOffsetConverterException.class).when(rangeOffsetConverter).offsetToString(textRange1, LINE_1, DEFAULT_LINE_LENGTH);
     HighlightingLineReader highlightingLineReader = newReader(of(textRange1, ANNOTATION));
 
-    highlightingLineReader.read(line1);
+    assertThat(highlightingLineReader.read(line1))
+      .contains(new LineReader.ReadError(HIGHLIGHTING, 1));
 
-    assertThat(logTester.logs(WARN)).containsOnly("Inconsistency detected in Highlighting data. Highlighting will be ignored for file 'FILE_KEY'");
+    assertThat(logTester.logs(DEBUG)).containsOnly("Inconsistency detected in Highlighting data. Highlighting will be ignored for file 'FILE_KEY'");
   }
 
   private HighlightingLineReader newReader(Map<TextRange, HighlightingType> textRangeByType) {

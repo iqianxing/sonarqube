@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,6 @@
  */
 package org.sonar.server.authentication.ws;
 
-import javax.annotation.Nullable;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletRequest;
@@ -29,7 +28,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.sonar.api.server.ws.WebService;
 import org.sonar.api.web.ServletFilter;
 import org.sonar.db.user.UserDto;
-import org.sonar.server.authentication.CredentialsAuthenticator;
+import org.sonar.server.authentication.Credentials;
+import org.sonar.server.authentication.CredentialsAuthentication;
 import org.sonar.server.authentication.JwtHttpHandler;
 import org.sonar.server.authentication.event.AuthenticationEvent;
 import org.sonar.server.authentication.event.AuthenticationException;
@@ -51,15 +51,15 @@ public class LoginAction extends ServletFilter implements AuthenticationWsAction
   private static final String LOGIN_ACTION = "login";
   public static final String LOGIN_URL = "/" + AUTHENTICATION_CONTROLLER + "/" + LOGIN_ACTION;
 
-  private final CredentialsAuthenticator credentialsAuthenticator;
+  private final CredentialsAuthentication credentialsAuthentication;
   private final JwtHttpHandler jwtHttpHandler;
   private final ThreadLocalUserSession threadLocalUserSession;
   private final AuthenticationEvent authenticationEvent;
   private final UserSessionFactory userSessionFactory;
 
-  public LoginAction(CredentialsAuthenticator credentialsAuthenticator, JwtHttpHandler jwtHttpHandler,
-    ThreadLocalUserSession threadLocalUserSession, AuthenticationEvent authenticationEvent, UserSessionFactory userSessionFactory) {
-    this.credentialsAuthenticator = credentialsAuthenticator;
+  public LoginAction(CredentialsAuthentication credentialsAuthentication, JwtHttpHandler jwtHttpHandler,
+                     ThreadLocalUserSession threadLocalUserSession, AuthenticationEvent authenticationEvent, UserSessionFactory userSessionFactory) {
+    this.credentialsAuthentication = credentialsAuthentication;
     this.jwtHttpHandler = jwtHttpHandler;
     this.threadLocalUserSession = threadLocalUserSession;
     this.authenticationEvent = authenticationEvent;
@@ -96,10 +96,8 @@ public class LoginAction extends ServletFilter implements AuthenticationWsAction
       return;
     }
 
-    String login = request.getParameter("login");
-    String password = request.getParameter("password");
     try {
-      UserDto userDto = authenticate(request, login, password);
+      UserDto userDto = authenticate(request);
       jwtHttpHandler.generateToken(userDto, request, response);
       threadLocalUserSession.set(userSessionFactory.create(userDto));
     } catch (AuthenticationException e) {
@@ -110,7 +108,9 @@ public class LoginAction extends ServletFilter implements AuthenticationWsAction
     }
   }
 
-  private UserDto authenticate(HttpServletRequest request, @Nullable String login, @Nullable String password) {
+  private UserDto authenticate(HttpServletRequest request) {
+    String login = request.getParameter("login");
+    String password = request.getParameter("password");
     if (isEmpty(login) || isEmpty(password)) {
       throw AuthenticationException.newBuilder()
         .setSource(Source.local(Method.FORM))
@@ -118,7 +118,7 @@ public class LoginAction extends ServletFilter implements AuthenticationWsAction
         .setMessage("Empty login and/or password")
         .build();
     }
-    return credentialsAuthenticator.authenticate(login, password, request, Method.FORM);
+    return credentialsAuthentication.authenticate(new Credentials(login, password), request, Method.FORM);
   }
 
   @Override

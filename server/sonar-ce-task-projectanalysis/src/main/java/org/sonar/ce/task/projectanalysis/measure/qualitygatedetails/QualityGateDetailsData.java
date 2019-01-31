@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,8 +23,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
 import java.util.List;
 import javax.annotation.concurrent.Immutable;
-import org.sonar.ce.task.projectanalysis.measure.Measure;
-import org.sonar.ce.task.projectanalysis.qualitygate.Condition;
 import org.sonar.ce.task.projectanalysis.measure.Measure;
 import org.sonar.ce.task.projectanalysis.qualitygate.Condition;
 
@@ -64,15 +62,12 @@ public class QualityGateDetailsData {
     JsonObject result = new JsonObject();
     result.addProperty("metric", condition.getMetric().getKey());
     result.addProperty("op", condition.getOperator().getDbValue());
-    if (condition.hasPeriod()) {
+    if (condition.useVariation()) {
+      // without this for new_ metrics, the UI will show "-" instead of
+      // the actual value in the QG failure reason
       result.addProperty("period", 1);
     }
-    if (condition.getWarningThreshold() != null) {
-      result.addProperty("warning", condition.getWarningThreshold());
-    }
-    if (condition.getErrorThreshold() != null) {
-      result.addProperty("error", condition.getErrorThreshold());
-    }
+    result.addProperty("error", condition.getErrorThreshold());
     result.addProperty("actual", evaluatedCondition.getActualValue());
     result.addProperty(FIELD_LEVEL, evaluatedCondition.getLevel().name());
     return result;

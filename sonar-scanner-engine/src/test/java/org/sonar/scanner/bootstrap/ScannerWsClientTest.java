@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -57,7 +57,7 @@ public class ScannerWsClientTest {
     when(wsClient.wsConnector().call(request)).thenReturn(response);
 
     logTester.setLevel(LoggerLevel.DEBUG);
-    ScannerWsClient underTest = new ScannerWsClient(wsClient, false, new GlobalAnalysisMode(new GlobalProperties(Collections.emptyMap())));
+    ScannerWsClient underTest = new ScannerWsClient(wsClient, false, new GlobalAnalysisMode(new ScannerProperties(Collections.emptyMap())));
 
     WsResponse result = underTest.call(request);
 
@@ -98,7 +98,7 @@ public class ScannerWsClientTest {
     WsResponse response = newResponse().setCode(401);
     when(wsClient.wsConnector().call(request)).thenReturn(response);
 
-    new ScannerWsClient(wsClient, false, new GlobalAnalysisMode(new GlobalProperties(Collections.emptyMap()))).call(request);
+    new ScannerWsClient(wsClient, false, new GlobalAnalysisMode(new ScannerProperties(Collections.emptyMap()))).call(request);
   }
 
   @Test
@@ -110,21 +110,20 @@ public class ScannerWsClientTest {
     WsResponse response = newResponse().setCode(401);
     when(wsClient.wsConnector().call(request)).thenReturn(response);
 
-    new ScannerWsClient(wsClient, /* credentials are configured */true, new GlobalAnalysisMode(new GlobalProperties(Collections.emptyMap()))).call(request);
+    new ScannerWsClient(wsClient, /* credentials are configured */true, new GlobalAnalysisMode(new ScannerProperties(Collections.emptyMap()))).call(request);
   }
 
   @Test
   public void fail_if_requires_permission() {
     expectedException.expect(MessageException.class);
-    expectedException.expectMessage("missing scan permission, missing another permission");
+    expectedException.expectMessage("You're not authorized to run analysis. Please contact the project administrator.");
 
     WsRequest request = newRequest();
     WsResponse response = newResponse()
-      .setCode(403)
-      .setContent("{\"errors\":[{\"msg\":\"missing scan permission\"}, {\"msg\":\"missing another permission\"}]}");
+      .setCode(403);
     when(wsClient.wsConnector().call(request)).thenReturn(response);
 
-    new ScannerWsClient(wsClient, true, new GlobalAnalysisMode(new GlobalProperties(Collections.emptyMap()))).call(request);
+    new ScannerWsClient(wsClient, true, new GlobalAnalysisMode(new ScannerProperties(Collections.emptyMap()))).call(request);
   }
 
   @Test
@@ -138,7 +137,7 @@ public class ScannerWsClientTest {
       .setContent("{\"errors\":[{\"msg\":\"Boo! bad request! bad!\"}]}");
     when(wsClient.wsConnector().call(request)).thenReturn(response);
 
-    new ScannerWsClient(wsClient, true, new GlobalAnalysisMode(new GlobalProperties(Collections.emptyMap()))).call(request);
+    new ScannerWsClient(wsClient, true, new GlobalAnalysisMode(new ScannerProperties(Collections.emptyMap()))).call(request);
   }
 
   private MockWsResponse newResponse() {

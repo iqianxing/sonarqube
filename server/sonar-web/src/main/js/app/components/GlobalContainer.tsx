@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -36,22 +36,20 @@ export default function GlobalContainer(props: Props) {
   const { footer = <GlobalFooterContainer /> } = props;
   return (
     <SuggestionsProvider>
-      {({ suggestions }) => (
-        <StartupModal location={props.location}>
-          <div className="global-container">
-            <div className="page-wrapper" id="container">
-              <div className="page-container">
-                <Workspace>
-                  <GlobalNav location={props.location} suggestions={suggestions} />
-                  <GlobalMessagesContainer />
-                  {props.children}
-                </Workspace>
-              </div>
+      <StartupModal>
+        <div className="global-container">
+          <div className="page-wrapper" id="container">
+            <div className="page-container">
+              <Workspace>
+                <GlobalNav location={props.location} />
+                <GlobalMessagesContainer />
+                {props.children}
+              </Workspace>
             </div>
-            {footer}
           </div>
-        </StartupModal>
-      )}
+          {footer}
+        </div>
+      </StartupModal>
     </SuggestionsProvider>
   );
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,14 +18,13 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import { Group } from '../../../app/types';
 import SimpleModal from '../../../components/controls/SimpleModal';
 import DeferredSpinner from '../../../components/common/DeferredSpinner';
 import { SubmitButton, ResetButtonLink } from '../../../components/ui/buttons';
 import { translate, translateWithParameters } from '../../../helpers/l10n';
 
 interface Props {
-  group: Group;
+  group: T.Group;
   onClose: () => void;
   onSubmit: () => Promise<void>;
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,9 +20,8 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import { ComponentNavMeta } from '../ComponentNavMeta';
-import { BranchType, ShortLivingBranch, LongLivingBranch, PullRequest } from '../../../../types';
 
-const component = {
+const COMPONENT = {
   analysisDate: '2017-01-02T00:00:00.000Z',
   breadcrumbs: [],
   key: 'foo',
@@ -32,45 +31,53 @@ const component = {
   version: '0.0.1'
 };
 
+const MEASURES = [
+  { metric: 'new_coverage', value: '0', periods: [{ index: 1, value: '95.9943' }] },
+  { metric: 'new_duplicated_lines_density', periods: [{ index: 1, value: '3.5' }] }
+];
+
 it('renders status of short-living branch', () => {
-  const branch: ShortLivingBranch = {
+  const branch: T.ShortLivingBranch = {
     isMain: false,
     mergeBranch: 'master',
     name: 'feature',
     status: { bugs: 0, codeSmells: 2, qualityGateStatus: 'ERROR', vulnerabilities: 3 },
-    type: BranchType.SHORT
+    type: 'SHORT'
   };
   expect(
     shallow(
       <ComponentNavMeta
         branchLike={branch}
-        component={component}
+        branchMeasures={MEASURES}
+        component={COMPONENT}
         currentUser={{ isLoggedIn: false }}
+        warnings={[]}
       />
     )
   ).toMatchSnapshot();
 });
 
 it('renders meta for long-living branch', () => {
-  const branch: LongLivingBranch = {
+  const branch: T.LongLivingBranch = {
     isMain: false,
     name: 'release',
     status: { qualityGateStatus: 'OK' },
-    type: BranchType.LONG
+    type: 'LONG'
   };
   expect(
     shallow(
       <ComponentNavMeta
         branchLike={branch}
-        component={component}
+        component={COMPONENT}
         currentUser={{ isLoggedIn: false }}
+        warnings={[]}
       />
     )
   ).toMatchSnapshot();
 });
 
 it('renders meta for pull request', () => {
-  const pullRequest: PullRequest = {
+  const pullRequest: T.PullRequest = {
     base: 'master',
     branch: 'feature',
     key: '1234',
@@ -82,8 +89,9 @@ it('renders meta for pull request', () => {
     shallow(
       <ComponentNavMeta
         branchLike={pullRequest}
-        component={component}
+        component={COMPONENT}
         currentUser={{ isLoggedIn: false }}
+        warnings={[]}
       />
     )
   ).toMatchSnapshot();

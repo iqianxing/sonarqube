@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,8 +30,10 @@ import org.sonar.ce.task.projectanalysis.analysis.Analysis;
 import org.sonar.ce.task.projectanalysis.analysis.AnalysisMetadataHolder;
 import org.sonar.ce.task.projectanalysis.analysis.ScannerPlugin;
 import org.sonar.ce.task.projectanalysis.component.Component;
+import org.sonar.ce.task.projectanalysis.filemove.AddedFileRepository;
 import org.sonar.ce.task.projectanalysis.qualityprofile.ActiveRule;
 import org.sonar.ce.task.projectanalysis.qualityprofile.ActiveRulesHolder;
+import org.sonar.ce.task.projectanalysis.qualityprofile.QProfileStatusRepository;
 import org.sonar.ce.task.projectanalysis.scm.Changeset;
 import org.sonar.ce.task.projectanalysis.scm.ScmInfo;
 import org.sonar.ce.task.projectanalysis.scm.ScmInfoRepository;
@@ -39,6 +41,7 @@ import org.sonar.core.issue.DefaultIssue;
 import org.sonar.core.issue.IssueChangeContext;
 import org.sonar.server.issue.IssueFieldsSetter;
 
+import static org.sonar.ce.task.projectanalysis.qualityprofile.QProfileStatusRepository.Status.UNCHANGED;
 import static org.sonar.core.issue.IssueChangeContext.createScan;
 
 /**
@@ -53,15 +56,20 @@ public class IssueCreationDateCalculator extends IssueVisitor {
   private final IssueChangeContext changeContext;
   private final ActiveRulesHolder activeRulesHolder;
   private final RuleRepository ruleRepository;
+  private final AddedFileRepository addedFileRepository;
+  private QProfileStatusRepository qProfileStatusRepository;
 
   public IssueCreationDateCalculator(AnalysisMetadataHolder analysisMetadataHolder, ScmInfoRepository scmInfoRepository,
-    IssueFieldsSetter issueUpdater, ActiveRulesHolder activeRulesHolder, RuleRepository ruleRepository) {
+    IssueFieldsSetter issueUpdater, ActiveRulesHolder activeRulesHolder, RuleRepository ruleRepository,
+    AddedFileRepository addedFileRepository, QProfileStatusRepository qProfileStatusRepository) {
     this.scmInfoRepository = scmInfoRepository;
     this.issueUpdater = issueUpdater;
     this.analysisMetadataHolder = analysisMetadataHolder;
     this.ruleRepository = ruleRepository;
     this.changeContext = createScan(new Date(analysisMetadataHolder.getAnalysisDate()));
     this.activeRulesHolder = activeRulesHolder;
+    this.addedFileRepository = addedFileRepository;
+    this.qProfileStatusRepository = qProfileStatusRepository;
   }
 
   @Override
@@ -69,21 +77,44 @@ public class IssueCreationDateCalculator extends IssueVisitor {
     if (!issue.isNew()) {
       return;
     }
+
     Optional<Long> lastAnalysisOptional = lastAnalysis();
     boolean firstAnalysis = !lastAnalysisOptional.isPresent();
+    if (firstAnalysis || isNewFile(component)) {
+      backdateIssue(component, issue);
+      return;
+    }
+
     Rule rule = ruleRepository.findByKey(issue.getRuleKey())
       .orElseThrow(illegalStateException("The rule with key '%s' raised an issue, but no rule with that key was found", issue.getRuleKey()));
-
     if (rule.isExternal()) {
-      getDateOfLatestChange(component, issue).ifPresent(changeDate -> updateDate(issue, changeDate));
+      backdateIssue(component, issue);
     } else {
       // Rule can't be inactive (see contract of IssueVisitor)
       ActiveRule activeRule = activeRulesHolder.get(issue.getRuleKey()).get();
-      if (firstAnalysis || activeRuleIsNew(activeRule, lastAnalysisOptional.get())
-        || ruleImplementationChanged(activeRule.getRuleKey(), activeRule.getPluginKey(), lastAnalysisOptional.get())) {
-        getDateOfLatestChange(component, issue).ifPresent(changeDate -> updateDate(issue, changeDate));
+      if (activeRuleIsNewOrChanged(activeRule, lastAnalysisOptional.get())
+        || ruleImplementationChanged(activeRule.getRuleKey(), activeRule.getPluginKey(), lastAnalysisOptional.get())
+        || qualityProfileChanged(activeRule.getQProfileKey())) {
+        backdateIssue(component, issue);
       }
     }
+  }
+
+  private boolean qualityProfileChanged(@Nullable String qpKey) {
+    // Support issue from report created before scanner protocol update -> no backdating
+    if (qpKey == null) {
+      return false;
+    }
+
+    return qProfileStatusRepository.get(qpKey).filter(s -> !s.equals(UNCHANGED)).isPresent();
+  }
+
+  private boolean isNewFile(Component component) {
+    return component.getType() == Component.Type.FILE && addedFileRepository.isAdded(component);
+  }
+
+  private void backdateIssue(Component component, DefaultIssue issue) {
+    getDateOfLatestChange(component, issue).ifPresent(changeDate -> updateDate(issue, changeDate));
   }
 
   private boolean ruleImplementationChanged(RuleKey ruleKey, @Nullable String pluginKey, long lastAnalysisDate) {
@@ -110,9 +141,8 @@ public class IssueCreationDateCalculator extends IssueVisitor {
     return lastAnalysisDate < scannerPlugin.getUpdatedAt();
   }
 
-  private static boolean activeRuleIsNew(ActiveRule activeRule, Long lastAnalysisDate) {
-    long ruleCreationDate = activeRule.getCreatedAt();
-    return lastAnalysisDate < ruleCreationDate;
+  private static boolean activeRuleIsNewOrChanged(ActiveRule activeRule, Long lastAnalysisDate) {
+    return lastAnalysisDate < activeRule.getUpdatedAt();
   }
 
   private Optional<Date> getDateOfLatestChange(Component component, DefaultIssue issue) {

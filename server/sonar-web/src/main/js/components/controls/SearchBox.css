@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -37,11 +37,6 @@
   /* for clear button */
   padding-right: var(--controlHeight) !important;
   font-size: var(--baseFontSize);
-}
-
-.search-box-input::placeholder {
-  color: var(--secondFontColor);
-  opacity: 1;
 }
 
 .search-box-input::-webkit-search-decoration,

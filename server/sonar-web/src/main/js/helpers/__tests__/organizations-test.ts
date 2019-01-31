@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,10 +18,9 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import { hasPrivateAccess, isCurrentUserMemberOf } from '../organizations';
-import { OrganizationSubscription } from '../../app/types';
 
-const org = { key: 'foo', name: 'Foo', subscription: OrganizationSubscription.Paid };
-const adminOrg = { key: 'bar', name: 'Bar', canAdmin: true };
+const org: T.Organization = { key: 'foo', name: 'Foo', subscription: 'PAID' };
+const adminOrg = { actions: { admin: true }, key: 'bar', name: 'Bar' };
 const randomOrg = { key: 'bar', name: 'Bar' };
 
 const loggedIn = {

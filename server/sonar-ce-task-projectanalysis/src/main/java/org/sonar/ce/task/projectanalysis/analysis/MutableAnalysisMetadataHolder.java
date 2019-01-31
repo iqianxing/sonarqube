@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -85,4 +85,9 @@ public interface MutableAnalysisMetadataHolder extends AnalysisMetadataHolder {
    * @throws IllegalStateException if Plugins by key has already been set
    */
   MutableAnalysisMetadataHolder setScannerPluginsByKey(Map<String, ScannerPlugin> pluginsByKey);
+
+  /**
+   * @throws IllegalStateException if scm revision id has already been set
+   */
+  MutableAnalysisMetadataHolder setScmRevisionId(String scmRevisionId);
 }

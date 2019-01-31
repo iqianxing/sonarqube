@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -100,6 +100,7 @@ public class GenericCoverageSensor implements Sensor {
   @Override
   public void describe(SensorDescriptor descriptor) {
     descriptor.name("Generic Coverage Report")
+      .global()
       .onlyWhenConfiguration(c -> asList(REPORT_PATHS_PROPERTY_KEY, OLD_REPORT_PATH_PROPERTY_KEY, OLD_COVERAGE_REPORT_PATHS_PROPERTY_KEY,
         OLD_IT_COVERAGE_REPORT_PATHS_PROPERTY_KEY, OLD_OVERALL_COVERAGE_REPORT_PATHS_PROPERTY_KEY)
           .stream()

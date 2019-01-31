@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,7 +22,7 @@ import OrganizationLink from '../../../components/ui/OrganizationLink';
 
 interface Props {
   organization?: { key: string; name: string };
-  organizationsEnabled: boolean;
+  organizationsEnabled?: boolean;
 }
 
 export default function ProjectCardOrganization({ organization, organizationsEnabled }: Props) {

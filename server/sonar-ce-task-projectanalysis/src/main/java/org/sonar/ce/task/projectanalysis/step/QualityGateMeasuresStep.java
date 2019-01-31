@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,7 +22,6 @@ package org.sonar.ce.task.projectanalysis.step;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Ordering;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -71,12 +70,8 @@ import static org.sonar.ce.task.projectanalysis.qualitygate.ConditionStatus.crea
  * {@link CoreMetrics#ALERT_STATUS_KEY}</li>
  * </ul>
  *
- * It must be executed after the computation of differential measures {@link ComputeMeasureVariationsStep}
  */
 public class QualityGateMeasuresStep implements ComputationStep {
-  // Condition on period should come first
-  private static final Ordering<Condition> PERIOD_ORDERING = Ordering.natural().reverse().onResultOf(Condition::hasPeriod);
-
   private final TreeRootHolder treeRootHolder;
   private final QualityGateHolder qualityGateHolder;
   private final MutableQualityGateStatusHolder qualityGateStatusHolder;
@@ -129,8 +124,6 @@ public class QualityGateMeasuresStep implements ComputationStep {
     switch (globalLevel) {
       case OK:
         return ConditionStatus.EvaluationStatus.OK;
-      case WARN:
-        return ConditionStatus.EvaluationStatus.WARN;
       case ERROR:
         return ConditionStatus.EvaluationStatus.ERROR;
       default:
@@ -144,8 +137,6 @@ public class QualityGateMeasuresStep implements ComputationStep {
     switch (globalLevel) {
       case OK:
         return org.sonar.ce.task.projectanalysis.qualitygate.QualityGateStatus.OK;
-      case WARN:
-        return org.sonar.ce.task.projectanalysis.qualitygate.QualityGateStatus.WARN;
       case ERROR:
         return org.sonar.ce.task.projectanalysis.qualitygate.QualityGateStatus.ERROR;
       default:
@@ -177,7 +168,7 @@ public class QualityGateMeasuresStep implements ComputationStep {
     boolean ignoredConditions = false;
     for (Map.Entry<Metric, Collection<Condition>> entry : conditionsPerMetric.asMap().entrySet()) {
       Metric metric = entry.getKey();
-      com.google.common.base.Optional<Measure> measure = measureRepository.getRawMeasure(project, metric);
+      Optional<Measure> measure = measureRepository.getRawMeasure(project, metric);
       if (!measure.isPresent()) {
         continue;
       }
@@ -206,7 +197,7 @@ public class QualityGateMeasuresStep implements ComputationStep {
   private static MetricEvaluationResult evaluateQualityGate(Measure measure, Collection<Condition> conditions) {
     ConditionEvaluator conditionEvaluator = new ConditionEvaluator();
     MetricEvaluationResult metricEvaluationResult = null;
-    for (Condition newCondition : PERIOD_ORDERING.immutableSortedCopy(conditions)) {
+    for (Condition newCondition : conditions) {
       EvaluationResult newEvaluationResult = conditionEvaluator.evaluate(newCondition, measure);
       if (metricEvaluationResult == null || newEvaluationResult.getLevel().ordinal() > metricEvaluationResult.evaluationResult.getLevel().ordinal()) {
         metricEvaluationResult = new MetricEvaluationResult(newEvaluationResult, newCondition);
@@ -255,10 +246,7 @@ public class QualityGateMeasuresStep implements ComputationStep {
 
     public void addEvaluatedCondition(MetricEvaluationResult metricEvaluationResult) {
       Measure.Level level = metricEvaluationResult.evaluationResult.getLevel();
-      if (Measure.Level.WARN == level && this.globalLevel != Measure.Level.ERROR) {
-        globalLevel = Measure.Level.WARN;
-
-      } else if (Measure.Level.ERROR == level) {
+      if (Measure.Level.ERROR == level) {
         globalLevel = Measure.Level.ERROR;
       }
       evaluatedConditions.add(

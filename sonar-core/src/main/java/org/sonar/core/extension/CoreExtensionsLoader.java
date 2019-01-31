@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -53,7 +53,9 @@ public class CoreExtensionsLoader {
     ensureNoDuplicateName(coreExtensions);
 
     coreExtensionRepository.setLoadedCoreExtensions(coreExtensions);
-    LOG.info("Loaded core extensions: {}", coreExtensions.stream().map(CoreExtension::getName).collect(Collectors.joining(", ")));
+    if (!coreExtensions.isEmpty()) {
+      LOG.info("Loaded core extensions: {}", coreExtensions.stream().map(CoreExtension::getName).collect(Collectors.joining(", ")));
+    }
   }
 
   private static void ensureNoDuplicateName(Set<CoreExtension> coreExtensions) {

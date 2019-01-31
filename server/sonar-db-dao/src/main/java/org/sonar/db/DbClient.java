@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,12 +21,15 @@ package org.sonar.db;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
-import org.sonar.db.alm.ProjectAlmBindingsDao;
+import org.sonar.db.alm.AlmAppInstallDao;
+import org.sonar.db.alm.OrganizationAlmBindingDao;
+import org.sonar.db.alm.ProjectAlmBindingDao;
 import org.sonar.db.ce.CeActivityDao;
 import org.sonar.db.ce.CeQueueDao;
 import org.sonar.db.ce.CeScannerContextDao;
 import org.sonar.db.ce.CeTaskCharacteristicDao;
 import org.sonar.db.ce.CeTaskInputDao;
+import org.sonar.db.ce.CeTaskMessageDao;
 import org.sonar.db.component.AnalysisPropertiesDao;
 import org.sonar.db.component.BranchDao;
 import org.sonar.db.component.ComponentDao;
@@ -35,10 +38,10 @@ import org.sonar.db.component.ProjectLinkDao;
 import org.sonar.db.component.SnapshotDao;
 import org.sonar.db.duplication.DuplicationDao;
 import org.sonar.db.es.EsQueueDao;
+import org.sonar.db.event.EventComponentChangeDao;
 import org.sonar.db.event.EventDao;
 import org.sonar.db.issue.IssueChangeDao;
 import org.sonar.db.issue.IssueDao;
-import org.sonar.db.alm.AlmAppInstallDao;
 import org.sonar.db.mapping.ProjectMappingsDao;
 import org.sonar.db.measure.LiveMeasureDao;
 import org.sonar.db.measure.MeasureDao;
@@ -74,6 +77,7 @@ import org.sonar.db.user.GroupMembershipDao;
 import org.sonar.db.user.RoleDao;
 import org.sonar.db.user.UserDao;
 import org.sonar.db.user.UserGroupDao;
+import org.sonar.db.user.UserPropertiesDao;
 import org.sonar.db.user.UserTokenDao;
 import org.sonar.db.webhook.WebhookDao;
 import org.sonar.db.webhook.WebhookDeliveryDao;
@@ -91,7 +95,7 @@ public class DbClient {
   private final QualityProfileDao qualityProfileDao;
   private final PropertiesDao propertiesDao;
   private final AlmAppInstallDao almAppInstallDao;
-  private final ProjectAlmBindingsDao projectAlmBindingsDao;
+  private final ProjectAlmBindingDao projectAlmBindingDao;
   private final InternalPropertiesDao internalPropertiesDao;
   private final SnapshotDao snapshotDao;
   private final ComponentDao componentDao;
@@ -100,6 +104,7 @@ public class DbClient {
   private final UserDao userDao;
   private final UserGroupDao userGroupDao;
   private final UserTokenDao userTokenDao;
+  private final UserPropertiesDao userPropertiesDao;
   private final GroupMembershipDao groupMembershipDao;
   private final RoleDao roleDao;
   private final GroupPermissionDao groupPermissionDao;
@@ -112,9 +117,11 @@ public class DbClient {
   private final CeTaskInputDao ceTaskInputDao;
   private final CeTaskCharacteristicDao ceTaskCharacteristicsDao;
   private final CeScannerContextDao ceScannerContextDao;
+  private final CeTaskMessageDao ceTaskMessageDao;
   private final FileSourceDao fileSourceDao;
   private final ProjectLinkDao projectLinkDao;
   private final EventDao eventDao;
+  private final EventComponentChangeDao eventComponentChangeDao;
   private final PurgeDao purgeDao;
   private final QualityGateDao qualityGateDao;
   private final QualityGateConditionDao gateConditionDao;
@@ -140,6 +147,7 @@ public class DbClient {
   private final WebhookDao webhookDao;
   private final WebhookDeliveryDao webhookDeliveryDao;
   private final ProjectMappingsDao projectMappingsDao;
+  private final OrganizationAlmBindingDao organizationAlmBindingDao;
 
   public DbClient(Database database, MyBatis myBatis, DBSessions dbSessions, Dao... daos) {
     this.database = database;
@@ -151,7 +159,7 @@ public class DbClient {
       map.put(dao.getClass(), dao);
     }
     almAppInstallDao = getDao(map, AlmAppInstallDao.class);
-    projectAlmBindingsDao = getDao(map, ProjectAlmBindingsDao.class);
+    projectAlmBindingDao = getDao(map, ProjectAlmBindingDao.class);
     schemaMigrationDao = getDao(map, SchemaMigrationDao.class);
     authorizationDao = getDao(map, AuthorizationDao.class);
     organizationDao = getDao(map, OrganizationDao.class);
@@ -166,6 +174,7 @@ public class DbClient {
     userDao = getDao(map, UserDao.class);
     userGroupDao = getDao(map, UserGroupDao.class);
     userTokenDao = getDao(map, UserTokenDao.class);
+    userPropertiesDao = getDao(map, UserPropertiesDao.class);
     groupMembershipDao = getDao(map, GroupMembershipDao.class);
     roleDao = getDao(map, RoleDao.class);
     groupPermissionDao = getDao(map, GroupPermissionDao.class);
@@ -178,9 +187,11 @@ public class DbClient {
     ceTaskInputDao = getDao(map, CeTaskInputDao.class);
     ceTaskCharacteristicsDao = getDao(map, CeTaskCharacteristicDao.class);
     ceScannerContextDao = getDao(map, CeScannerContextDao.class);
+    ceTaskMessageDao = getDao(map, CeTaskMessageDao.class);
     fileSourceDao = getDao(map, FileSourceDao.class);
     projectLinkDao = getDao(map, ProjectLinkDao.class);
     eventDao = getDao(map, EventDao.class);
+    eventComponentChangeDao = getDao(map, EventComponentChangeDao.class);
     purgeDao = getDao(map, PurgeDao.class);
     qualityGateDao = getDao(map, QualityGateDao.class);
     gateConditionDao = getDao(map, QualityGateConditionDao.class);
@@ -206,6 +217,7 @@ public class DbClient {
     webhookDao = getDao(map, WebhookDao.class);
     webhookDeliveryDao = getDao(map, WebhookDeliveryDao.class);
     projectMappingsDao = getDao(map, ProjectMappingsDao.class);
+    organizationAlmBindingDao = getDao(map, OrganizationAlmBindingDao.class);
   }
 
   public DbSession openSession(boolean batch) {
@@ -220,8 +232,8 @@ public class DbClient {
     return almAppInstallDao;
   }
 
-  public ProjectAlmBindingsDao projectAlmBindingsDao() {
-    return projectAlmBindingsDao;
+  public ProjectAlmBindingDao projectAlmBindingsDao() {
+    return projectAlmBindingDao;
   }
 
   public SchemaMigrationDao schemaMigrationDao() {
@@ -292,6 +304,10 @@ public class DbClient {
     return userTokenDao;
   }
 
+  public UserPropertiesDao userPropertiesDao() {
+    return userPropertiesDao;
+  }
+
   public GroupMembershipDao groupMembershipDao() {
     return groupMembershipDao;
   }
@@ -332,6 +348,10 @@ public class DbClient {
     return ceScannerContextDao;
   }
 
+  public CeTaskMessageDao ceTaskMessageDao() {
+    return ceTaskMessageDao;
+  }
+
   public FileSourceDao fileSourceDao() {
     return fileSourceDao;
   }
@@ -342,6 +362,10 @@ public class DbClient {
 
   public EventDao eventDao() {
     return eventDao;
+  }
+
+  public EventComponentChangeDao eventComponentChangeDao() {
+    return eventComponentChangeDao;
   }
 
   public PurgeDao purgeDao() {
@@ -448,5 +472,9 @@ public class DbClient {
 
   public ProjectMappingsDao projectMappingsDao() {
     return projectMappingsDao;
+  }
+
+  public OrganizationAlmBindingDao organizationAlmBindingDao() {
+    return organizationAlmBindingDao;
   }
 }

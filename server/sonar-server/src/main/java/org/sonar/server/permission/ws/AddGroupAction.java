@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
  */
 package org.sonar.server.permission.ws;
 
+import com.google.common.collect.ImmutableList;
 import java.util.Optional;
 import org.sonar.api.server.ws.Request;
 import org.sonar.api.server.ws.Response;
@@ -27,18 +28,17 @@ import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.server.permission.GroupPermissionChange;
 import org.sonar.server.permission.PermissionChange;
+import org.sonar.server.permission.PermissionService;
 import org.sonar.server.permission.PermissionUpdater;
 import org.sonar.server.permission.ProjectId;
 import org.sonar.server.user.UserSession;
 import org.sonar.server.usergroups.ws.GroupIdOrAnyone;
 
-import static java.util.Arrays.asList;
 import static org.sonar.server.permission.PermissionPrivilegeChecker.checkProjectAdmin;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createGroupIdParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createGroupNameParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createOrganizationParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createPermissionParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createProjectParameters;
+import static org.sonar.server.permission.ws.WsParameters.createGroupIdParameter;
+import static org.sonar.server.permission.ws.WsParameters.createGroupNameParameter;
+import static org.sonar.server.permission.ws.WsParameters.createOrganizationParameter;
+import static org.sonar.server.permission.ws.WsParameters.createProjectParameters;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_PERMISSION;
 
 public class AddGroupAction implements PermissionsWsAction {
@@ -48,13 +48,18 @@ public class AddGroupAction implements PermissionsWsAction {
   private final DbClient dbClient;
   private final UserSession userSession;
   private final PermissionUpdater permissionUpdater;
-  private final PermissionWsSupport support;
+  private final PermissionWsSupport wsSupport;
+  private final WsParameters wsParameters;
+  private final PermissionService permissionService;
 
-  public AddGroupAction(DbClient dbClient, UserSession userSession, PermissionUpdater permissionUpdater, PermissionWsSupport support) {
+  public AddGroupAction(DbClient dbClient, UserSession userSession, PermissionUpdater permissionUpdater, PermissionWsSupport wsSupport,
+    WsParameters wsParameters, PermissionService permissionService) {
     this.dbClient = dbClient;
     this.userSession = userSession;
     this.permissionUpdater = permissionUpdater;
-    this.support = support;
+    this.wsSupport = wsSupport;
+    this.wsParameters = wsParameters;
+    this.permissionService = permissionService;
   }
 
   @Override
@@ -72,7 +77,7 @@ public class AddGroupAction implements PermissionsWsAction {
       .setPost(true)
       .setHandler(this);
 
-    createPermissionParameter(action);
+    wsParameters.createPermissionParameter(action);
     createOrganizationParameter(action).setSince("6.2");
     createGroupNameParameter(action);
     createGroupIdParameter(action);
@@ -82,8 +87,8 @@ public class AddGroupAction implements PermissionsWsAction {
   @Override
   public void handle(Request request, Response response) throws Exception {
     try (DbSession dbSession = dbClient.openSession(false)) {
-      GroupIdOrAnyone group = support.findGroup(dbSession, request);
-      Optional<ProjectId> projectId = support.findProjectId(dbSession, request);
+      GroupIdOrAnyone group = wsSupport.findGroup(dbSession, request);
+      Optional<ProjectId> projectId = wsSupport.findProjectId(dbSession, request);
 
       checkProjectAdmin(userSession, group.getOrganizationUuid(), projectId);
 
@@ -91,8 +96,8 @@ public class AddGroupAction implements PermissionsWsAction {
         PermissionChange.Operation.ADD,
         request.mandatoryParam(PARAM_PERMISSION),
         projectId.orElse(null),
-        group);
-      permissionUpdater.apply(dbSession, asList(change));
+        group, permissionService);
+      permissionUpdater.apply(dbSession, ImmutableList.of(change));
     }
     response.noContent();
   }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,11 +22,10 @@ import CodeSnippet from '../../../components/common/CodeSnippet';
 import DeferredSpinner from '../../../components/common/DeferredSpinner';
 import { formatMeasure } from '../../../helpers/measures';
 import { translateWithParameters, translate } from '../../../helpers/l10n';
-import { WebhookDelivery } from '../../../app/types';
 
 interface Props {
   className?: string;
-  delivery: WebhookDelivery;
+  delivery: T.WebhookDelivery;
   loading: boolean;
   payload: string | undefined;
 }

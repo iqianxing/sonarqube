@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,23 +23,16 @@ import ProfileRules from '../ProfileRules';
 import * as apiRules from '../../../../api/rules';
 import * as apiQP from '../../../../api/quality-profiles';
 import { waitAndUpdate } from '../../../../helpers/testUtils';
-import { RuleType } from '../../../../app/types';
+import { mockQualityProfile } from '../../testUtils';
 
-const PROFILE = {
+const PROFILE = mockQualityProfile({
   activeRuleCount: 68,
   activeDeprecatedRuleCount: 0,
-  childrenCount: 0,
   depth: 0,
-  isBuiltIn: false,
-  isDefault: false,
-  isInherited: false,
-  key: 'foo',
-  language: 'java',
-  languageName: 'Java',
-  name: 'Foo',
+  language: 'js',
   organization: 'org',
   rulesUpdatedAt: '2017-06-28T12:58:44+0000'
-};
+});
 
 const EDITABLE_PROFILE = { ...PROFILE, actions: { edit: true } };
 
@@ -49,10 +42,10 @@ const apiResponseAll = {
     {
       property: 'types',
       values: [
-        { val: RuleType.CodeSmell, count: 168 },
-        { val: RuleType.Bug, count: 68 },
-        { val: RuleType.Vulnerability, count: 7 },
-        { val: RuleType.Hotspot, count: 10 }
+        { val: 'CODE_SMELL', count: 168 },
+        { val: 'BUG', count: 68 },
+        { val: 'VULNERABILITY', count: 7 },
+        { val: 'SECURITY_HOTSPOT', count: 10 }
       ]
     }
   ]
@@ -64,10 +57,10 @@ const apiResponseActive = {
     {
       property: 'types',
       values: [
-        { val: RuleType.Bug, count: 68 },
-        { val: RuleType.CodeSmell, count: 0 },
-        { val: RuleType.Vulnerability, count: 0 },
-        { val: RuleType.Hotspot, count: 0 }
+        { val: 'BUG', count: 68 },
+        { val: 'CODE_SMELL', count: 0 },
+        { val: 'VULNERABILITY', count: 0 },
+        { val: 'SECURITY_HOTSPOT', count: 0 }
       ]
     }
   ]

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -45,8 +45,12 @@ public class EventDao implements Dao {
     return executeLargeInputs(analyses, mapper(dbSession)::selectByAnalysisUuids);
   }
 
+  public List<EventDto> selectVersionsByMostRecentFirst(DbSession session, String componentUuid) {
+    return mapper(session).selectVersions(componentUuid);
+  }
+
   public EventDto insert(DbSession session, EventDto dto) {
-    session.getMapper(EventMapper.class).insert(dto);
+    mapper(session).insert(dto);
 
     return dto;
   }

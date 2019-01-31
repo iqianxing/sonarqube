@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,6 +22,7 @@ package org.sonar.ce.task.projectanalysis.component;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 
@@ -42,17 +43,19 @@ public class ReportComponent implements Component {
     .setPublicKey("PUBLIC_PROJECT_KEY")
     .setUuid("PROJECT_UUID")
     .setName("Project Name")
-    .setVersion("1.0-SNAPSHOT")
+    .setProjectVersion("1.0-SNAPSHOT")
     .build();
 
   private final Type type;
   private final Status status;
   private final String name;
+  private final String shortName;
   @CheckForNull
   private final String description;
   private final String key;
   private final String publicKey;
   private final String uuid;
+  private final ProjectAttributes projectAttributes;
   private final ReportAttributes reportAttributes;
   private final FileAttributes fileAttributes;
   private final List<Component> children;
@@ -63,11 +66,11 @@ public class ReportComponent implements Component {
     this.key = builder.key;
     this.publicKey = builder.publicKey;
     this.name = builder.name == null ? String.valueOf(builder.key) : builder.name;
+    this.shortName = builder.shortName == null ? this.name : builder.shortName;
     this.description = builder.description;
     this.uuid = builder.uuid;
+    this.projectAttributes = Optional.ofNullable(builder.projectVersion).map(ProjectAttributes::new).orElse(null);
     this.reportAttributes = ReportAttributes.newBuilder(builder.ref)
-      .setVersion(builder.version)
-      .setPath(builder.path)
       .build();
     this.fileAttributes = builder.fileAttributes == null ? DEFAULT_FILE_ATTRIBUTES : builder.fileAttributes;
     this.children = ImmutableList.copyOf(builder.children);
@@ -92,7 +95,7 @@ public class ReportComponent implements Component {
   }
 
   @Override
-  public String getKey() {
+  public String getDbKey() {
     if (key == null) {
       throw new UnsupportedOperationException(String.format("Component key of ref '%d' has not be fed yet", this.reportAttributes.getRef()));
     }
@@ -100,7 +103,7 @@ public class ReportComponent implements Component {
   }
 
   @Override
-  public String getPublicKey() {
+  public String getKey() {
     if (publicKey == null) {
       throw new UnsupportedOperationException(String.format("Component key of ref '%d' has not be fed yet", this.reportAttributes.getRef()));
     }
@@ -113,6 +116,11 @@ public class ReportComponent implements Component {
   }
 
   @Override
+  public String getShortName() {
+    return this.shortName;
+  }
+
+  @Override
   @CheckForNull
   public String getDescription() {
     return this.description;
@@ -121,6 +129,12 @@ public class ReportComponent implements Component {
   @Override
   public List<Component> getChildren() {
     return children;
+  }
+
+  @Override
+  public ProjectAttributes getProjectAttributes() {
+    checkState(this.type == Type.PROJECT);
+    return this.projectAttributes;
   }
 
   @Override
@@ -158,12 +172,12 @@ public class ReportComponent implements Component {
       return false;
     }
     ReportComponent that = (ReportComponent) o;
-    return reportAttributes.getRef() == that.reportAttributes.getRef();
+    return uuid.equals(that.uuid);
   }
 
   @Override
   public int hashCode() {
-    return this.reportAttributes.getRef();
+    return uuid.hashCode();
   }
 
   @Override
@@ -188,9 +202,9 @@ public class ReportComponent implements Component {
     private String key;
     private String publicKey;
     private String name;
-    private String version;
+    private String shortName;
+    private String projectVersion;
     private String description;
-    private String path;
     private FileAttributes fileAttributes;
     private final List<Component> children = new ArrayList<>();
 
@@ -198,6 +212,9 @@ public class ReportComponent implements Component {
       checkArgument(type.isReportType(), "Component type must be a report type");
       this.type = type;
       this.ref = ref;
+      if (type == Type.PROJECT) {
+        this.projectVersion = "toBeDefined";
+      }
     }
 
     public Builder setStatus(Status s) {
@@ -215,6 +232,11 @@ public class ReportComponent implements Component {
       return this;
     }
 
+    public Builder setShortName(@Nullable String s) {
+      this.shortName = s;
+      return this;
+    }
+
     public Builder setKey(String s) {
       this.key = requireNonNull(s);
       return this;
@@ -225,8 +247,9 @@ public class ReportComponent implements Component {
       return this;
     }
 
-    public Builder setVersion(@Nullable String s) {
-      this.version = s;
+    public Builder setProjectVersion(String s) {
+      checkProjectVersion(s);
+      this.projectVersion = s;
       return this;
     }
 
@@ -241,11 +264,6 @@ public class ReportComponent implements Component {
       return this;
     }
 
-    public Builder setPath(@Nullable String path) {
-      this.path = path;
-      return this;
-    }
-
     public Builder addChildren(Component... c) {
       for (Component component : c) {
         checkArgument(component.getType().isReportType());
@@ -255,7 +273,12 @@ public class ReportComponent implements Component {
     }
 
     public ReportComponent build() {
+      checkProjectVersion(this.projectVersion);
       return new ReportComponent(this);
+    }
+
+    private void checkProjectVersion(@Nullable String s) {
+      checkArgument(type != Type.PROJECT ^ s != null, "Project version must and can only be set on Project");
     }
   }
 

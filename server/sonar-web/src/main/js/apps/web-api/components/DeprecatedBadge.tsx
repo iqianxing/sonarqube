@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,13 +20,18 @@
 import * as React from 'react';
 import Tooltip from '../../../components/controls/Tooltip';
 import { translate, translateWithParameters } from '../../../helpers/l10n';
+import { parseVersion } from '../utils';
 
 export default function DeprecatedBadge({ since }: { since?: string }) {
+  const version = since && parseVersion(since);
+  const overlay = version
+    ? translateWithParameters('api_documentation.will_be_removed_in_x', `${version.major + 2}.0`)
+    : translate('api_documentation.deprecation_tooltip');
   const label = since
     ? translateWithParameters('api_documentation.deprecated_since_x', since)
     : translate('api_documentation.deprecated');
   return (
-    <Tooltip overlay={translate('api_documentation.deprecation_tooltip')}>
+    <Tooltip overlay={overlay}>
       <span className="badge badge-warning">{label}</span>
     </Tooltip>
   );

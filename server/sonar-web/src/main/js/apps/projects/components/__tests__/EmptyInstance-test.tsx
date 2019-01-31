@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,10 +29,22 @@ jest.mock('../../../../helpers/system', () => ({
 it('renders correctly for SQ', () => {
   (isSonarCloud as jest.Mock<any>).mockReturnValue(false);
   expect(
-    shallow(<EmptyInstance currentUser={{ isLoggedIn: false }} organization={undefined} />)
+    shallow(
+      <EmptyInstance
+        currentUser={{ isLoggedIn: false }}
+        openProjectOnboarding={jest.fn()}
+        organization={undefined}
+      />
+    )
   ).toMatchSnapshot();
   expect(
-    shallow(<EmptyInstance currentUser={{ isLoggedIn: true }} organization={undefined} />)
+    shallow(
+      <EmptyInstance
+        currentUser={{ isLoggedIn: true, permissions: { global: ['provisioning'] } }}
+        openProjectOnboarding={jest.fn()}
+        organization={undefined}
+      />
+    )
   ).toMatchSnapshot();
 });
 
@@ -42,6 +54,7 @@ it('renders correctly for SC', () => {
     shallow(
       <EmptyInstance
         currentUser={{ isLoggedIn: false }}
+        openProjectOnboarding={jest.fn()}
         organization={{ key: 'foo', name: 'Foo' }}
       />
     )
@@ -50,7 +63,8 @@ it('renders correctly for SC', () => {
     shallow(
       <EmptyInstance
         currentUser={{ isLoggedIn: false }}
-        organization={{ canProvisionProjects: true, key: 'foo', name: 'Foo' }}
+        openProjectOnboarding={jest.fn()}
+        organization={{ actions: { provision: true }, key: 'foo', name: 'Foo' }}
       />
     )
   ).toMatchSnapshot();

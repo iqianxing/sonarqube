@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -214,10 +214,6 @@ public class MetricDto {
   public MetricDto setDecimalScale(@Nullable Integer i) {
     this.decimalScale = i;
     return this;
-  }
-
-  public boolean isDataType() {
-    return DATA.name().equals(valueType) || DISTRIB.name().equals(valueType) || STRING.name().equals(valueType);
   }
 
 }

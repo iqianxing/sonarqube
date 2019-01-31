@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,13 +22,11 @@ package org.sonar.ce.task.projectanalysis.component;
 public interface MutableTreeRootHolder extends TreeRootHolder {
 
   /**
-   * Sets the root of the component tree in the TreeRootHolder. Settings a root more than once is allowed but it can
-   * never be set to {@code null}.
+   * Sets the root of the component tree in the TreeRootHolder.
    *
-   * @param newRoot a {@link Component}, can not be {@code null}
-   *                
    * @throws NullPointerException if {@code newRoot} is {@code null}
    * @throws IllegalStateException if root {@link Component} has already been set
    */
-  MutableTreeRootHolder setRoot(Component newRoot);
+  MutableTreeRootHolder setRoots(Component root, Component reportRoot);
+
 }

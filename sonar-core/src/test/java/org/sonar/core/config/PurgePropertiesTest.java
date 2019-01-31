@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,6 +27,6 @@ public class PurgePropertiesTest {
 
   @Test
   public void shouldGetExtensions() {
-    assertThat(PurgeProperties.all()).hasSize(7);
+    assertThat(PurgeProperties.all()).hasSize(6);
   }
 }

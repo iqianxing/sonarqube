@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,14 +20,13 @@
 import * as React from 'react';
 import { Link } from 'react-router';
 import * as classNames from 'classnames';
-import { Organization } from '../../../app/types';
 import { translate } from '../../../helpers/l10n';
 import Dropdown from '../../../components/controls/Dropdown';
 import DropdownIcon from '../../../components/icons-components/DropdownIcon';
 
 interface Props {
   location: { pathname: string };
-  organization: Organization;
+  organization: T.Organization;
 }
 
 const ADMIN_PATHS = [
@@ -41,8 +40,8 @@ const ADMIN_PATHS = [
 ];
 
 export default function OrganizationNavigationAdministration({ location, organization }: Props) {
-  const extensions = organization.adminPages || [];
-  const adminPathsWithExtensions = extensions.map(e => `extension/${e.key}`).concat(ADMIN_PATHS);
+  const { actions = {}, adminPages = [] } = organization;
+  const adminPathsWithExtensions = adminPages.map(e => `extension/${e.key}`).concat(ADMIN_PATHS);
   const adminActive = adminPathsWithExtensions.some(path =>
     location.pathname.endsWith(`organizations/${organization.key}/${path}`)
   );
@@ -51,7 +50,7 @@ export default function OrganizationNavigationAdministration({ location, organiz
     <Dropdown
       overlay={
         <ul className="menu">
-          {extensions.map(extension => (
+          {adminPages.map(extension => (
             <li key={extension.key}>
               <Link
                 activeClassName="active"
@@ -94,7 +93,7 @@ export default function OrganizationNavigationAdministration({ location, organiz
               {translate('edit')}
             </Link>
           </li>
-          {organization.canDelete && (
+          {actions.delete && (
             <li>
               <Link activeClassName="active" to={`/organizations/${organization.key}/delete`}>
                 {translate('delete')}

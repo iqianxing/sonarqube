@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,9 +18,9 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
+import { InjectedIntlProps } from 'react-intl';
 import { shallow } from 'enzyme';
-import LeakPeriodLegend from '../LeakPeriodLegend';
-import { PeriodMode, Period } from '../../../../helpers/periods';
+import { LeakPeriodLegend } from '../LeakPeriodLegend';
 import { differenceInDays } from '../../../../helpers/dates';
 
 jest.mock('../../../../helpers/dates', () => {
@@ -34,7 +34,7 @@ it('10 days', () => {
     getWrapper({
       date: '2013-09-22T00:00:00+0200',
       index: 0,
-      mode: PeriodMode.Days,
+      mode: 'days',
       parameter: '10'
     })
   ).toMatchSnapshot();
@@ -45,7 +45,7 @@ it('date', () => {
     getWrapper({
       date: '2013-09-22T00:00:00+0200',
       index: 0,
-      mode: PeriodMode.Date,
+      mode: 'date',
       parameter: '2013-01-01'
     })
   ).toMatchSnapshot();
@@ -56,7 +56,7 @@ it('version', () => {
     getWrapper({
       date: '2013-09-22T00:00:00+0200',
       index: 0,
-      mode: PeriodMode.Version,
+      mode: 'version',
       parameter: '0.1'
     }).find('.overview-legend')
   ).toMatchSnapshot();
@@ -67,7 +67,7 @@ it('previous_version', () => {
     getWrapper({
       date: '2013-09-22T00:00:00+0200',
       index: 0,
-      mode: PeriodMode.PreviousVersion
+      mode: 'previous_version'
     }).find('.overview-legend')
   ).toMatchSnapshot();
 });
@@ -77,7 +77,7 @@ it('previous_analysis', () => {
     getWrapper({
       date: '2013-09-22T00:00:00+0200',
       index: 0,
-      mode: PeriodMode.PreviousAnalysis
+      mode: 'previous_analysis'
     }).find('.overview-legend')
   ).toMatchSnapshot();
 });
@@ -88,15 +88,16 @@ it('should render a more precise date', () => {
     getWrapper({
       date: '2018-08-17T00:00:00+0200',
       index: 0,
-      mode: PeriodMode.PreviousVersion
+      mode: 'previous_version'
     })
   ).toMatchSnapshot();
 });
 
-function getWrapper(period: Period) {
-  return shallow(<LeakPeriodLegend period={period} />, {
-    context: {
-      intl: { formatDate: (date: string) => 'formatted.' + date }
-    }
-  });
+function getWrapper(period: T.Period) {
+  return shallow(
+    <LeakPeriodLegend
+      intl={{ formatDate: (date: string) => 'formatted.' + date } as InjectedIntlProps['intl']}
+      period={period}
+    />
+  );
 }

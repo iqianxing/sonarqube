@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 package org.sonar.server.projectanalysis.ws;
 
 public enum EventCategory {
-  VERSION("Version"), OTHER("Other"), QUALITY_PROFILE("Profile"), QUALITY_GATE("Alert");
+  VERSION("Version"), OTHER("Other"), QUALITY_PROFILE("Profile"), QUALITY_GATE("Alert"), DEFINITION_CHANGE("Definition change");
 
   private final String label;
 

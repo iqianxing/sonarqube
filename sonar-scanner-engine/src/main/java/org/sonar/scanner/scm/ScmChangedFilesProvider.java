@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,12 +24,13 @@ import java.util.Collection;
 import javax.annotation.CheckForNull;
 import org.picocontainer.annotations.Nullable;
 import org.picocontainer.injectors.ProviderAdapter;
-import org.sonar.api.batch.fs.internal.InputModuleHierarchy;
+import org.sonar.api.batch.fs.internal.DefaultInputProject;
 import org.sonar.api.batch.scm.ScmProvider;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.api.utils.log.Profiler;
 import org.sonar.scanner.scan.branch.BranchConfiguration;
+import org.sonar.scanner.util.ScannerUtils;
 
 public class ScmChangedFilesProvider extends ProviderAdapter {
   private static final Logger LOG = Loggers.get(ScmChangedFilesProvider.class);
@@ -40,12 +41,12 @@ public class ScmChangedFilesProvider extends ProviderAdapter {
   /*
    * ScmConfiguration is not available in issues mode
    */
-  public ScmChangedFiles provide(@Nullable ScmConfiguration scmConfiguration, BranchConfiguration branchConfiguration, InputModuleHierarchy inputModuleHierarchy) {
+  public ScmChangedFiles provide(@Nullable ScmConfiguration scmConfiguration, BranchConfiguration branchConfiguration, DefaultInputProject project) {
     if (scmBranchChangedFiles == null) {
       if (scmConfiguration == null) {
         scmBranchChangedFiles = new ScmChangedFiles(null);
       } else {
-        Path rootBaseDir = inputModuleHierarchy.root().getBaseDir();
+        Path rootBaseDir = project.getBaseDir();
         Collection<Path> changedFiles = loadChangedFilesIfNeeded(scmConfiguration, branchConfiguration, rootBaseDir);
         validatePaths(changedFiles);
         scmBranchChangedFiles = new ScmChangedFiles(changedFiles);
@@ -62,14 +63,14 @@ public class ScmChangedFilesProvider extends ProviderAdapter {
 
   @CheckForNull
   private static Collection<Path> loadChangedFilesIfNeeded(ScmConfiguration scmConfiguration, BranchConfiguration branchConfiguration, Path rootBaseDir) {
-    if (branchConfiguration.isShortOrPullRequest() && branchConfiguration.branchTarget() != null) {
+    if (branchConfiguration.isShortOrPullRequest() && branchConfiguration.targetScmBranch() != null) {
       ScmProvider scmProvider = scmConfiguration.provider();
       if (scmProvider != null) {
         Profiler profiler = Profiler.create(LOG).startInfo(LOG_MSG);
-        Collection<Path> changedFiles = scmProvider.branchChangedFiles(branchConfiguration.branchTarget(), rootBaseDir);
+        Collection<Path> changedFiles = scmProvider.branchChangedFiles(branchConfiguration.targetScmBranch(), rootBaseDir);
         profiler.stopInfo();
         if (changedFiles != null) {
-          LOG.debug("SCM reported {} {} changed in the branch", changedFiles.size(), pluralize("file", changedFiles.size()));
+          LOG.debug("SCM reported {} {} changed in the branch", changedFiles.size(), ScannerUtils.pluralize("file", changedFiles.size()));
           return changedFiles;
         }
       }
@@ -77,13 +78,6 @@ public class ScmChangedFilesProvider extends ProviderAdapter {
       LOG.debug("SCM information about changed files in the branch is not available");
     }
     return null;
-  }
-
-  private static String pluralize(String str, int i) {
-    if (i == 1) {
-      return str;
-    }
-    return str + "s";
   }
 
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -42,7 +42,7 @@ public interface QualityProfileMapper {
 
   List<RulesProfileDto> selectBuiltInRuleProfiles();
 
-  List<QProfileDto> selectBuiltInRuleProfilesWithActiveRules();
+  List<RulesProfileDto> selectBuiltInRuleProfilesWithActiveRules();
 
   @CheckForNull
   RulesProfileDto selectRuleProfile(@Param("uuid") String ruleProfileUuid);
@@ -52,7 +52,7 @@ public interface QualityProfileMapper {
   @CheckForNull
   QProfileDto selectDefaultProfile(@Param("organizationUuid") String organizationUuid, @Param("language") String language);
 
-  List<QProfileDto> selectDefaultBuiltInProfilesWithoutActiveRules();
+  List<QProfileDto> selectDefaultBuiltInProfilesWithoutActiveRules(@Param("languages") List<String> languages);
 
   List<QProfileDto> selectDefaultProfiles(
     @Param("organizationUuid") String organizationUuid,
@@ -63,6 +63,11 @@ public interface QualityProfileMapper {
     @Param("organizationUuid") String organizationUuid,
     @Param("name") String name,
     @Param("language") String language);
+
+  @CheckForNull
+  QProfileDto selectByRuleProfileUuid(
+    @Param("organizationUuid") String organizationUuid,
+    @Param("ruleProfileUuid") String ruleProfileKee);
 
   List<QProfileDto> selectByNameAndLanguages(
     @Param("organizationUuid") String organizationUuid,

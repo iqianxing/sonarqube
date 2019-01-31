@@ -15,6 +15,7 @@
     r.priority as "severity",
     r.is_template as "isTemplate",
     r.is_external as "isExternal",
+    r.is_ad_hoc as "isAdHoc",
     r.language as "language",
     r.template_id as "templateId",
     r.def_remediation_function as "defRemediationFunction",
@@ -46,6 +47,10 @@
     rm.remediation_gap_mult as "remediationGapMultiplier",
     rm.remediation_base_effort as "remediationBaseEffort",
     rm.tags as "tagsField",
+    rm.ad_hoc_name as "adHocName",
+    rm.ad_hoc_description as "adHocDescription",
+    rm.ad_hoc_severity as "adHocSeverity",
+    rm.ad_hoc_type as "adHocType",
     rm.created_at as "createdAtFromMetadata",
     rm.updated_at as "updatedAtFromMetadata"
   </sql>
@@ -195,7 +200,11 @@
       rm.remediation_gap_mult as "remediationGapMultiplier",
       rm.remediation_base_effort as "remediationBaseEffort",
       rm.tags as "tagsField",
-      rm.created_at as "createdAt",
+      rm.ad_hoc_name as "adHocName",
+      rm.ad_hoc_description as "adHocDescription",
+      rm.ad_hoc_severity as "adHocSeverity",
+      rm.ad_hoc_type as "adHocType",
+    rm.created_at as "createdAt",
       rm.updated_at as "updatedAt"
     from
       rules_metadata rm
@@ -287,6 +296,18 @@
       r.updated_at desc
   </select>
 
+  <select id="selectByTypeAndLanguages" parameterType="map" resultType="Rule">
+    select
+    <include refid="selectJoinedTablesColumns"/>
+    from
+    rules r
+    <include refid="outerJoinRulesMetadata"/>
+    where
+      r.status != 'REMOVED' and r.is_external=${_false} and r.is_template=${_false}
+      and r.rule_type in <foreach collection="types" item="type" separator="," open="(" close=")">#{type, jdbcType=INTEGER}</foreach>
+      and r.language in <foreach collection="languages" item="language" separator="," open="(" close=")">#{language, jdbcType=VARCHAR}</foreach>
+  </select>
+
   <insert id="insertDefinition" parameterType="org.sonar.db.rule.RuleDefinitionDto" keyColumn="id" useGeneratedKeys="true" keyProperty="id">
     insert into rules (
       plugin_key,
@@ -300,6 +321,7 @@
       priority,
       is_template,
       is_external,
+      is_ad_hoc,
       language,
       template_id,
       def_remediation_function,
@@ -325,6 +347,7 @@
       #{severity,jdbcType=INTEGER},
       #{isTemplate,jdbcType=BOOLEAN},
       #{isExternal,jdbcType=BOOLEAN},
+      #{isAdHoc,jdbcType=BOOLEAN},
       #{language,jdbcType=VARCHAR},
       #{templateId,jdbcType=INTEGER},
       #{defRemediationFunction,jdbcType=VARCHAR},
@@ -353,6 +376,7 @@
       priority=#{severity,jdbcType=INTEGER},
       is_template=#{isTemplate,jdbcType=BOOLEAN},
       is_external=#{isExternal,jdbcType=BOOLEAN},
+      is_ad_hoc=#{isAdHoc,jdbcType=BOOLEAN},
       language=#{language,jdbcType=VARCHAR},
       template_id=#{templateId,jdbcType=INTEGER},
       def_remediation_function=#{defRemediationFunction,jdbcType=VARCHAR},
@@ -390,6 +414,10 @@
       remediation_gap_mult,
       remediation_base_effort,
       tags,
+      ad_hoc_name,
+      ad_hoc_description,
+      ad_hoc_severity,
+      ad_hoc_type,
       created_at,
       updated_at
     )
@@ -404,6 +432,10 @@
       #{remediationGapMultiplier,jdbcType=VARCHAR},
       #{remediationBaseEffort,jdbcType=VARCHAR},
       #{tagsField,jdbcType=VARCHAR},
+      #{adHocName,jdbcType=VARCHAR},
+      #{adHocDescription,jdbcType=CLOB},
+      #{adHocSeverity,jdbcType=VARCHAR},
+      #{adHocType,jdbcType=TINYINT},
       #{createdAt,jdbcType=BIGINT},
       #{updatedAt,jdbcType=BIGINT}
     )
@@ -419,6 +451,10 @@
       remediation_gap_mult=#{remediationGapMultiplier,jdbcType=VARCHAR},
       remediation_base_effort=#{remediationBaseEffort,jdbcType=VARCHAR},
       tags=#{tagsField,jdbcType=VARCHAR},
+      ad_hoc_name=#{adHocName,jdbcType=VARCHAR},
+      ad_hoc_description=#{adHocDescription,jdbcType=CLOB},
+      ad_hoc_severity=#{adHocSeverity,jdbcType=VARCHAR},
+      ad_hoc_type=#{adHocType,jdbcType=TINYINT},
       updated_at=#{updatedAt,jdbcType=BIGINT}
     where
       rule_id=#{ruleId,jdbcType=INTEGER}

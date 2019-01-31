@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -37,7 +37,7 @@ public class AuthenticationModule extends Module {
       IdentityProviderRepository.class,
       BaseContextFactory.class,
       OAuth2ContextFactory.class,
-      UserIdentityAuthenticatorImpl.class,
+      UserRegistrarImpl.class,
       OAuthCsrfVerifier.class,
       UserSessionInitializer.class,
       JwtSerializer.class,
@@ -46,12 +46,12 @@ public class AuthenticationModule extends Module {
       OAuth2AuthenticationParametersImpl.class,
       LoginAction.class,
       LogoutAction.class,
-      CredentialsAuthenticator.class,
-      LocalAuthentication.class,
-      RealmAuthenticator.class,
-      BasicAuthenticator.class,
+      CredentialsAuthentication.class,
+      CredentialsLocalAuthentication.class,
+      CredentialsExternalAuthentication.class,
+      BasicAuthentication.class,
       ValidateAction.class,
-      HttpHeadersAuthenticator.class,
-      AuthenticatorsImpl.class);
+      HttpHeadersAuthentication.class,
+      RequestAuthenticatorImpl.class);
   }
 }

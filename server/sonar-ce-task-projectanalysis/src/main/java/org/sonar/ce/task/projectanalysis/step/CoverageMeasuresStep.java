@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -68,7 +68,7 @@ public class CoverageMeasuresStep implements ComputationStep {
   public void execute(ComputationStep.Context context) {
     new PathAwareCrawler<>(
       FormulaExecutorComponentVisitor.newBuilder(metricRepository, measureRepository).buildFor(COVERAGE_FORMULAS))
-        .visit(treeRootHolder.getRoot());
+        .visit(treeRootHolder.getReportTreeRoot());
   }
 
   private static class CodeCoverageFormula extends LinesAndConditionsWithUncoveredFormula {

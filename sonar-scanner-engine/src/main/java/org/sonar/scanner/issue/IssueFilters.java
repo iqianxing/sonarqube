@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,32 +19,35 @@
  */
 package org.sonar.scanner.issue;
 
-import org.sonar.api.batch.ScannerSide;
-import org.sonar.api.batch.fs.internal.DefaultInputModule;
+import org.sonar.api.batch.fs.InputComponent;
+import org.sonar.api.batch.fs.internal.DefaultInputProject;
 import org.sonar.api.scan.issue.filter.FilterableIssue;
 import org.sonar.api.scan.issue.filter.IssueFilter;
 import org.sonar.api.scan.issue.filter.IssueFilterChain;
 import org.sonar.scanner.ProjectAnalysisInfo;
 import org.sonar.scanner.protocol.output.ScannerReport;
 
-@ScannerSide
+/**
+ * @deprecated since 7.6, {@link IssueFilter} is deprecated
+ */
+@Deprecated
 public class IssueFilters {
   private final IssueFilterChain filterChain;
-  private final DefaultInputModule module;
+  private final DefaultInputProject project;
   private final ProjectAnalysisInfo projectAnalysisInfo;
 
-  public IssueFilters(DefaultInputModule module, ProjectAnalysisInfo projectAnalysisInfo, IssueFilter[] exclusionFilters) {
-    this.module = module;
+  public IssueFilters(DefaultInputProject project, ProjectAnalysisInfo projectAnalysisInfo, IssueFilter[] exclusionFilters) {
+    this.project = project;
     this.filterChain = new DefaultIssueFilterChain(exclusionFilters);
     this.projectAnalysisInfo = projectAnalysisInfo;
   }
 
-  public IssueFilters(DefaultInputModule module, ProjectAnalysisInfo projectAnalysisInfo) {
-    this(module, projectAnalysisInfo, new IssueFilter[0]);
+  public IssueFilters(DefaultInputProject project, ProjectAnalysisInfo projectAnalysisInfo) {
+    this(project, projectAnalysisInfo, new IssueFilter[0]);
   }
 
-  public boolean accept(String componentKey, ScannerReport.Issue rawIssue) {
-    FilterableIssue fIssue = new DefaultFilterableIssue(module, projectAnalysisInfo, rawIssue, componentKey);
+  public boolean accept(InputComponent component, ScannerReport.Issue rawIssue) {
+    FilterableIssue fIssue = new DefaultFilterableIssue(project, projectAnalysisInfo, rawIssue, component);
     return filterChain.accept(fIssue);
   }
 

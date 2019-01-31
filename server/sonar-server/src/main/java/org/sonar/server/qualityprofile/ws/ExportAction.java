@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -87,15 +87,14 @@ public class ExportAction implements QProfileWsAction {
       .setExampleValue(UUID_EXAMPLE_01);
 
     action.createParam(PARAM_QUALITY_PROFILE)
-      .setDescription("Quality profile name to export. If left empty, the default profile for the language is exported.",
-        PARAM_QUALITY_PROFILE)
+      .setDescription("Quality profile name to export. If left empty, the default profile for the language is exported.")
       .setDeprecatedKey("name", "6.6")
       .setExampleValue("My Sonar way");
 
     action.createParam(PARAM_LANGUAGE)
       .setDescription("Quality profile language")
       .setExampleValue(LanguageParamUtils.getExampleValue(languages))
-      .setPossibleValues(LanguageParamUtils.getLanguageKeys(languages));
+      .setPossibleValues(LanguageParamUtils.getOrderedLanguageKeys(languages));
 
     createOrganizationParam(action)
       .setSince("6.4");

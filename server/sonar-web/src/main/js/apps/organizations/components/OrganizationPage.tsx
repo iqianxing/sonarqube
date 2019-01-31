@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,27 +20,28 @@
 import * as React from 'react';
 import Helmet from 'react-helmet';
 import { connect } from 'react-redux';
+import { Location } from 'history';
 import OrganizationNavigation from '../navigation/OrganizationNavigation';
-import { fetchOrganization } from '../actions';
 import NotFound from '../../../app/components/NotFound';
 import Suggestions from '../../../app/components/embed-docs-modal/Suggestions';
-import { Organization, CurrentUser } from '../../../app/types';
 import {
   getOrganizationByKey,
   getCurrentUser,
-  getMyOrganizations
+  getMyOrganizations,
+  Store
 } from '../../../store/rootReducer';
+import { fetchOrganization } from '../../../store/rootActions';
 
 interface OwnProps {
   children?: React.ReactNode;
-  location: { pathname: string };
+  location: Location;
   params: { organizationKey: string };
 }
 
 interface StateProps {
-  currentUser: CurrentUser;
-  organization?: Organization;
-  userOrganizations: Organization[];
+  currentUser: T.CurrentUser;
+  organization?: T.Organization;
+  userOrganizations: T.Organization[];
 }
 
 interface DispatchToProps {
@@ -86,7 +87,7 @@ export class OrganizationPage extends React.PureComponent<Props, State> {
   render() {
     const { organization } = this.props;
 
-    if (!organization || organization.canAdmin == null) {
+    if (!organization || !organization.actions || organization.actions.admin == null) {
       if (this.state.loading) {
         return null;
       } else {
@@ -110,7 +111,7 @@ export class OrganizationPage extends React.PureComponent<Props, State> {
   }
 }
 
-const mapStateToProps = (state: any, ownProps: OwnProps) => ({
+const mapStateToProps = (state: Store, ownProps: OwnProps) => ({
   currentUser: getCurrentUser(state),
   organization: getOrganizationByKey(state, ownProps.params.organizationKey),
   userOrganizations: getMyOrganizations(state)
@@ -118,7 +119,7 @@ const mapStateToProps = (state: any, ownProps: OwnProps) => ({
 
 const mapDispatchToProps = { fetchOrganization: fetchOrganization as any };
 
-export default connect<StateProps, DispatchToProps, OwnProps>(
+export default connect(
   mapStateToProps,
   mapDispatchToProps
 )(OrganizationPage);

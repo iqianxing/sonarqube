@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -122,5 +122,10 @@ public interface PostProjectAnalysisTask {
      * @since 6.1
      */
     ScannerContext getScannerContext();
+
+    /**
+     * Revision Id that has been analysed
+     */
+    String getScmRevisionId();
   }
 }

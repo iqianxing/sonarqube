@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -37,7 +37,7 @@ public class MigrationConfigurationModuleTest {
     assertThat(container.getPicoContainer().getComponentAdapters())
       .hasSize(COMPONENTS_IN_EMPTY_COMPONENT_CONTAINER
         // DbVersion classes
-        + 14
+        + 17
         // Others
         + 3);
   }

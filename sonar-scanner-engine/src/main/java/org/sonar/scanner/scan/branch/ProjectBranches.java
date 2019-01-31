@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,10 +19,9 @@
  */
 package org.sonar.scanner.scan.branch;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.concurrent.Immutable;
 
@@ -31,11 +30,20 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 public class ProjectBranches {
-
   private final Map<String, BranchInfo> branches;
+  private final String defaultBranchName;
 
   public ProjectBranches(List<BranchInfo> branchInfos) {
-    branches = branchInfos.stream().collect(Collectors.toMap(BranchInfo::name, Function.identity()));
+    this.branches = new HashMap<>();
+    String mainBranchName = null;
+    for (BranchInfo branch : branchInfos) {
+      String branchName = branch.name();
+      this.branches.put(branchName, branch);
+      if (branch.isMain()) {
+        mainBranchName = branchName;
+      }
+    }
+    this.defaultBranchName = mainBranchName;
   }
 
   @CheckForNull
@@ -45,5 +53,9 @@ public class ProjectBranches {
 
   public boolean isEmpty() {
     return branches.isEmpty();
+  }
+
+  public String defaultBranchName() {
+    return defaultBranchName;
   }
 }

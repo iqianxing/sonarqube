@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,10 +19,11 @@
  */
 package org.sonar.ce.task.projectanalysis.source.linereader;
 
+import java.util.Optional;
 import javax.annotation.CheckForNull;
-import org.sonar.db.protobuf.DbFileSources;
 import org.sonar.ce.task.projectanalysis.scm.Changeset;
 import org.sonar.ce.task.projectanalysis.scm.ScmInfo;
+import org.sonar.db.protobuf.DbFileSources;
 
 public class ScmLineReader implements LineReader {
 
@@ -37,7 +38,7 @@ public class ScmLineReader implements LineReader {
   }
 
   @Override
-  public void read(DbFileSources.Line.Builder lineBuilder) {
+  public Optional<ReadError> read(DbFileSources.Line.Builder lineBuilder) {
     if (scmReport.hasChangesetForLine(lineBuilder.getLine())) {
       Changeset changeset = scmReport.getChangesetForLine(lineBuilder.getLine());
       String author = changeset.getAuthor();
@@ -55,6 +56,7 @@ public class ScmLineReader implements LineReader {
         updateLatestChangeWithRevision(changeset);
       }
     }
+    return Optional.empty();
   }
 
   private void updateLatestChange(Changeset newChangeSet) {

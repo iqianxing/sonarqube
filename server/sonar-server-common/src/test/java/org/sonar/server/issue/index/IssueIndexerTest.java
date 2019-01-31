@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -57,8 +57,8 @@ import static org.junit.rules.ExpectedException.none;
 import static org.sonar.db.component.ComponentTesting.newFileDto;
 import static org.sonar.server.issue.IssueDocTesting.newDoc;
 import static org.sonar.server.issue.index.IssueIndexDefinition.INDEX_TYPE_ISSUE;
-import static org.sonar.server.issue.index.IssueIndexDefinition.SANS_TOP_25_POROUS_DEFENSES;
-import static org.sonar.server.issue.index.IssueIndexDefinition.UNKNOWN_STANDARD;
+import static org.sonar.server.issue.index.SecurityStandardHelper.SANS_TOP_25_POROUS_DEFENSES;
+import static org.sonar.server.issue.index.SecurityStandardHelper.UNKNOWN_STANDARD;
 import static org.sonar.server.permission.index.IndexAuthorizationConstants.TYPE_AUTHORIZATION;
 
 public class IssueIndexerTest {

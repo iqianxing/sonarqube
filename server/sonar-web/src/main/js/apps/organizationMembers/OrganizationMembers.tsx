@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,19 +27,18 @@ import Suggestions from '../../app/components/embed-docs-modal/Suggestions';
 import ListFooter from '../../components/controls/ListFooter';
 import DocTooltip from '../../components/docs/DocTooltip';
 import { translate } from '../../helpers/l10n';
-import { Group, Organization, OrganizationMember, Paging } from '../../app/types';
 import { searchMembers, addMember, removeMember } from '../../api/organizations';
 import { searchUsersGroups, addUserToGroup, removeUserFromGroup } from '../../api/user_groups';
 
 interface Props {
-  organization: Organization;
+  organization: T.Organization;
 }
 
 interface State {
-  groups: Group[];
+  groups: T.Group[];
   loading: boolean;
-  members?: OrganizationMember[];
-  paging?: Paging;
+  members?: T.OrganizationMember[];
+  paging?: T.Paging;
   query: string;
 }
 
@@ -56,7 +55,7 @@ export default class OrganizationMembers extends React.PureComponent<Props, Stat
   componentDidMount() {
     this.mounted = true;
     this.fetchMembers();
-    if (this.props.organization.canAdmin) {
+    if (this.props.organization.actions && this.props.organization.actions.admin) {
       this.fetchGroups();
     }
   }
@@ -123,7 +122,7 @@ export default class OrganizationMembers extends React.PureComponent<Props, Stat
     }, this.stopLoading);
   };
 
-  handleAddMember = ({ login }: OrganizationMember) => {
+  handleAddMember = ({ login }: T.OrganizationMember) => {
     // TODO optimistic update
     addMember({ login, organization: this.props.organization.key }).then(
       member => {
@@ -138,7 +137,7 @@ export default class OrganizationMembers extends React.PureComponent<Props, Stat
     );
   };
 
-  handleRemoveMember = ({ login }: OrganizationMember) => {
+  handleRemoveMember = ({ login }: T.OrganizationMember) => {
     // TODO optimistic update
     removeMember({ login, organization: this.props.organization.key }).then(
       () => {
@@ -153,13 +152,16 @@ export default class OrganizationMembers extends React.PureComponent<Props, Stat
     );
   };
 
-  updateGroup = (login: string, updater: (member: OrganizationMember) => OrganizationMember) => {
+  updateGroup = (
+    login: string,
+    updater: (member: T.OrganizationMember) => T.OrganizationMember
+  ) => {
     this.setState(({ members }) => ({
       members: members && members.map(member => (member.login === login ? updater(member) : member))
     }));
   };
 
-  updateMemberGroups = ({ login }: OrganizationMember, add: string[], remove: string[]) => {
+  updateMemberGroups = ({ login }: T.OrganizationMember, add: string[], remove: string[]) => {
     // TODO optimistic update
     const promises = [
       ...add.map(name =>
@@ -191,19 +193,20 @@ export default class OrganizationMembers extends React.PureComponent<Props, Stat
         <Helmet title={translate('organization.members.page')} />
         <Suggestions suggestions="organization_members" />
         <MembersPageHeader loading={loading}>
-          {organization.canAdmin && (
-            <div className="page-actions">
-              <AddMemberForm
-                addMember={this.handleAddMember}
-                memberLogins={memberLogins}
-                organization={organization}
-              />
-              <DocTooltip
-                className="spacer-left"
-                doc={import(/* webpackMode: "eager" */ 'Docs/tooltips/organizations/add-organization-member.md')}
-              />
-            </div>
-          )}
+          {organization.actions &&
+            organization.actions.admin && (
+              <div className="page-actions">
+                <AddMemberForm
+                  addMember={this.handleAddMember}
+                  memberLogins={memberLogins}
+                  organization={organization}
+                />
+                <DocTooltip
+                  className="spacer-left"
+                  doc={import(/* webpackMode: "eager" */ 'Docs/tooltips/organizations/add-organization-member.md')}
+                />
+              </div>
+            )}
         </MembersPageHeader>
         {members !== undefined &&
           paging !== undefined && (

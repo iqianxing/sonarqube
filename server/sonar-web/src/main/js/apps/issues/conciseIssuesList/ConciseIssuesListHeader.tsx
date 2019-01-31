@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,14 +21,13 @@ import * as React from 'react';
 import BackButton from '../../../components/controls/BackButton';
 import ReloadButton from '../../../components/controls/ReloadButton';
 import IssuesCounter from '../components/IssuesCounter';
-import { Paging } from '../../../app/types';
 
 interface Props {
   displayBackButton?: boolean;
   loading: boolean;
   onBackClick: () => void;
   onReload: () => void;
-  paging: Paging | undefined;
+  paging: T.Paging | undefined;
   selectedIndex: number | undefined;
 }
 

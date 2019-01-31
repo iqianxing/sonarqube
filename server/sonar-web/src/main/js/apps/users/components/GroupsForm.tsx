@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,6 @@
  */
 import * as React from 'react';
 import { find, without } from 'lodash';
-import { User } from '../../../app/types';
 import Modal from '../../../components/controls/Modal';
 import SelectList, { Filter } from '../../../components/SelectList/SelectList';
 import { translate } from '../../../helpers/l10n';
@@ -29,18 +28,17 @@ import { addUserToGroup, removeUserFromGroup } from '../../../api/user_groups';
 interface Props {
   onClose: () => void;
   onUpdateUsers: () => void;
-  user: User;
+  user: T.User;
 }
 
 interface State {
-  error: string;
   groups: UserGroup[];
   selectedGroups: string[];
 }
 
 export default class GroupsForm extends React.PureComponent<Props> {
   container?: HTMLDivElement | null;
-  state: State = { error: '', groups: [], selectedGroups: [] };
+  state: State = { groups: [], selectedGroups: [] };
 
   componentDidMount() {
     this.handleSearch('', Filter.Selected);
@@ -112,11 +110,6 @@ export default class GroupsForm extends React.PureComponent<Props> {
         </div>
 
         <div className="modal-body">
-          {this.state.error !== '' && (
-            <div className="alert alert-danger">
-              <p>{this.state.error}</p>
-            </div>
-          )}
           <SelectList
             elements={this.state.groups.map(group => group.name)}
             onSearch={this.handleSearch}

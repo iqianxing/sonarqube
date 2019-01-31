@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,39 +18,53 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
+import * as classNames from 'classnames';
 import Component from './Component';
 import ComponentsEmpty from './ComponentsEmpty';
 import ComponentsHeader from './ComponentsHeader';
-import { Component as IComponent } from '../types';
-import { BranchLike } from '../../../app/types';
+import { isDefined } from '../../../helpers/types';
+import { getCodeMetrics, showLeakMeasure } from '../utils';
 
 interface Props {
-  baseComponent?: IComponent;
-  branchLike?: BranchLike;
-  components: IComponent[];
-  rootComponent: IComponent;
-  selected?: IComponent;
+  baseComponent?: T.ComponentMeasure;
+  branchLike?: T.BranchLike;
+  components: T.ComponentMeasure[];
+  metrics: { [metric: string]: T.Metric };
+  rootComponent: T.ComponentMeasure;
+  selected?: T.ComponentMeasure;
 }
 
 export default function Components(props: Props) {
   const { baseComponent, branchLike, components, rootComponent, selected } = props;
+  const metricKeys = getCodeMetrics(rootComponent.qualifier, branchLike);
+  const metrics = metricKeys.map(metric => props.metrics[metric]).filter(isDefined);
+  const isLeak = Boolean(baseComponent && showLeakMeasure(branchLike));
   return (
-    <table className="data zebra">
-      <ComponentsHeader
-        baseComponent={baseComponent}
-        branchLike={branchLike}
-        rootComponent={rootComponent}
-      />
+    <table className="data boxed-padding zebra">
+      {baseComponent && (
+        <ComponentsHeader
+          baseComponent={baseComponent}
+          isLeak={isLeak}
+          metrics={metricKeys}
+          rootComponent={rootComponent}
+        />
+      )}
       {baseComponent && (
         <tbody>
           <Component
             branchLike={branchLike}
             component={baseComponent}
+            isLeak={isLeak}
             key={baseComponent.key}
+            metrics={metrics}
             rootComponent={rootComponent}
           />
           <tr className="blank">
-            <td colSpan={8}>&nbsp;</td>
+            <td colSpan={3}>&nbsp;</td>
+            <td className={classNames({ leak: isLeak })} colSpan={10}>
+              {' '}
+              &nbsp;{' '}
+            </td>
           </tr>
         </tbody>
       )}
@@ -61,15 +75,22 @@ export default function Components(props: Props) {
               branchLike={branchLike}
               canBrowse={true}
               component={component}
+              isLeak={isLeak}
               key={component.key}
+              metrics={metrics}
               previous={index > 0 ? list[index - 1] : undefined}
               rootComponent={rootComponent}
               selected={component === selected}
             />
           ))
         ) : (
-          <ComponentsEmpty />
+          <ComponentsEmpty isLeak={isLeak} />
         )}
+
+        <tr className="blank">
+          <td colSpan={3} />
+          <td className={classNames({ leak: isLeak })} colSpan={10} />
+        </tr>
       </tbody>
     </table>
   );

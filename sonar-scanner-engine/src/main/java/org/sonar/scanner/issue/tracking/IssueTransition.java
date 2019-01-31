@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,7 +25,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 import javax.annotation.Nullable;
-import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.batch.fs.InputComponent;
 import org.sonar.api.batch.fs.internal.DefaultInputComponent;
 import org.sonar.core.util.CloseableIterator;
@@ -38,7 +37,6 @@ import org.sonar.scanner.report.ReportPublisher;
 import org.sonar.scanner.scan.filesystem.InputComponentStore;
 import org.sonar.scanner.util.ProgressReport;
 
-@ScannerSide
 public class IssueTransition {
   private final IssueCache issueCache;
   private final InputComponentStore inputComponentStore;
@@ -90,7 +88,7 @@ public class IssueTransition {
   public void trackIssues(ScannerReportReader reader, DefaultInputComponent component) {
     // raw issues = all the issues created by rule engines during this module scan and not excluded by filters
     List<ScannerReport.Issue> rawIssues = new LinkedList<>();
-    try (CloseableIterator<ScannerReport.Issue> it = reader.readComponentIssues(component.batchId())) {
+    try (CloseableIterator<ScannerReport.Issue> it = reader.readComponentIssues(component.scannerId())) {
       while (it.hasNext()) {
         rawIssues.add(it.next());
       }

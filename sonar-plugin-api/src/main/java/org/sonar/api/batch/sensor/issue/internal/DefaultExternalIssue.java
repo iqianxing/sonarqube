@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,10 +21,12 @@ package org.sonar.api.batch.sensor.issue.internal;
 
 import com.google.common.base.Preconditions;
 import javax.annotation.Nullable;
+import org.sonar.api.batch.fs.internal.DefaultInputProject;
 import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.ExternalIssue;
 import org.sonar.api.batch.sensor.issue.NewExternalIssue;
+import org.sonar.api.rule.RuleKey;
 import org.sonar.api.rules.RuleType;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -35,13 +37,15 @@ public class DefaultExternalIssue extends AbstractDefaultIssue<DefaultExternalIs
   private Long effort;
   private Severity severity;
   private RuleType type;
+  private String engineId;
+  private String ruleId;
 
-  public DefaultExternalIssue() {
-    super(null);
+  public DefaultExternalIssue(DefaultInputProject project) {
+    this(project, null);
   }
 
-  public DefaultExternalIssue(@Nullable SensorStorage storage) {
-    super(storage);
+  public DefaultExternalIssue(DefaultInputProject project, @Nullable SensorStorage storage) {
+    super(project, storage);
   }
 
   @Override
@@ -58,6 +62,16 @@ public class DefaultExternalIssue extends AbstractDefaultIssue<DefaultExternalIs
   }
 
   @Override
+  public String engineId() {
+    return engineId;
+  }
+
+  @Override
+  public String ruleId() {
+    return ruleId;
+  }
+
+  @Override
   public Severity severity() {
     return this.severity;
   }
@@ -69,7 +83,8 @@ public class DefaultExternalIssue extends AbstractDefaultIssue<DefaultExternalIs
 
   @Override
   public void doSave() {
-    requireNonNull(this.ruleKey, "Rule key is mandatory on external issue");
+    requireNonNull(this.engineId, "Engine id is mandatory on external issue");
+    requireNonNull(this.ruleId, "Rule id is mandatory on external issue");
     checkState(primaryLocation != null, "Primary location is mandatory on every external issue");
     checkState(primaryLocation.inputComponent().isFile(), "External issues must be located in files");
     checkState(primaryLocation.message() != null, "External issues must have a message");
@@ -81,6 +96,33 @@ public class DefaultExternalIssue extends AbstractDefaultIssue<DefaultExternalIs
   @Override
   public RuleType type() {
     return type;
+  }
+
+  @Override
+  public NewExternalIssue engineId(String engineId) {
+    this.engineId = engineId;
+    return this;
+  }
+
+  @Override
+  public NewExternalIssue ruleId(String ruleId) {
+    this.ruleId = ruleId;
+    return this;
+  }
+
+  @Override
+  public DefaultExternalIssue forRule(RuleKey ruleKey) {
+    this.engineId = ruleKey.repository();
+    this.ruleId = ruleKey.rule();
+    return this;
+  }
+
+  @Override
+  public RuleKey ruleKey() {
+    if (engineId != null && ruleId != null) {
+      return RuleKey.of(RuleKey.EXTERNAL_RULE_REPO_PREFIX + engineId, ruleId);
+    }
+    return null;
   }
 
   @Override

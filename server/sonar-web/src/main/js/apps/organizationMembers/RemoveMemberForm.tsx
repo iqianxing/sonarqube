@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,13 +21,12 @@ import * as React from 'react';
 import Modal from '../../components/controls/Modal';
 import { translate, translateWithParameters } from '../../helpers/l10n';
 import { SubmitButton, ResetButtonLink } from '../../components/ui/buttons';
-import { Organization, OrganizationMember } from '../../app/types';
 
 interface Props {
   onClose: () => void;
-  member: OrganizationMember;
-  organization: Organization;
-  removeMember: (member: OrganizationMember) => void;
+  member: T.OrganizationMember;
+  organization: T.Organization;
+  removeMember: (member: T.OrganizationMember) => void;
 }
 
 export default class RemoveMemberForm extends React.PureComponent<Props> {

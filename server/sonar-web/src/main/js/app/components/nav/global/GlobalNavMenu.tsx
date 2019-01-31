@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,17 +20,17 @@
 import * as React from 'react';
 import * as classNames from 'classnames';
 import { Link } from 'react-router';
-import { isLoggedIn, CurrentUser, AppState, Extension } from '../../../types';
 import { translate } from '../../../../helpers/l10n';
 import { getQualityGatesUrl, getBaseUrl } from '../../../../helpers/urls';
 import { isMySet } from '../../../../apps/issues/utils';
 import Dropdown from '../../../../components/controls/Dropdown';
 import DropdownIcon from '../../../../components/icons-components/DropdownIcon';
 import { isSonarCloud } from '../../../../helpers/system';
+import { isLoggedIn } from '../../../../helpers/users';
 
 interface Props {
-  appState: AppState;
-  currentUser: CurrentUser;
+  appState: Pick<T.AppState, 'canAdmin' | 'globalPages' | 'organizationsEnabled' | 'qualifiers'>;
+  currentUser: T.CurrentUser;
   location: { pathname: string };
 }
 
@@ -45,8 +45,8 @@ export default class GlobalNavMenu extends React.PureComponent<Props> {
     }
 
     const active =
-      this.props.location.pathname.startsWith('projects') &&
-      this.props.location.pathname !== 'projects/create';
+      this.props.location.pathname.startsWith('/projects') &&
+      this.props.location.pathname !== '/projects/create';
 
     return (
       <li>
@@ -143,7 +143,7 @@ export default class GlobalNavMenu extends React.PureComponent<Props> {
     );
   }
 
-  renderGlobalPageLink = ({ key, name }: Extension) => {
+  renderGlobalPageLink = ({ key, name }: T.Extension) => {
     return (
       <li key={key}>
         <Link to={`/extension/${key}`}>{name}</Link>

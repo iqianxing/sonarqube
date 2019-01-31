@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,8 +19,10 @@
  */
 package org.sonar.ce.task.projectanalysis.step;
 
-import com.google.common.base.Function;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+import org.sonar.ce.task.projectanalysis.analysis.AnalysisMetadataHolder;
 import org.sonar.ce.task.projectanalysis.batch.BatchReportReader;
 import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.ce.task.projectanalysis.component.CrawlerDepthLimit;
@@ -31,6 +33,7 @@ import org.sonar.ce.task.projectanalysis.duplication.DetailedTextBlock;
 import org.sonar.ce.task.projectanalysis.duplication.Duplicate;
 import org.sonar.ce.task.projectanalysis.duplication.Duplication;
 import org.sonar.ce.task.projectanalysis.duplication.DuplicationRepository;
+import org.sonar.ce.task.projectanalysis.duplication.InExtendedProjectDuplicate;
 import org.sonar.ce.task.projectanalysis.duplication.InProjectDuplicate;
 import org.sonar.ce.task.projectanalysis.duplication.InnerDuplicate;
 import org.sonar.ce.task.projectanalysis.duplication.TextBlock;
@@ -39,18 +42,20 @@ import org.sonar.core.util.CloseableIterator;
 import org.sonar.scanner.protocol.output.ScannerReport;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.collect.FluentIterable.from;
 
 /**
  * Loads duplication information from the report and loads them into the {@link DuplicationRepository}.
  */
 public class LoadDuplicationsFromReportStep implements ComputationStep {
   private final TreeRootHolder treeRootHolder;
+  private final AnalysisMetadataHolder analysisMetadataHolder;
   private final BatchReportReader batchReportReader;
   private final DuplicationRepository duplicationRepository;
 
-  public LoadDuplicationsFromReportStep(TreeRootHolder treeRootHolder, BatchReportReader batchReportReader, DuplicationRepository duplicationRepository) {
+  public LoadDuplicationsFromReportStep(TreeRootHolder treeRootHolder, AnalysisMetadataHolder analysisMetadataHolder, BatchReportReader batchReportReader,
+    DuplicationRepository duplicationRepository) {
     this.treeRootHolder = treeRootHolder;
+    this.analysisMetadataHolder = analysisMetadataHolder;
     this.batchReportReader = batchReportReader;
     this.duplicationRepository = duplicationRepository;
   }
@@ -63,7 +68,7 @@ public class LoadDuplicationsFromReportStep implements ComputationStep {
   @Override
   public void execute(ComputationStep.Context context) {
     DuplicationVisitor visitor = new DuplicationVisitor();
-    new DepthTraversalTypeAwareCrawler(visitor).visit(treeRootHolder.getRoot());
+    new DepthTraversalTypeAwareCrawler(visitor).visit(treeRootHolder.getReportTreeRoot());
     context.getStatistics().add("duplications", visitor.count);
   }
 
@@ -79,9 +84,12 @@ public class LoadDuplicationsFromReportStep implements ComputationStep {
     public Duplicate apply(@Nonnull ScannerReport.Duplicate input) {
       if (input.getOtherFileRef() != 0) {
         checkArgument(input.getOtherFileRef() != file.getReportAttributes().getRef(), "file and otherFile references can not be the same");
-        return new InProjectDuplicate(
-          treeRootHolder.getComponentByRef(input.getOtherFileRef()),
-          convert(input.getRange()));
+        Component otherComponent = treeRootHolder.getReportTreeComponentByRef(input.getOtherFileRef());
+        if ((analysisMetadataHolder.isShortLivingBranch() || analysisMetadataHolder.isPullRequest()) && otherComponent.getStatus() == Component.Status.SAME) {
+          return new InExtendedProjectDuplicate(otherComponent, convert(input.getRange()));
+        } else {
+          return new InProjectDuplicate(otherComponent, convert(input.getRange()));
+        }
       }
       return new InnerDuplicate(convert(input.getRange()));
     }
@@ -114,8 +122,8 @@ public class LoadDuplicationsFromReportStep implements ComputationStep {
       duplicationRepository.add(file,
         new Duplication(
           convert(duplication.getOriginPosition(), id),
-          from(duplication.getDuplicateList())
-            .transform(new BatchDuplicateToCeDuplicate(file))));
+          duplication.getDuplicateList().stream()
+            .map(new BatchDuplicateToCeDuplicate(file)).collect(Collectors.toList())));
     }
 
     private DetailedTextBlock convert(ScannerReport.TextRange textRange, int id) {

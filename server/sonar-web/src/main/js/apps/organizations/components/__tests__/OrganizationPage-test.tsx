@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
  */
 import * as React from 'react';
 import { shallow } from 'enzyme';
+import { Location } from 'history';
 import { OrganizationPage } from '../OrganizationPage';
 
 const fetchOrganization = jest.fn().mockResolvedValue(undefined);
@@ -31,7 +32,7 @@ it('smoke test', () => {
   const wrapper = getWrapper();
   expect(wrapper.type()).toBeNull();
 
-  const organization = { key: 'foo', name: 'Foo', isDefault: false, canAdmin: false };
+  const organization = { actions: { admin: false }, key: 'foo', name: 'Foo', isDefault: false };
   wrapper.setProps({ organization });
   expect(wrapper).toMatchSnapshot();
 });
@@ -54,7 +55,7 @@ function getWrapper(props = {}) {
     <OrganizationPage
       currentUser={{ isLoggedIn: false }}
       fetchOrganization={fetchOrganization}
-      location={{ pathname: 'foo' }}
+      location={{ pathname: 'foo' } as Location}
       params={{ organizationKey: 'foo' }}
       userOrganizations={[]}
       {...props}>

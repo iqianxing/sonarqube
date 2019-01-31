@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -38,6 +38,7 @@ import org.sonar.ce.task.projectanalysis.batch.BatchReportReaderRule;
 import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.ce.task.projectanalysis.component.MergeBranchComponentUuids;
 import org.sonar.ce.task.projectanalysis.component.ReportComponent;
+import org.sonar.ce.task.projectanalysis.component.ReportModulesPath;
 import org.sonar.ce.task.projectanalysis.component.TreeRootHolderRule;
 import org.sonar.ce.task.projectanalysis.component.TypeAwareVisitor;
 import org.sonar.ce.task.projectanalysis.filemove.MovedFilesRepository;
@@ -61,6 +62,7 @@ import org.sonar.db.rule.RuleDto;
 import org.sonar.db.rule.RuleTesting;
 import org.sonar.scanner.protocol.Constants;
 import org.sonar.scanner.protocol.output.ScannerReport;
+import org.sonar.server.issue.IssueFieldsSetter;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static java.util.Arrays.asList;
@@ -117,6 +119,7 @@ public class IntegrateIssuesVisitorTest {
   private ShortBranchIssueMerger issueStatusCopier = mock(ShortBranchIssueMerger.class);
   private MergeBranchComponentUuids mergeBranchComponentUuids = mock(MergeBranchComponentUuids.class);
   private SourceLinesHashRepository sourceLinesHash = mock(SourceLinesHashRepository.class);
+  private IssueRelocationToRoot issueRelocationToRoot = mock(IssueRelocationToRoot.class);
 
   private ArgumentCaptor<DefaultIssue> defaultIssueCaptor;
 
@@ -138,12 +141,12 @@ public class IntegrateIssuesVisitorTest {
     when(movedFilesRepository.getOriginalFile(any(Component.class))).thenReturn(Optional.absent());
 
     DbClient dbClient = dbTester.getDbClient();
-    TrackerRawInputFactory rawInputFactory = new TrackerRawInputFactory(treeRootHolder, reportReader, sourceLinesHash, new CommonRuleEngineImpl(), issueFilter, ruleRepositoryRule,
-      activeRulesHolder);
-    TrackerBaseInputFactory baseInputFactory = new TrackerBaseInputFactory(issuesLoader, dbClient, movedFilesRepository);
+    TrackerRawInputFactory rawInputFactory = new TrackerRawInputFactory(treeRootHolder, reportReader, sourceLinesHash, new CommonRuleEngineImpl(),
+      issueFilter, ruleRepositoryRule, activeRulesHolder, issueRelocationToRoot);
+    TrackerBaseInputFactory baseInputFactory = new TrackerBaseInputFactory(issuesLoader, dbClient, movedFilesRepository, mock(ReportModulesPath.class), analysisMetadataHolder, new IssueFieldsSetter(), mock(ComponentsWithUnprocessedIssues.class));
     TrackerMergeBranchInputFactory mergeInputFactory = new TrackerMergeBranchInputFactory(issuesLoader, mergeBranchComponentsUuids, dbClient);
     ClosedIssuesInputFactory closedIssuesInputFactory = new ClosedIssuesInputFactory(issuesLoader, dbClient, movedFilesRepository);
-    tracker = new TrackerExecution(baseInputFactory, rawInputFactory, closedIssuesInputFactory, new Tracker<>(), issuesLoader);
+    tracker = new TrackerExecution(baseInputFactory, rawInputFactory, closedIssuesInputFactory, new Tracker<>(), issuesLoader, analysisMetadataHolder);
     shortBranchTracker = new ShortBranchTrackerExecution(baseInputFactory, rawInputFactory, mergeInputFactory, new Tracker<>());
     mergeBranchTracker = new MergeBranchTrackerExecution(rawInputFactory, mergeInputFactory, new Tracker<>());
 

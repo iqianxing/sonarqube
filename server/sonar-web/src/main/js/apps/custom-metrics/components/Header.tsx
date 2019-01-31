@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,6 +22,7 @@ import CreateButton from './CreateButton';
 import { MetricProps } from './Form';
 import DeferredSpinner from '../../../components/common/DeferredSpinner';
 import { translate } from '../../../helpers/l10n';
+import { Alert } from '../../../components/ui/Alert';
 
 interface Props {
   domains: string[] | undefined;
@@ -38,7 +39,12 @@ export default function Header({ domains, loading, onCreate, types }: Props) {
       <div className="page-actions">
         {domains && types && <CreateButton domains={domains} onCreate={onCreate} types={types} />}
       </div>
-      <p className="page-description">{translate('custom_metrics.page.description')}</p>
+      <div className="page-description">
+        <Alert display="inline" variant="error">
+          {translate('custom_metrics.deprecated')}
+        </Alert>
+        <p>{translate('custom_metrics.page.description')}</p>
+      </div>
     </header>
   );
 }

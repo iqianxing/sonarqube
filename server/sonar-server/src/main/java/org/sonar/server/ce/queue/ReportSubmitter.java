@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,22 +19,23 @@
  */
 package org.sonar.server.ce.queue;
 
-import com.google.common.base.Optional;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.sonar.api.resources.Qualifiers;
 import org.sonar.api.resources.Scopes;
 import org.sonar.api.server.ServerSide;
+import org.sonar.api.web.UserRole;
 import org.sonar.ce.queue.CeQueue;
 import org.sonar.ce.queue.CeTaskSubmit;
 import org.sonar.ce.task.CeTask;
-import org.sonar.core.component.ComponentKeys;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.ce.CeTaskTypes;
+import org.sonar.db.component.BranchDto;
 import org.sonar.db.component.ComponentDto;
 import org.sonar.db.organization.OrganizationDto;
 import org.sonar.db.permission.OrganizationPermission;
@@ -48,7 +49,6 @@ import org.sonar.server.user.UserSession;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.format;
 import static org.apache.commons.lang.StringUtils.defaultIfBlank;
-import static org.sonar.core.permission.GlobalPermissions.SCAN_EXECUTION;
 import static org.sonar.server.component.NewComponent.newComponentBuilder;
 import static org.sonar.server.user.AbstractUserSession.insufficientPrivilegesException;
 
@@ -60,31 +60,33 @@ public class ReportSubmitter {
   private final ComponentUpdater componentUpdater;
   private final PermissionTemplateService permissionTemplateService;
   private final DbClient dbClient;
+  private final BranchSupport branchSupport;
 
   public ReportSubmitter(CeQueue queue, UserSession userSession, ComponentUpdater componentUpdater,
-    PermissionTemplateService permissionTemplateService, DbClient dbClient) {
+    PermissionTemplateService permissionTemplateService, DbClient dbClient, BranchSupport branchSupport) {
     this.queue = queue;
     this.userSession = userSession;
     this.componentUpdater = componentUpdater;
     this.permissionTemplateService = permissionTemplateService;
     this.dbClient = dbClient;
+    this.branchSupport = branchSupport;
   }
 
   /**
    * @throws NotFoundException if the organization with the specified key does not exist
    * @throws IllegalArgumentException if the organization with the specified key is not the organization of the specified project (when it already exists in DB)
    */
-  public CeTask submit(String organizationKey, String projectKey, @Nullable String deprecatedBranch, @Nullable String projectName, Map<String, String> characteristics,
-    InputStream reportInput) {
+  public CeTask submit(String organizationKey, String projectKey, @Nullable String deprecatedBranch, @Nullable String projectName,
+    Map<String, String> characteristics, InputStream reportInput) {
     try (DbSession dbSession = dbClient.openSession(false)) {
       OrganizationDto organizationDto = getOrganizationDtoOrFail(dbSession, organizationKey);
-      String effectiveProjectKey = ComponentKeys.createKey(projectKey, deprecatedBranch);
-      Optional<ComponentDto> component = dbClient.componentDao().selectByKey(dbSession, effectiveProjectKey);
-      validateProject(dbSession, component, projectKey);
-      ensureOrganizationIsConsistent(component, organizationDto);
-      ComponentDto project = component.or(() -> createProject(dbSession, organizationDto, projectKey, deprecatedBranch, projectName));
-      checkScanPermission(project);
-      return submitReport(dbSession, reportInput, project, characteristics);
+      BranchSupport.ComponentKey componentKey = branchSupport.createComponentKey(projectKey, deprecatedBranch, characteristics);
+      Optional<ComponentDto> existingComponent = dbClient.componentDao().selectByKey(dbSession, componentKey.getDbKey());
+      validateProject(dbSession, existingComponent, projectKey);
+      ensureOrganizationIsConsistent(existingComponent, organizationDto);
+      ComponentDto component = existingComponent.orElseGet(() -> createComponent(dbSession, organizationDto, componentKey, projectName));
+      checkScanPermission(component);
+      return submitReport(dbSession, reportInput, component, characteristics);
     }
   }
 
@@ -94,7 +96,7 @@ public class ReportSubmitter {
     // they don't have the direct permission on the project.
     // That means that dropping the permission on the project does not have any effects
     // if user has still the permission on the organization
-    if (!userSession.hasComponentPermission(SCAN_EXECUTION, project) &&
+    if (!userSession.hasComponentPermission(UserRole.SCAN, project) &&
       !userSession.hasPermission(OrganizationPermission.SCAN, project.getOrganizationUuid())) {
       throw insufficientPrivilegesException();
     }
@@ -135,13 +137,34 @@ public class ReportSubmitter {
     }
   }
 
-  private ComponentDto createProject(DbSession dbSession, OrganizationDto organization, String projectKey, @Nullable String deprecatedBranch, @Nullable String projectName) {
+  private ComponentDto createComponent(DbSession dbSession, OrganizationDto organization, BranchSupport.ComponentKey componentKey, @Nullable String projectName) {
+    if (componentKey.isMainBranch() || componentKey.isDeprecatedBranch()) {
+      ComponentDto project = createProject(dbSession, organization, componentKey, projectName);
+      componentUpdater.commitAndIndex(dbSession, project);
+      return project;
+    }
+
+    Optional<ComponentDto> existingMainComponent = dbClient.componentDao().selectByKey(dbSession, componentKey.getKey());
+    ComponentDto mainComponentDto = existingMainComponent
+      .orElseGet(() -> createProject(dbSession, organization, componentKey.getMainBranchComponentKey(), projectName));
+    BranchDto mainComponentBranchDto = dbClient.branchDao().selectByUuid(dbSession, mainComponentDto.uuid())
+      .orElseThrow(() -> new IllegalStateException("Branch of main component does not exist"));
+    ComponentDto branchComponent = branchSupport.createBranchComponent(dbSession, componentKey, organization, mainComponentDto, mainComponentBranchDto);
+    if (existingMainComponent.isPresent()) {
+      dbSession.commit();
+    } else {
+      componentUpdater.commitAndIndex(dbSession, mainComponentDto);
+    }
+    return branchComponent;
+  }
+
+  private ComponentDto createProject(DbSession dbSession, OrganizationDto organization, BranchSupport.ComponentKey componentKey,
+    @Nullable String projectName) {
     userSession.checkPermission(OrganizationPermission.PROVISION_PROJECTS, organization);
     Integer userId = userSession.getUserId();
 
-    String effectiveProjectKey = ComponentKeys.createEffectiveKey(projectKey, deprecatedBranch);
     boolean wouldCurrentUserHaveScanPermission = permissionTemplateService.wouldUserHaveScanPermissionWithDefaultTemplate(
-      dbSession, organization.getUuid(), userId, effectiveProjectKey, Qualifiers.PROJECT);
+      dbSession, organization.getUuid(), userId, componentKey.getDbKey(), Qualifiers.PROJECT);
     if (!wouldCurrentUserHaveScanPermission) {
       throw insufficientPrivilegesException();
     }
@@ -150,13 +173,13 @@ public class ReportSubmitter {
 
     NewComponent newProject = newComponentBuilder()
       .setOrganizationUuid(organization.getUuid())
-      .setKey(projectKey)
-      .setName(defaultIfBlank(projectName, projectKey))
-      .setDeprecatedBranch(deprecatedBranch)
+      .setKey(componentKey.getKey())
+      .setName(defaultIfBlank(projectName, componentKey.getKey()))
+      .setDeprecatedBranch(componentKey.getDeprecatedBranchName().orElse(null))
       .setQualifier(Qualifiers.PROJECT)
       .setPrivate(newProjectPrivate)
       .build();
-    return componentUpdater.create(dbSession, newProject, userId);
+    return componentUpdater.createWithoutCommit(dbSession, newProject, userId);
   }
 
   private CeTask submitReport(DbSession dbSession, InputStream reportInput, ComponentDto project, Map<String, String> characteristics) {
@@ -167,9 +190,10 @@ public class ReportSubmitter {
     dbSession.commit();
 
     submit.setType(CeTaskTypes.REPORT);
-    submit.setComponentUuid(project.uuid());
+    submit.setComponent(CeTaskSubmit.Component.fromDto(project));
     submit.setSubmitterUuid(userSession.getUuid());
     submit.setCharacteristics(characteristics);
     return queue.submit(submit.build());
   }
+
 }

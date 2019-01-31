@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,9 +28,11 @@ import org.sonar.api.utils.Version;
 import org.sonar.xoo.coverage.ItCoverageSensor;
 import org.sonar.xoo.coverage.OverallCoverageSensor;
 import org.sonar.xoo.coverage.UtCoverageSensor;
+import org.sonar.xoo.extensions.XooIssueFilter;
 import org.sonar.xoo.extensions.XooPostJob;
 import org.sonar.xoo.extensions.XooProjectBuilder;
-import org.sonar.xoo.global.GlobalSensor;
+import org.sonar.xoo.global.DeprecatedGlobalSensor;
+import org.sonar.xoo.global.GlobalProjectSensor;
 import org.sonar.xoo.lang.CpdTokenizerSensor;
 import org.sonar.xoo.lang.LineMeasureSensor;
 import org.sonar.xoo.lang.MeasureSensor;
@@ -49,7 +51,6 @@ import org.sonar.xoo.rule.OneBlockerIssuePerFileSensor;
 import org.sonar.xoo.rule.OneBugIssuePerLineSensor;
 import org.sonar.xoo.rule.OneDayDebtPerFileSensor;
 import org.sonar.xoo.rule.OneExternalIssuePerLineSensor;
-import org.sonar.xoo.rule.OneExternalIssueWithDetailsPerLineSensor;
 import org.sonar.xoo.rule.OneIssueOnDirPerFileSensor;
 import org.sonar.xoo.rule.OneIssuePerDirectorySensor;
 import org.sonar.xoo.rule.OneIssuePerFileSensor;
@@ -57,6 +58,8 @@ import org.sonar.xoo.rule.OneIssuePerLineSensor;
 import org.sonar.xoo.rule.OneIssuePerModuleSensor;
 import org.sonar.xoo.rule.OneIssuePerTestFileSensor;
 import org.sonar.xoo.rule.OneIssuePerUnknownFileSensor;
+import org.sonar.xoo.rule.OnePredefinedAndAdHocRuleExternalIssuePerLineSensor;
+import org.sonar.xoo.rule.OnePredefinedRuleExternalIssuePerLineSensor;
 import org.sonar.xoo.rule.OneVulnerabilityIssuePerModuleSensor;
 import org.sonar.xoo.rule.RandomAccessSensor;
 import org.sonar.xoo.rule.SaveDataTwiceSensor;
@@ -71,6 +74,7 @@ import org.sonar.xoo.rule.XooFakeImporterWithMessages;
 import org.sonar.xoo.rule.XooRulesDefinition;
 import org.sonar.xoo.rule.XooSonarWayProfile;
 import org.sonar.xoo.scm.XooBlameCommand;
+import org.sonar.xoo.scm.XooIgnoreCommand;
 import org.sonar.xoo.scm.XooScmProvider;
 import org.sonar.xoo.test.CoveragePerTestSensor;
 import org.sonar.xoo.test.TestExecutionSensor;
@@ -90,8 +94,12 @@ public class XooPlugin implements Plugin {
         .subCategory("General")
         .onQualifiers(Qualifiers.PROJECT)
         .build(),
-      // Used by DuplicationsTest. If not declared it is not returned by api/settings
+      // Used by DuplicationsTest and IssueFilterOnCommonRulesTest. If not declared it is not returned by api/settings
       PropertyDefinition.builder("sonar.cpd.xoo.minimumTokens")
+        .onQualifiers(Qualifiers.PROJECT)
+        .type(PropertyType.INTEGER)
+        .build(),
+      PropertyDefinition.builder("sonar.cpd.xoo.minimumLines")
         .onQualifiers(Qualifiers.PROJECT)
         .type(PropertyType.INTEGER)
         .build(),
@@ -153,7 +161,8 @@ public class XooPlugin implements Plugin {
 
       // Other
       XooProjectBuilder.class,
-      XooPostJob.class);
+      XooPostJob.class,
+      XooIssueFilter.class);
 
     if (context.getRuntime().getProduct() != SonarProduct.SONARLINT) {
       context.addExtension(MeasureSensor.class);
@@ -163,12 +172,18 @@ public class XooPlugin implements Plugin {
       context.addExtension(XooBuiltInQualityProfilesDefinition.class);
     }
     if (context.getSonarQubeVersion().isGreaterThanOrEqual(Version.create(6, 4))) {
-      context.addExtension(GlobalSensor.class);
+      context.addExtension(DeprecatedGlobalSensor.class);
+    }
+    if (context.getSonarQubeVersion().isGreaterThanOrEqual(Version.create(7, 6))) {
+      context.addExtensions(
+        GlobalProjectSensor.class,
+        XooIgnoreCommand.class);
     }
     if (context.getSonarQubeVersion().isGreaterThanOrEqual(Version.create(7, 2))) {
       context.addExtensions(
         OneExternalIssuePerLineSensor.class,
-        OneExternalIssueWithDetailsPerLineSensor.class,
+        OnePredefinedRuleExternalIssuePerLineSensor.class,
+        OnePredefinedAndAdHocRuleExternalIssuePerLineSensor.class,
         SignificantCodeSensor.class);
     }
     if (context.getSonarQubeVersion().isGreaterThanOrEqual(Version.create(7, 3))) {

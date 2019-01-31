@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -78,7 +78,7 @@ import static org.sonarqube.ws.client.qualityprofile.QualityProfileWsParameters.
 public class ChangeParentActionTest {
 
   @Rule
-  public DbTester db = new DbTester(System2.INSTANCE, null);
+  public DbTester db = DbTester.create(System2.INSTANCE);
   @Rule
   public EsTester es = EsTester.create();
   @Rule

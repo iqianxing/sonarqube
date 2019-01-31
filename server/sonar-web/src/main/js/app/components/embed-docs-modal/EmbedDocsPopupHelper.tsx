@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,24 +18,18 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import { SuggestionLink } from './SuggestionsProvider';
-import { CurrentUser } from '../../types';
 import Toggler from '../../../components/controls/Toggler';
 import HelpIcon from '../../../components/icons-components/HelpIcon';
 import { lazyLoad } from '../../../components/lazyLoad';
+import { translate } from '../../../helpers/l10n';
 
 const EmbedDocsPopup = lazyLoad(() => import('./EmbedDocsPopup'));
 
-interface Props {
-  currentUser: CurrentUser;
-  suggestions: Array<SuggestionLink>;
-  tooltip: boolean;
-}
 interface State {
   helpOpen: boolean;
 }
 
-export default class EmbedDocsPopupHelper extends React.PureComponent<Props, State> {
+export default class EmbedDocsPopupHelper extends React.PureComponent<{}, State> {
   mounted = false;
   state: State = { helpOpen: false };
 
@@ -83,14 +77,12 @@ export default class EmbedDocsPopupHelper extends React.PureComponent<Props, Sta
         <Toggler
           onRequestClose={this.closeHelp}
           open={this.state.helpOpen}
-          overlay={
-            <EmbedDocsPopup
-              currentUser={this.props.currentUser}
-              onClose={this.closeHelp}
-              suggestions={this.props.suggestions}
-            />
-          }>
-          <a className="navbar-help" href="#" onClick={this.handleClick}>
+          overlay={<EmbedDocsPopup onClose={this.closeHelp} />}>
+          <a
+            className="navbar-help navbar-icon"
+            href="#"
+            onClick={this.handleClick}
+            title={translate('help')}>
             <HelpIcon />
           </a>
         </Toggler>

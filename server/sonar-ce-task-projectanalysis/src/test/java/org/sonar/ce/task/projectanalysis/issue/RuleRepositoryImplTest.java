@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -37,8 +37,7 @@ import org.sonar.db.rule.DeprecatedRuleKeyDto;
 import org.sonar.db.rule.RuleDao;
 import org.sonar.db.rule.RuleDefinitionDto;
 import org.sonar.db.rule.RuleDto;
-import org.sonar.server.rule.ExternalRuleCreator;
-import org.sonar.server.rule.NewExternalRule;
+import org.sonar.scanner.protocol.output.ScannerReport;
 import org.sonar.server.rule.index.RuleIndexer;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -78,8 +77,8 @@ public class RuleRepositoryImplTest {
   private RuleDao ruleDao = mock(RuleDao.class);
 
   private RuleIndexer ruleIndexer = mock(RuleIndexer.class);
-  private ExternalRuleCreator externalRuleCreator = new ExternalRuleCreator(db.getDbClient(), System2.INSTANCE, ruleIndexer);
-  private RuleRepositoryImpl underTest = new RuleRepositoryImpl(externalRuleCreator, dbClient, analysisMetadataHolder);
+  private AdHocRuleCreator adHocRuleCreator = new AdHocRuleCreator(db.getDbClient(), System2.INSTANCE, ruleIndexer);
+  private RuleRepositoryImpl underTest = new RuleRepositoryImpl(adHocRuleCreator, dbClient, analysisMetadataHolder);
 
   @Before
   public void setUp() throws Exception {
@@ -268,15 +267,11 @@ public class RuleRepositoryImplTest {
 
   @Test
   public void accept_new_externally_defined_Rules() {
-    RuleKey ruleKey = RuleKey.of("eslint", "no-cond-assign");
+    RuleKey ruleKey = RuleKey.of("external_eslint", "no-cond-assign");
 
-    underTest.insertNewExternalRuleIfAbsent(ruleKey, () -> new NewExternalRule.Builder()
-      .setKey(ruleKey)
-      .setPluginKey("eslint")
-      .build());
+    underTest.addOrUpdateAddHocRuleIfNeeded(ruleKey, () -> new NewAdHocRule(ScannerReport.ExternalIssue.newBuilder().setEngineId("eslint").setRuleId("no-cond-assign").build()));
 
     assertThat(underTest.getByKey(ruleKey)).isNotNull();
-    assertThat(underTest.getByKey(ruleKey).getPluginKey()).isEqualTo("eslint");
     assertThat(underTest.getByKey(ruleKey).getType()).isNull();
 
     RuleDao ruleDao = dbClient.ruleDao();
@@ -286,15 +281,12 @@ public class RuleRepositoryImplTest {
 
   @Test
   public void persist_new_externally_defined_Rules() {
-    underTest = new RuleRepositoryImpl(externalRuleCreator, db.getDbClient(), analysisMetadataHolder);
+    underTest = new RuleRepositoryImpl(adHocRuleCreator, db.getDbClient(), analysisMetadataHolder);
 
-    RuleKey ruleKey = RuleKey.of("eslint", "no-cond-assign");
-    underTest.insertNewExternalRuleIfAbsent(ruleKey, () -> new NewExternalRule.Builder()
-      .setKey(ruleKey)
-      .setPluginKey("eslint")
-      .build());
+    RuleKey ruleKey = RuleKey.of("external_eslint", "no-cond-assign");
+    underTest.addOrUpdateAddHocRuleIfNeeded(ruleKey, () -> new NewAdHocRule(ScannerReport.ExternalIssue.newBuilder().setEngineId("eslint").setRuleId("no-cond-assign").build()));
 
-    underTest.persistNewExternalRules(db.getSession());
+    underTest.saveOrUpdateAddHocRules(db.getSession());
     db.commit();
 
     Optional<RuleDefinitionDto> ruleDefinitionDto = db.getDbClient().ruleDao().selectDefinitionByKey(db.getSession(), ruleKey);

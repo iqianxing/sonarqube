@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,14 +31,11 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.sensor.internal.SensorContextTester;
 import org.sonar.api.config.Encryption;
 import org.sonar.api.config.PropertyDefinitions;
-import org.sonar.api.config.Settings;
-import org.sonar.api.config.internal.MapSettings;
 import org.sonar.api.utils.log.LogTester;
 import org.sonar.api.utils.log.LoggerLevel;
-import org.sonar.scanner.bootstrap.GlobalAnalysisMode;
 import org.sonar.scanner.config.DefaultConfiguration;
 import org.sonar.scanner.deprecated.test.TestPlanBuilder;
-import org.sonar.scanner.scan.ProjectSettings;
+import org.sonar.scanner.scan.ProjectConfiguration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -61,7 +58,7 @@ public class GenericTestExecutionSensorTest {
     Map<String, String> settings = new HashMap<>();
     settings.put(GenericTestExecutionSensor.OLD_UNIT_TEST_REPORT_PATHS_PROPERTY_KEY, "report.xml");
     PropertyDefinitions defs = new PropertyDefinitions(GenericTestExecutionSensor.properties());
-    DefaultConfiguration config = new ProjectSettings(defs, new Encryption(null), mock(GlobalAnalysisMode.class), settings);
+    DefaultConfiguration config = new ProjectConfiguration(defs, new Encryption(null), settings);
 
     new GenericTestExecutionSensor(mock(TestPlanBuilder.class), config).execute(context);
     assertThat(logTester.logs(LoggerLevel.WARN)).contains(

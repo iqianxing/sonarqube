@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,7 +30,7 @@ import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.DbTester;
 import org.sonar.db.user.UserDto;
-import org.sonar.server.authentication.LocalAuthentication;
+import org.sonar.server.authentication.CredentialsLocalAuthentication;
 import org.sonar.server.es.EsTester;
 import org.sonar.server.exceptions.ForbiddenException;
 import org.sonar.server.exceptions.NotFoundException;
@@ -71,11 +71,12 @@ public class UpdateActionTest {
   private UserIndexer userIndexer = new UserIndexer(dbClient, es.client());
   private DefaultOrganizationProvider defaultOrganizationProvider = TestDefaultOrganizationProvider.from(db);
   private TestOrganizationFlags organizationFlags = TestOrganizationFlags.standalone();
-  private LocalAuthentication localAuthentication = new LocalAuthentication(db.getDbClient());
+  private CredentialsLocalAuthentication localAuthentication = new CredentialsLocalAuthentication(db.getDbClient());
 
   private WsActionTester ws = new WsActionTester(new UpdateAction(
-    new UserUpdater(mock(NewUserNotifier.class), dbClient, userIndexer, organizationFlags, defaultOrganizationProvider, ORGANIZATION_CREATION_NOT_USED_FOR_UPDATE,
-      new DefaultGroupFinder(db.getDbClient()), settings.asConfig(), localAuthentication), userSession, new UserJsonWriter(userSession), dbClient));
+    new UserUpdater(system2, mock(NewUserNotifier.class), dbClient, userIndexer, organizationFlags, defaultOrganizationProvider, ORGANIZATION_CREATION_NOT_USED_FOR_UPDATE,
+      new DefaultGroupFinder(db.getDbClient()), settings.asConfig(), localAuthentication),
+    userSession, new UserJsonWriter(userSession), dbClient));
 
   @Before
   public void setUp() {

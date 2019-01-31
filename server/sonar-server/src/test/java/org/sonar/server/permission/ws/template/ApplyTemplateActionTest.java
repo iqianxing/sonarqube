@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -96,7 +96,7 @@ public class ApplyTemplateActionTest extends BasePermissionWsTest<ApplyTemplateA
   }
 
   @Test
-  public void apply_template_with_project_uuid() throws Exception {
+  public void apply_template_with_project_uuid() {
     loginAsAdmin(db.getDefaultOrganization());
 
     newRequest(template1.getUuid(), project.uuid(), null);
@@ -117,7 +117,7 @@ public class ApplyTemplateActionTest extends BasePermissionWsTest<ApplyTemplateA
   }
 
   @Test
-  public void apply_template_with_project_key() throws Exception {
+  public void apply_template_with_project_key() {
     loginAsAdmin(db.getDefaultOrganization());
 
     newRequest(template1.getUuid(), null, project.getDbKey());
@@ -126,7 +126,7 @@ public class ApplyTemplateActionTest extends BasePermissionWsTest<ApplyTemplateA
   }
 
   @Test
-  public void fail_when_unknown_template() throws Exception {
+  public void fail_when_unknown_template() {
     loginAsAdmin(db.getDefaultOrganization());
 
     expectedException.expect(NotFoundException.class);
@@ -136,7 +136,7 @@ public class ApplyTemplateActionTest extends BasePermissionWsTest<ApplyTemplateA
   }
 
   @Test
-  public void fail_when_unknown_project_uuid() throws Exception {
+  public void fail_when_unknown_project_uuid() {
     loginAsAdmin(db.getDefaultOrganization());
 
     expectedException.expect(NotFoundException.class);
@@ -146,7 +146,7 @@ public class ApplyTemplateActionTest extends BasePermissionWsTest<ApplyTemplateA
   }
 
   @Test
-  public void fail_when_unknown_project_key() throws Exception {
+  public void fail_when_unknown_project_key() {
     loginAsAdmin(db.getDefaultOrganization());
 
     expectedException.expect(NotFoundException.class);
@@ -156,7 +156,7 @@ public class ApplyTemplateActionTest extends BasePermissionWsTest<ApplyTemplateA
   }
 
   @Test
-  public void fail_when_template_is_not_provided() throws Exception {
+  public void fail_when_template_is_not_provided() {
     loginAsAdmin(db.getDefaultOrganization());
 
     expectedException.expect(BadRequestException.class);
@@ -165,7 +165,7 @@ public class ApplyTemplateActionTest extends BasePermissionWsTest<ApplyTemplateA
   }
 
   @Test
-  public void fail_when_project_uuid_and_key_not_provided() throws Exception {
+  public void fail_when_project_uuid_and_key_not_provided() {
     loginAsAdmin(db.getDefaultOrganization());
 
     expectedException.expect(BadRequestException.class);
@@ -175,7 +175,7 @@ public class ApplyTemplateActionTest extends BasePermissionWsTest<ApplyTemplateA
   }
 
   @Test
-  public void fail_when_not_admin_of_organization() throws Exception {
+  public void fail_when_not_admin_of_organization() {
     userSession.logIn().addPermission(ADMINISTER, "otherOrg");
 
     expectedException.expect(ForbiddenException.class);

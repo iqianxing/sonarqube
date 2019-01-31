@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -65,10 +65,12 @@ public class AnalysisErrorSensorTest {
     Path baseDir = temp.newFolder().toPath().toAbsolutePath();
     createErrorFile(baseDir);
 
-    int[] offsets = {10, 20, 30, 40};
+    int[] startOffsets = {10, 20, 30, 40};
+    int[] endOffsets = {19, 29, 39, 49};
     DefaultInputFile inputFile = new TestInputFileBuilder("foo", "src/foo.xoo")
       .setLanguage("xoo")
-      .setOriginalLineOffsets(offsets)
+      .setOriginalLineStartOffsets(startOffsets)
+      .setOriginalLineEndOffsets(endOffsets)
       .setModuleBaseDir(baseDir)
       .setLines(4)
       .build();

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -186,8 +186,6 @@ public class Storage<V> {
 
   /**
    * Removes everything in the specified group.
-   *
-   * @param group The group name.
    */
   public Storage<V> clear(Object key) {
     resetKey(key);
@@ -236,7 +234,6 @@ public class Storage<V> {
    * Returns the set of cache keys associated with this group.
    * TODO implement a lazy-loading equivalent with Iterator/Iterable
    *
-   * @param group The group.
    * @return The set of cache keys for this group.
    */
   @SuppressWarnings("rawtypes")

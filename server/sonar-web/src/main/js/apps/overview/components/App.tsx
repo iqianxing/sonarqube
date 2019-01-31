@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,62 +18,50 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import { Helmet } from 'react-helmet';
-import EmptyOverview from './EmptyOverview';
 import OverviewApp from './OverviewApp';
-import SonarCloudEmptyOverview from './SonarCloudEmptyOverview';
+import EmptyOverview from './EmptyOverview';
 import Suggestions from '../../../app/components/embed-docs-modal/Suggestions';
-import { Component, BranchLike } from '../../../app/types';
 import { isShortLivingBranch } from '../../../helpers/branches';
 import {
   getShortLivingBranchUrl,
-  getCodeUrl,
   getProjectUrl,
   getBaseUrl,
   getPathUrlAsString
 } from '../../../helpers/urls';
 import { isSonarCloud } from '../../../helpers/system';
+import { withRouter, Router } from '../../../components/hoc/withRouter';
 
 interface Props {
-  branchLike?: BranchLike;
-  branchLikes: BranchLike[];
-  component: Component;
+  branchLike?: T.BranchLike;
+  branchLikes: T.BranchLike[];
+  component: T.Component;
   isInProgress?: boolean;
   isPending?: boolean;
-  onComponentChange: (changes: Partial<Component>) => void;
+  onComponentChange: (changes: Partial<T.Component>) => void;
+  router: Pick<Router, 'replace'>;
 }
 
-export default class App extends React.PureComponent<Props> {
-  static contextTypes = {
-    router: PropTypes.object
-  };
-
+export class App extends React.PureComponent<Props> {
   componentDidMount() {
     const { branchLike, component } = this.props;
 
     if (this.isPortfolio()) {
-      this.context.router.replace({
+      this.props.router.replace({
         pathname: '/portfolio',
         query: { id: component.key }
       });
-    } else if (this.isFile()) {
-      this.context.router.replace(
-        getCodeUrl(component.breadcrumbs[0].key, branchLike, component.key)
-      );
     } else if (isShortLivingBranch(branchLike)) {
-      this.context.router.replace(getShortLivingBranchUrl(component.key, branchLike.name));
+      this.props.router.replace(getShortLivingBranchUrl(component.key, branchLike.name));
     }
   }
 
   isPortfolio = () => ['VW', 'SVW'].includes(this.props.component.qualifier);
 
-  isFile = () => ['FIL', 'UTS'].includes(this.props.component.qualifier);
-
   render() {
     const { branchLike, branchLikes, component } = this.props;
 
-    if (this.isPortfolio() || this.isFile() || isShortLivingBranch(branchLike)) {
+    if (this.isPortfolio() || isShortLivingBranch(branchLike)) {
       return null;
     }
 
@@ -89,23 +77,15 @@ export default class App extends React.PureComponent<Props> {
         )}
         <Suggestions suggestions="overview" />
 
-        {!component.analysisDate &&
-          (isSonarCloud() ? (
-            <SonarCloudEmptyOverview
-              branchLike={branchLike}
-              branchLikes={branchLikes}
-              component={component}
-              hasAnalyses={this.props.isPending || this.props.isInProgress}
-              onComponentChange={this.props.onComponentChange}
-            />
-          ) : (
-            <EmptyOverview
-              branchLike={branchLike}
-              branchLikes={branchLikes}
-              component={component.key}
-              showWarning={!this.props.isPending && !this.props.isInProgress}
-            />
-          ))}
+        {!component.analysisDate && (
+          <EmptyOverview
+            branchLike={branchLike}
+            branchLikes={branchLikes}
+            component={component}
+            hasAnalyses={this.props.isPending || this.props.isInProgress}
+            onComponentChange={this.props.onComponentChange}
+          />
+        )}
         {component.analysisDate && (
           <OverviewApp
             branchLike={branchLike}
@@ -117,3 +97,5 @@ export default class App extends React.PureComponent<Props> {
     );
   }
 }
+
+export default withRouter(App);

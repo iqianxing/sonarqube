@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,6 +28,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.core.util.CloseableIterator;
 import org.sonar.core.util.Protobuf;
+import org.sonar.scanner.protocol.Constants;
 import org.sonar.scanner.protocol.output.ScannerReport.Component.ComponentType;
 import org.sonar.scanner.protocol.output.ScannerReport.Measure.DoubleValue;
 import org.sonar.scanner.protocol.output.ScannerReport.SyntaxHighlightingRule.HighlightingType;
@@ -79,7 +80,7 @@ public class ScannerReportWriterTest {
     ScannerReport.Component.Builder component = ScannerReport.Component.newBuilder()
       .setRef(1)
       .setLanguage("java")
-      .setPath("src/Foo.java")
+      .setProjectRelativePath("src/Foo.java")
       .setType(ComponentType.FILE)
       .setIsTest(false)
       .addChildRef(5)
@@ -126,7 +127,7 @@ public class ScannerReportWriterTest {
       .setMsg("the message")
       .build();
 
-    underTest.writeComponentExternalIssues(1, asList(issue));
+    underTest.appendComponentExternalIssue(1, issue);
 
     assertThat(underTest.hasComponentData(FileStructure.Domain.EXTERNAL_ISSUES, 1)).isTrue();
     File file = underTest.getFileStructure().fileFor(FileStructure.Domain.EXTERNAL_ISSUES, 1);
@@ -134,6 +135,44 @@ public class ScannerReportWriterTest {
     try (CloseableIterator<ScannerReport.ExternalIssue> read = Protobuf.readStream(file, ScannerReport.ExternalIssue.parser())) {
       assertThat(Iterators.size(read)).isEqualTo(1);
     }
+  }
+
+  @Test
+  public void write_adhoc_rule() {
+
+    // write data
+    ScannerReport.AdHocRule rule = ScannerReport.AdHocRule.newBuilder()
+      .setEngineId("eslint")
+      .setRuleId("123")
+      .setName("Foo")
+      .setDescription("Description")
+      .setSeverity(Constants.Severity.BLOCKER)
+      .setType(ScannerReport.IssueType.BUG)
+      .build();
+    underTest.appendAdHocRule(rule);
+
+    File file = underTest.getFileStructure().adHocRules();
+    assertThat(file).exists().isFile();
+    try (CloseableIterator<ScannerReport.AdHocRule> read = Protobuf.readStream(file, ScannerReport.AdHocRule.parser())) {
+      assertThat(Iterators.size(read)).isEqualTo(1);
+    }
+  }
+
+  @Test
+  public void write_changed_lines() {
+    assertThat(underTest.hasComponentData(FileStructure.Domain.CHANGED_LINES, 1)).isFalse();
+
+    ScannerReport.ChangedLines changedLines = ScannerReport.ChangedLines.newBuilder()
+      .addLine(1)
+      .addLine(3)
+      .build();
+    underTest.writeComponentChangedLines(1, changedLines);
+
+    assertThat(underTest.hasComponentData(FileStructure.Domain.CHANGED_LINES, 1)).isTrue();
+    File file = underTest.getFileStructure().fileFor(FileStructure.Domain.CHANGED_LINES, 1);
+    assertThat(file).exists().isFile();
+    ScannerReport.ChangedLines loadedChangedLines = Protobuf.read(file, ScannerReport.ChangedLines.parser());
+    assertThat(loadedChangedLines.getLineList()).containsExactly(1, 3);
   }
 
   @Test
@@ -314,24 +353,4 @@ public class ScannerReportWriterTest {
     assertThat(underTest.hasComponentData(FileStructure.Domain.COVERAGES, 1)).isTrue();
   }
 
-  @Test
-  public void write_tests() {
-    assertThat(underTest.hasComponentData(FileStructure.Domain.TESTS, 1)).isFalse();
-
-    underTest.writeTests(1, asList(
-      ScannerReport.Test.getDefaultInstance()));
-
-    assertThat(underTest.hasComponentData(FileStructure.Domain.TESTS, 1)).isTrue();
-
-  }
-
-  @Test
-  public void write_coverage_details() {
-    assertThat(underTest.hasComponentData(FileStructure.Domain.COVERAGE_DETAILS, 1)).isFalse();
-
-    underTest.writeCoverageDetails(1, asList(
-      ScannerReport.CoverageDetail.getDefaultInstance()));
-
-    assertThat(underTest.hasComponentData(FileStructure.Domain.COVERAGE_DETAILS, 1)).isTrue();
-  }
 }

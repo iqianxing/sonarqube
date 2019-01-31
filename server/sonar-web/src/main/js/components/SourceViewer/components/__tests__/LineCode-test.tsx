@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,9 +20,9 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import LineCode from '../LineCode';
-import { BranchType, Issue, ShortLivingBranch, IssueType } from '../../../../app/types';
 
-const issueBase: Issue = {
+const issueBase: T.Issue = {
+  actions: [],
   component: '',
   componentLongName: '',
   componentQualifier: '',
@@ -42,7 +42,8 @@ const issueBase: Issue = {
   secondaryLocations: [],
   severity: '',
   status: '',
-  type: IssueType.Bug
+  transitions: [],
+  type: 'BUG'
 };
 
 it('render code', () => {
@@ -51,11 +52,11 @@ it('render code', () => {
     code: '<span class="k">class</span> <span class="sym sym-1">Foo</span> {'
   };
   const issueLocations = [{ from: 0, to: 5, line: 3 }];
-  const branch: ShortLivingBranch = {
+  const branch: T.ShortLivingBranch = {
     isMain: false,
     mergeBranch: 'master',
     name: 'feature',
-    type: BranchType.SHORT
+    type: 'SHORT'
   };
   const wrapper = shallow(
     <LineCode

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,10 +19,10 @@
  */
 package org.sonar.ce.task.projectanalysis.step;
 
-import com.google.common.base.Optional;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.ce.task.projectanalysis.component.CrawlerDepthLimit;
 import org.sonar.ce.task.projectanalysis.component.PathAwareCrawler;
@@ -78,10 +78,10 @@ public class SizeMeasuresStep implements ComputationStep {
       metricRepository.getByKey(DIRECTORIES_KEY),
       metricRepository.getByKey(FILES_KEY),
       metricRepository.getByKey(LINES_KEY)))
-        .visit(treeRootHolder.getRoot());
+      .visit(treeRootHolder.getRoot());
     new PathAwareCrawler<>(FormulaExecutorComponentVisitor.newBuilder(metricRepository, measureRepository)
       .buildFor(AGGREGATED_SIZE_MEASURE_FORMULAS))
-        .visit(treeRootHolder.getRoot());
+      .visit(treeRootHolder.getRoot());
   }
 
   @Override
@@ -107,21 +107,21 @@ public class SizeMeasuresStep implements ComputationStep {
     }
 
     @Override
-    public void visitModule(Component module, Path<Counter> path) {
-      createMeasures(module, path.current());
-      path.parent().aggregate(path.current());
-    }
-
-    @Override
     public void visitDirectory(Component directory, Path<Counter> path) {
-      int fileCount = path.current().files;
-      if (fileCount > 0) {
-        measureRepository.add(directory, directoryMetric, newMeasureBuilder().create(1));
-        measureRepository.add(directory, fileMetric, newMeasureBuilder().create(fileCount));
-        measureRepository.add(directory, linesMetric, newMeasureBuilder().create(path.current().lines));
+      int mainfileCount = path.current().files;
+      path.parent().directories += path.current().directories;
+      if (mainfileCount > 0 || path.current().directories > 0) {
         path.parent().directories += 1;
-        path.parent().files += fileCount;
+      }
+      if (mainfileCount > 0) {
+        measureRepository.add(directory, fileMetric, newMeasureBuilder().create(mainfileCount));
+        measureRepository.add(directory, linesMetric, newMeasureBuilder().create(path.current().lines));
+        path.parent().files += mainfileCount;
         path.parent().lines += path.current().lines;
+      }
+      int mainDirectoryCount = path.current().directories;
+      if (mainDirectoryCount > 0) {
+        measureRepository.add(directory, directoryMetric, newMeasureBuilder().create(mainDirectoryCount));
       }
     }
 
@@ -165,7 +165,7 @@ public class SizeMeasuresStep implements ComputationStep {
 
     private int getIntValue(Component component, Metric metric) {
       Optional<Measure> fileMeasure = measureRepository.getRawMeasure(component, metric);
-      return fileMeasure.isPresent() ? fileMeasure.get().getIntValue() : 0;
+      return fileMeasure.map(Measure::getIntValue).orElse(0);
     }
   }
 

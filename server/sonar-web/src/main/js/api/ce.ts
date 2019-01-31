@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,39 +20,30 @@
 import { getJSON, post, RequestData } from '../helpers/request';
 import throwGlobalError from '../app/utils/throwGlobalError';
 
-export interface PendingTask {
+export function getAnalysisStatus(data: {
+  component: string;
   branch?: string;
-  branchType?: string;
-  componentKey: string;
-  componentName: string;
-  componentQualifier: string;
-  id: string;
-  logs: boolean;
-  organization: string;
   pullRequest?: string;
-  pullRequestTitle?: string;
-  status: string;
-  submittedAt: Date;
-  submitterLogin?: string;
-  type: string;
+}): Promise<{
+  component: {
+    branch?: string;
+    key: string;
+    name: string;
+    organization?: string;
+    pullRequest?: string;
+    warnings: string[];
+  };
+}> {
+  return getJSON('/api/ce/analysis_status', data).catch(throwGlobalError);
 }
 
-export interface Task extends PendingTask {
-  analysisId?: string;
-  errorMessage?: string;
-  errorType?: string;
-  executionTimeMs: number;
-  executedAt: Date;
-  hasErrorStacktrace: boolean;
-  hasScannerContext: boolean;
-  startedAt: Date;
-}
-
-export function getActivity(data: RequestData): Promise<any> {
+export function getActivity(data: RequestData): Promise<{ tasks: T.Task[] }> {
   return getJSON('/api/ce/activity', data);
 }
 
-export function getStatus(componentId?: string): Promise<any> {
+export function getStatus(
+  componentId?: string
+): Promise<{ failing: number; inProgress: number; pending: number }> {
   const data = {};
   if (componentId) {
     Object.assign(data, { componentId });
@@ -60,7 +51,7 @@ export function getStatus(componentId?: string): Promise<any> {
   return getJSON('/api/ce/activity_status', data);
 }
 
-export function getTask(id: string, additionalFields?: string[]): Promise<any> {
+export function getTask(id: string, additionalFields?: string[]): Promise<T.Task> {
   return getJSON('/api/ce/task', { id, additionalFields }).then(r => r.task);
 }
 
@@ -73,12 +64,12 @@ export function cancelAllTasks(): Promise<any> {
 }
 
 export function getTasksForComponent(
-  componentKey: string
-): Promise<{ queue: PendingTask[]; current: Task }> {
-  return getJSON('/api/ce/component', { componentKey }).catch(throwGlobalError);
+  component: string
+): Promise<{ queue: T.Task[]; current: T.Task }> {
+  return getJSON('/api/ce/component', { component }).catch(throwGlobalError);
 }
 
-export function getTypes(): Promise<any> {
+export function getTypes(): Promise<string[]> {
   return getJSON('/api/ce/task_types').then(r => r.taskTypes);
 }
 

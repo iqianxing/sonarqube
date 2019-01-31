@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -41,11 +41,6 @@ class PluginClassLoaderDef {
   private final Mask mask = new Mask();
   private boolean selfFirstStrategy = false;
 
-  /**
-   * Compatibility with API classloader as defined before version 5.2
-   */
-  private boolean compatibilityMode = false;
-
   PluginClassLoaderDef(String basePluginKey) {
     Preconditions.checkArgument(!Strings.isNullOrEmpty(basePluginKey));
     this.basePluginKey = basePluginKey;
@@ -83,14 +78,6 @@ class PluginClassLoaderDef {
     if (!Strings.isNullOrEmpty(mainClass)) {
       mainClassesByPluginKey.put(pluginKey, mainClass);
     }
-  }
-
-  boolean isCompatibilityMode() {
-    return compatibilityMode;
-  }
-
-  void setCompatibilityMode(boolean b) {
-    this.compatibilityMode = b;
   }
 
   @Override

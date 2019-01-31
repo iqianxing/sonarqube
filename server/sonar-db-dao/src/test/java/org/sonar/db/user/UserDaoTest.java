@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,17 +23,15 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.sonar.api.user.UserQuery;
 import org.sonar.api.utils.DateUtils;
-import org.sonar.api.utils.System2;
+import org.sonar.api.utils.internal.TestSystem2;
 import org.sonar.db.DatabaseUtils;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.DbTester;
-import org.sonar.db.KeyLongValue;
 import org.sonar.db.component.ComponentDto;
 import org.sonar.db.organization.OrganizationDto;
 
@@ -42,15 +40,13 @@ import static java.util.Collections.emptyList;
 import static org.apache.commons.lang.RandomStringUtils.randomAlphanumeric;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.groups.Tuple.tuple;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 import static org.sonar.db.user.GroupTesting.newGroupDto;
 import static org.sonar.db.user.UserTesting.newUserDto;
 
 public class UserDaoTest {
   private static final long NOW = 1_500_000_000_000L;
 
-  private System2 system2 = mock(System2.class);
+  private TestSystem2 system2 = new TestSystem2().setNow(NOW);
 
   @Rule
   public DbTester db = DbTester.create(system2);
@@ -58,11 +54,6 @@ public class UserDaoTest {
   private DbClient dbClient = db.getDbClient();
   private DbSession session = db.getSession();
   private UserDao underTest = db.getDbClient().userDao();
-
-  @Before
-  public void setUp() {
-    when(system2.now()).thenReturn(NOW);
-  }
 
   @Test
   public void selectByUuid() {
@@ -300,94 +291,6 @@ public class UserDaoTest {
     session.commit();
 
     assertThat(underTest.countRootUsersButLogin(session, rootLogin)).isEqualTo(2);
-  }
-
-  @Test
-  public void countTotalUsers() {
-    assertThat(underTest.countTotalUsers(session)).isEqualTo(0);
-
-    db.users().insertUser(u -> u.setActive(false));
-    db.users().insertUser(u -> u.setActive(true));
-
-    assertThat(underTest.countTotalUsers(session)).isEqualTo(2);
-  }
-
-  @Test
-  public void countTeamUsers() {
-    assertThat(underTest.countTeamUsers(session)).isEqualTo(0);
-
-    // user 1: with only personal organization
-    OrganizationDto user1Org = db.organizations().insert();
-    insertNonRootUser(newUserDto().setOrganizationUuid(user1Org.getUuid()));
-    assertThat(underTest.countTeamUsers(session)).isEqualTo(0);
-
-    // user 2: with no organizations at all
-    insertNonRootUser(newUserDto().setOrganizationUuid(null));
-    assertThat(underTest.countTeamUsers(session)).isEqualTo(0);
-
-    // user 3: with personal and team organizations
-    OrganizationDto user3Org = db.organizations().insert();
-    OrganizationDto teamOrg = db.organizations().insert();
-    UserDto user3 = insertNonRootUser(newUserDto().setOrganizationUuid(user3Org.getUuid()));
-    db.organizations().addMember(teamOrg, user3);
-    assertThat(underTest.countTeamUsers(session)).isEqualTo(1);
-  }
-
-  @Test
-  public void countPersonalUsers() {
-    assertThat(underTest.countPersonalUsers(session)).isEqualTo(0);
-
-    // user 1: with only personal organization
-    OrganizationDto user1Org = db.organizations().insert();
-    insertNonRootUser(newUserDto().setOrganizationUuid(user1Org.getUuid()));
-    assertThat(underTest.countPersonalUsers(session)).isEqualTo(1);
-
-    // user 2: with no organizations at all
-    insertNonRootUser(newUserDto().setOrganizationUuid(null));
-    assertThat(underTest.countPersonalUsers(session)).isEqualTo(1);
-
-    // user 3: with personal and team organizations
-    OrganizationDto user3Org = db.organizations().insert();
-    OrganizationDto teamOrg = db.organizations().insert();
-    UserDto user3 = insertNonRootUser(newUserDto().setOrganizationUuid(user3Org.getUuid()));
-    db.organizations().addMember(teamOrg, user3);
-    assertThat(underTest.countPersonalUsers(session)).isEqualTo(1);
-
-    // user 4: excluded because deactivated
-    OrganizationDto user4Org = db.organizations().insert();
-    insertNonRootUser(newUserDto().setOrganizationUuid(user4Org.getUuid()).setActive(false));
-    assertThat(underTest.countPersonalUsers(session)).isEqualTo(1);
-  }
-
-  @Test
-  public void countNewUsersSince() {
-    assertThat(underTest.countNewUsersSince(session, 400L)).isEqualTo(0);
-
-    when(system2.now()).thenReturn(100L);
-    insertNonRootUser(newUserDto());
-    when(system2.now()).thenReturn(200L);
-    insertNonRootUser(newUserDto());
-    when(system2.now()).thenReturn(300L);
-    insertNonRootUser(newUserDto());
-
-    assertThat(underTest.countNewUsersSince(session, 50L)).isEqualTo(3);
-    assertThat(underTest.countNewUsersSince(session, 190L)).isEqualTo(2);
-    assertThat(underTest.countNewUsersSince(session, 400L)).isEqualTo(0);
-  }
-
-  @Test
-  public void countUsersByIdentityProviders() {
-    assertThat(underTest.countUsersByIdentityProviders(session)).isEmpty();
-
-    db.users().insertUser(u -> u.setActive(true).setExternalIdentityProvider("bitbucket"));
-    db.users().insertUser(u -> u.setActive(true).setExternalIdentityProvider("github"));
-    db.users().insertUser(u -> u.setActive(true).setExternalIdentityProvider("github"));
-    // this used is excluded because deactivated
-    db.users().insertUser(u -> u.setActive(false).setExternalIdentityProvider("github"));
-
-    assertThat(underTest.countUsersByIdentityProviders(session))
-      .extracting(KeyLongValue::getKey, KeyLongValue::getValue)
-      .containsExactlyInAnyOrder(tuple("bitbucket", 1L), tuple("github", 2L));
   }
 
   private UserDto insertInactiveRootUser(UserDto dto) {
@@ -694,6 +597,16 @@ public class UserDaoTest {
   }
 
   @Test
+  public void select_by_external_login_and_identity_provider() {
+    UserDto activeUser = db.users().insertUser();
+    UserDto disableUser = db.users().insertUser(u -> u.setActive(false));
+
+    assertThat(underTest.selectByExternalLoginAndIdentityProvider(session, activeUser.getExternalLogin(), activeUser.getExternalIdentityProvider())).isNotNull();
+    assertThat(underTest.selectByExternalLoginAndIdentityProvider(session, disableUser.getExternalLogin(), disableUser.getExternalIdentityProvider())).isNotNull();
+    assertThat(underTest.selectByExternalLoginAndIdentityProvider(session, "unknown", "unknown")).isNull();
+  }
+
+  @Test
   public void setRoot_does_not_fail_on_non_existing_login() {
     underTest.setRoot(session, "unkown", true);
     underTest.setRoot(session, "unkown", false);
@@ -707,25 +620,25 @@ public class UserDaoTest {
     assertThat(underTest.selectByLogin(session, otherUser.getLogin()).isRoot()).isEqualTo(false);
 
     // does not fail when changing to same value
-    when(system2.now()).thenReturn(15_000L);
+    system2.setNow(15_000L);
     commit(() -> underTest.setRoot(session, login, false));
     verifyRootAndUpdatedAt(login, false, 15_000L);
     verifyRootAndUpdatedAt(otherUser.getLogin(), false, otherUser.getUpdatedAt());
 
     // change value
-    when(system2.now()).thenReturn(26_000L);
+    system2.setNow(26_000L);
     commit(() -> underTest.setRoot(session, login, true));
     verifyRootAndUpdatedAt(login, true, 26_000L);
     verifyRootAndUpdatedAt(otherUser.getLogin(), false, otherUser.getUpdatedAt());
 
     // does not fail when changing to same value
-    when(system2.now()).thenReturn(37_000L);
+    system2.setNow(37_000L);
     commit(() -> underTest.setRoot(session, login, true));
     verifyRootAndUpdatedAt(login, true, 37_000L);
     verifyRootAndUpdatedAt(otherUser.getLogin(), false, otherUser.getUpdatedAt());
 
     // change value back
-    when(system2.now()).thenReturn(48_000L);
+    system2.setNow(48_000L);
     commit(() -> underTest.setRoot(session, login, false));
     verifyRootAndUpdatedAt(login, false, 48_000L);
     verifyRootAndUpdatedAt(otherUser.getLogin(), false, otherUser.getUpdatedAt());

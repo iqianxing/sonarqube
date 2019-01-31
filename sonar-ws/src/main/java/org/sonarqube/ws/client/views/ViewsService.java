@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
  */
 package org.sonarqube.ws.client.views;
 
+import java.util.stream.Collectors;
 import javax.annotation.Generated;
 import org.sonarqube.ws.MediaTypes;
 import org.sonarqube.ws.client.BaseService;
@@ -215,6 +216,7 @@ public class ViewsService extends BaseService {
    * This is a POST request.
    * @see <a href="https://next.sonarqube.com/sonarqube/web_api/api/views/mode">Further information about this action online (including a response example)</a>
    * @since 2.6
+   * @deprecated since 7.4
    */
   public void mode(ModeRequest request) {
     call(
@@ -299,6 +301,7 @@ public class ViewsService extends BaseService {
    * This is a POST request.
    * @see <a href="https://next.sonarqube.com/sonarqube/web_api/api/views/regexp">Further information about this action online (including a response example)</a>
    * @since 1.0
+   * @deprecated since 7.4
    */
   public void regexp(RegexpRequest request) {
     call(
@@ -356,6 +359,68 @@ public class ViewsService extends BaseService {
         .setParam("ps", request.getPs())
         .setParam("q", request.getQ())
         .setParam("qualifiers", request.getQualifiers())
+        .setMediaType(MediaTypes.JSON)
+      ).content();
+  }
+
+  /**
+   *
+   * This is part of the internal API.
+   * This is a POST request.
+   * @see <a href="https://next.sonarqube.com/sonarqube/web_api/api/views/set_manual_mode">Further information about this action online (including a response example)</a>
+   * @since 7.4
+   */
+  public void setManualMode(SetManualModeRequest request) {
+    call(
+      new PostRequest(path("set_manual_mode"))
+        .setParam("portfolio", request.getPortfolio())
+        .setMediaType(MediaTypes.JSON)
+    ).content();
+  }
+
+  /**
+   *
+   * This is part of the internal API.
+   * This is a POST request.
+   * @see <a href="https://next.sonarqube.com/sonarqube/web_api/api/views/set_remaining_projects_mode">Further information about this action online (including a response example)</a>
+   * @since 7.4
+   */
+  public void setRegexpMode(SetRegexpModeRequest request) {
+    call(
+      new PostRequest(path("set_regexp_mode"))
+        .setParam("portfolio", request.getPortfolio())
+        .setParam("regexp", request.getRegexp())
+        .setMediaType(MediaTypes.JSON)
+    ).content();
+  }
+
+  /**
+   *
+   * This is part of the internal API.
+   * This is a POST request.
+   * @see <a href="https://next.sonarqube.com/sonarqube/web_api/api/views/set_remaining_projects_mode">Further information about this action online (including a response example)</a>
+   * @since 7.4
+   */
+  public void setRemainingProjectsMode(SetRemainingProjectsModeRequest request) {
+    call(
+      new PostRequest(path("set_remaining_projects_mode"))
+        .setParam("portfolio", request.getPortfolio())
+        .setMediaType(MediaTypes.JSON)
+    ).content();
+  }
+
+  /**
+   *
+   * This is part of the internal API.
+   * This is a POST request.
+   * @see <a href="https://next.sonarqube.com/sonarqube/web_api/api/views/set_tags_mode">Further information about this action online (including a response example)</a>
+   * @since 7.4
+   */
+  public void setTagsMode(SetTagsModeRequest request) {
+    call(
+      new PostRequest(path("set_tags_mode"))
+        .setParam("portfolio", request.getPortfolio())
+        .setParam("tags", request.getTags() == null ? null : request.getTags().stream().collect(Collectors.joining(",")))
         .setMediaType(MediaTypes.JSON)
       ).content();
   }

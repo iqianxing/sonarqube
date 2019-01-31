@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,29 +17,27 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-import { Breadcrumb, Component } from './types';
-
-let bucket: { [key: string]: Component } = {};
+let bucket: { [key: string]: T.ComponentMeasure } = {};
 let childrenBucket: {
   [key: string]: {
-    children: Component[];
+    children: T.ComponentMeasure[];
     page: number;
     total: number;
   };
 } = {};
-let breadcrumbsBucket: { [key: string]: Breadcrumb[] } = {};
+let breadcrumbsBucket: { [key: string]: T.Breadcrumb[] } = {};
 
-export function addComponent(component: Component): void {
+export function addComponent(component: T.ComponentMeasure): void {
   bucket[component.key] = component;
 }
 
-export function getComponent(componentKey: string): Component {
+export function getComponent(componentKey: string): T.ComponentMeasure {
   return bucket[componentKey];
 }
 
 export function addComponentChildren(
   componentKey: string,
-  children: Component[],
+  children: T.ComponentMeasure[],
   total: number,
   page: number
 ): void {
@@ -53,18 +51,18 @@ export function addComponentChildren(
 export function getComponentChildren(
   componentKey: string
 ): {
-  children: Component[];
+  children: T.ComponentMeasure[];
   page: number;
   total: number;
 } {
   return childrenBucket[componentKey];
 }
 
-export function addComponentBreadcrumbs(componentKey: string, breadcrumbs: Breadcrumb[]): void {
+export function addComponentBreadcrumbs(componentKey: string, breadcrumbs: T.Breadcrumb[]): void {
   breadcrumbsBucket[componentKey] = breadcrumbs;
 }
 
-export function getComponentBreadcrumbs(componentKey: string): Breadcrumb[] {
+export function getComponentBreadcrumbs(componentKey: string): T.Breadcrumb[] {
   return breadcrumbsBucket[componentKey];
 }
 

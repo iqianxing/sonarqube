@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,6 +26,7 @@ interface Props {
   children?: any;
   className?: string;
   height: number;
+  top?: number;
   notif?: React.ReactNode;
   [prop: string]: any;
 }
@@ -52,13 +53,15 @@ export default class NavBar extends React.PureComponent<Props, State> {
   }
 
   followHorizontalScroll = () => {
-    this.setState({ left: -document.documentElement.scrollLeft });
+    if (document.documentElement) {
+      this.setState({ left: -document.documentElement.scrollLeft });
+    }
   };
 
   render() {
-    const { children, className, height, notif, ...other } = this.props;
+    const { children, className, height, top, notif, ...other } = this.props;
     return (
-      <nav {...other} className={classNames('navbar', className)} style={{ height }}>
+      <nav {...other} className={classNames('navbar', className)} style={{ height, top }}>
         <div
           className={classNames('navbar-inner', { 'navbar-inner-with-notif': notif != null })}
           style={{ height, left: this.state.left }}>

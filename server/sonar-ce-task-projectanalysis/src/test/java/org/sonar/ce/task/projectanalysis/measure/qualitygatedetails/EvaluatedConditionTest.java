@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,10 +26,15 @@ import org.sonar.ce.task.projectanalysis.qualitygate.Condition;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class EvaluatedConditionTest {
 
-  private static final Condition SOME_CONDITION = new Condition(mock(Metric.class), Condition.Operator.EQUALS.getDbValue(), "1", null, false);
+  private static final Metric SOME_METRIC = mock(Metric.class);
+  static {
+    when(SOME_METRIC.getKey()).thenReturn("dummy key");
+  }
+  private static final Condition SOME_CONDITION = new Condition(SOME_METRIC, Condition.Operator.LESS_THAN.getDbValue(), "1");
   private static final Measure.Level SOME_LEVEL = Measure.Level.OK;
   private static final String SOME_VALUE = "some value";
 

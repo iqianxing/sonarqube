@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -87,16 +87,12 @@ export function fileFromPath(path: string | null): string | null {
   }
 }
 
-export function splitPath(path: string): { head: string; tail: string } | null {
-  if (typeof path === 'string') {
-    const tokens = path.split('/');
-    return {
-      head: tokens.slice(0, -1).join('/'),
-      tail: tokens[tokens.length - 1]
-    };
-  } else {
-    return null;
-  }
+export function splitPath(path: string) {
+  const tokens = path.split('/');
+  return {
+    head: tokens.slice(0, -1).join('/'),
+    tail: tokens[tokens.length - 1]
+  };
 }
 
 export function limitComponentName(str: string, limit = 30): string {

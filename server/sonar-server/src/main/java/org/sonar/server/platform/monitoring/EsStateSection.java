@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -101,6 +101,6 @@ public class EsStateSection implements SystemInfoSection {
   }
 
   private static String formatPercent(long amount) {
-    return format(Locale.ENGLISH, "%.1f%%", 100 * amount * 1.0D / 100L);
+    return format(Locale.ENGLISH, "%.1f%%", 100.0 * amount * 1.0 / 100.0);
   }
 }

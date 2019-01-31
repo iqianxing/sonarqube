@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,11 +20,10 @@
 import * as React from 'react';
 import { sortBy } from 'lodash';
 import Item from './Item';
-import { CustomMeasure } from '../../../app/types';
 import { translate } from '../../../helpers/l10n';
 
 interface Props {
-  measures: CustomMeasure[];
+  measures: T.CustomMeasure[];
   onDelete: (measureId: string) => Promise<void>;
   onEdit: (data: { description: string; id: string; value: string }) => Promise<void>;
 }

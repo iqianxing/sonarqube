@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,10 +22,10 @@ package org.sonar.server.permission;
 import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonar.core.permission.GlobalPermissions;
-import org.sonar.core.permission.ProjectPermissions;
+import org.sonar.db.permission.OrganizationPermission;
 
 import static java.util.Objects.requireNonNull;
+import static org.sonar.core.util.stream.MoreCollectors.toList;
 import static org.sonar.server.ws.WsUtils.checkRequest;
 
 public abstract class PermissionChange {
@@ -38,16 +38,21 @@ public abstract class PermissionChange {
   private final String organizationUuid;
   private final String permission;
   private final ProjectId projectId;
+  protected final PermissionService permissionService;
 
-  public PermissionChange(Operation operation, String organizationUuid, String permission, @Nullable ProjectId projectId) {
+  public PermissionChange(Operation operation, String organizationUuid, String permission, @Nullable ProjectId projectId, PermissionService permissionService) {
     this.operation = requireNonNull(operation);
     this.organizationUuid = requireNonNull(organizationUuid);
     this.permission = requireNonNull(permission);
     this.projectId = projectId;
+    this.permissionService = permissionService;
     if (projectId == null) {
-      checkRequest(GlobalPermissions.ALL.contains(permission), "Invalid global permission '%s'. Valid values are %s", permission, GlobalPermissions.ALL);
+      checkRequest(permissionService.getAllOrganizationPermissions().stream().anyMatch(p -> p.getKey().equals(permission)),
+        "Invalid global permission '%s'. Valid values are %s", permission,
+        permissionService.getAllOrganizationPermissions().stream().map(OrganizationPermission::getKey).collect(toList()));
     } else {
-      checkRequest(ProjectPermissions.ALL.contains(permission), "Invalid project permission '%s'. Valid values are %s", permission, ProjectPermissions.ALL);
+      checkRequest(permissionService.getAllProjectPermissions().contains(permission), "Invalid project permission '%s'. Valid values are %s", permission,
+        permissionService.getAllProjectPermissions());
     }
   }
 

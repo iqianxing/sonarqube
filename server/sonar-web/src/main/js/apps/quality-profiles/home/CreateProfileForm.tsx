@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,18 +19,23 @@
  */
 import * as React from 'react';
 import { sortBy } from 'lodash';
-import { getImporters, createQualityProfile } from '../../../api/quality-profiles';
+import {
+  changeProfileParent,
+  createQualityProfile,
+  getImporters
+} from '../../../api/quality-profiles';
 import Modal from '../../../components/controls/Modal';
 import Select from '../../../components/controls/Select';
 import { SubmitButton, ResetButtonLink } from '../../../components/ui/buttons';
 import { translate } from '../../../helpers/l10n';
+import { Profile } from '../types';
 
 interface Props {
   languages: Array<{ key: string; name: string }>;
   onClose: () => void;
   onCreate: Function;
-  onRequestFail: (reasong: any) => void;
   organization: string | null;
+  profiles: Profile[];
 }
 
 interface State {
@@ -38,6 +43,7 @@ interface State {
   language?: string;
   loading: boolean;
   name: string;
+  parent?: string;
   preloading: boolean;
 }
 
@@ -77,7 +83,11 @@ export default class CreateProfileForm extends React.PureComponent<Props, State>
     this.setState({ language: option.value });
   };
 
-  handleFormSubmit = (event: React.SyntheticEvent<HTMLFormElement>) => {
+  handleParentChange = (option: { value: string } | null) => {
+    this.setState({ parent: option ? option.value : undefined });
+  };
+
+  handleFormSubmit = async (event: React.SyntheticEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     this.setState({ loading: true });
@@ -87,25 +97,41 @@ export default class CreateProfileForm extends React.PureComponent<Props, State>
       data.append('organization', this.props.organization);
     }
 
-    createQualityProfile(data).then(
-      (response: any) => this.props.onCreate(response.profile),
-      (error: any) => {
-        if (this.mounted) {
-          this.setState({ loading: false });
-        }
-        this.props.onRequestFail(error);
+    try {
+      const { profile } = await createQualityProfile(data);
+      if (this.state.parent) {
+        await changeProfileParent(profile.key, this.state.parent);
       }
-    );
+      this.props.onCreate(profile);
+    } finally {
+      if (this.mounted) {
+        this.setState({ loading: false });
+      }
+    }
   };
 
   render() {
     const header = translate('quality_profiles.new_profile');
-
     const languages = sortBy(this.props.languages, 'name');
+    let profiles: Array<{ label: string; value: string }> = [];
+
     const selectedLanguage = this.state.language || languages[0].key;
     const importers = this.state.importers.filter(importer =>
       importer.languages.includes(selectedLanguage)
     );
+
+    if (selectedLanguage) {
+      const languageProfiles = this.props.profiles.filter(p => p.language === selectedLanguage);
+      profiles = [
+        { label: translate('none'), value: '' },
+        ...sortBy(languageProfiles, 'name').map(profile => ({
+          label: profile.isBuiltIn
+            ? `${profile.name} (${translate('quality_profiles.built_in')})`
+            : profile.name,
+          value: profile.key
+        }))
+      ];
+    }
 
     return (
       <Modal contentLabel={header} onRequestClose={this.props.onClose}>
@@ -144,6 +170,7 @@ export default class CreateProfileForm extends React.PureComponent<Props, State>
                 </label>
                 <Select
                   clearable={false}
+                  id="create-profile-language"
                   name="language"
                   onChange={this.handleLanguageChange}
                   options={languages.map(language => ({
@@ -153,6 +180,22 @@ export default class CreateProfileForm extends React.PureComponent<Props, State>
                   value={selectedLanguage}
                 />
               </div>
+              {selectedLanguage &&
+                profiles.length && (
+                  <div className="modal-field">
+                    <label htmlFor="create-profile-parent">
+                      {translate('quality_profiles.parent')}
+                    </label>
+                    <Select
+                      clearable={true}
+                      id="create-profile-parent"
+                      name="parentKey"
+                      onChange={this.handleParentChange}
+                      options={profiles}
+                      value={this.state.parent || ''}
+                    />
+                  </div>
+                )}
               {importers.map(importer => (
                 <div
                   className="modal-field spacer-bottom js-importer"

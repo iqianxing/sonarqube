@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,8 @@
  */
 package org.sonar.server.permission.ws.template;
 
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.sonar.api.i18n.I18n;
 import org.sonar.api.resources.Qualifiers;
 import org.sonar.api.resources.ResourceTypes;
@@ -32,14 +34,11 @@ import org.sonar.db.organization.OrganizationDao;
 import org.sonar.db.permission.template.PermissionTemplateDto;
 import org.sonar.server.permission.ws.PermissionWsSupport;
 import org.sonar.server.permission.ws.PermissionsWsAction;
+import org.sonar.server.permission.ws.RequestValidator;
+import org.sonar.server.permission.ws.WsParameters;
 import org.sonar.server.user.UserSession;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
-
 import static org.sonar.server.permission.PermissionPrivilegeChecker.checkGlobalAdmin;
-import static org.sonar.server.permission.ws.PermissionRequestValidator.validateQualifier;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createTemplateParameters;
 import static org.sonar.server.permission.ws.template.WsTemplateRef.newTemplateRef;
 import static org.sonar.server.ws.WsParameterBuilder.QualifierParameterContext.newQualifierParameterContext;
 import static org.sonar.server.ws.WsParameterBuilder.createDefaultTemplateQualifierParameter;
@@ -82,7 +81,7 @@ public class SetDefaultTemplateAction implements PermissionsWsAction {
       .setSince("5.2")
       .setHandler(this);
 
-    createTemplateParameters(action);
+    WsParameters.createTemplateParameters(action);
     createDefaultTemplateQualifierParameter(action, newQualifierParameterContext(i18n, resourceTypes))
       .setDefaultValue(Qualifiers.PROJECT);
   }
@@ -98,7 +97,7 @@ public class SetDefaultTemplateAction implements PermissionsWsAction {
       String qualifier = request.getQualifier();
       PermissionTemplateDto template = findTemplate(dbSession, request);
       checkGlobalAdmin(userSession, template.getOrganizationUuid());
-      validateQualifier(qualifier, resourceTypes);
+      RequestValidator.validateQualifier(qualifier, resourceTypes);
       setDefaultTemplateUuid(dbSession, template, qualifier);
       dbSession.commit();
     }
@@ -116,10 +115,13 @@ public class SetDefaultTemplateAction implements PermissionsWsAction {
     DefaultTemplates defaultTemplates = checkFoundWithOptional(
       organizationDao.getDefaultTemplates(dbSession, organizationUuid),
       "No Default templates for organization with uuid '%s'", organizationUuid);
+
     if (Qualifiers.PROJECT.equals(qualifier)) {
       defaultTemplates.setProjectUuid(permissionTemplateDto.getUuid());
     } else if (Qualifiers.VIEW.equals(qualifier)) {
-      defaultTemplates.setViewUuid(permissionTemplateDto.getUuid());
+      defaultTemplates.setPortfoliosUuid(permissionTemplateDto.getUuid());
+    } else if (Qualifiers.APP.equals(qualifier)) {
+      defaultTemplates.setApplicationsUuid(permissionTemplateDto.getUuid());
     }
     organizationDao.setDefaultTemplates(dbSession, organizationUuid, defaultTemplates);
   }

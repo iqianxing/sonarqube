@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -36,31 +36,40 @@ public class CeTaskQuery {
 
   private boolean onlyCurrents = false;
   // SONAR-7681 a public implementation of List must be used in MyBatis - potential concurrency exceptions otherwise
-  private ArrayList<String> componentUuids;
+  @Nullable
+  private ArrayList<String> mainComponentUuids;
+  @Nullable
   private ArrayList<String> statuses;
+  @Nullable
   private String type;
+  @Nullable
   private Long minSubmittedAt;
+  @Nullable
   private Long maxExecutedAt;
+  @Nullable
+  private Long minExecutedAt;
+  @Nullable
+  private ArrayList<String> errorTypes;
 
   @CheckForNull
-  public List<String> getComponentUuids() {
-    return componentUuids;
+  public List<String> getMainComponentUuids() {
+    return mainComponentUuids;
   }
 
-  public CeTaskQuery setComponentUuids(@Nullable List<String> l) {
-    this.componentUuids = l == null ? null : newArrayList(l);
+  public CeTaskQuery setMainComponentUuids(@Nullable List<String> l) {
+    this.mainComponentUuids = l == null ? null : newArrayList(l);
     return this;
   }
 
-  public boolean isShortCircuitedByComponentUuids() {
-    return componentUuids != null && (componentUuids.isEmpty() || componentUuids.size() > MAX_COMPONENT_UUIDS);
+  public boolean isShortCircuitedByMainComponentUuids() {
+    return mainComponentUuids != null && (mainComponentUuids.isEmpty() || mainComponentUuids.size() > MAX_COMPONENT_UUIDS);
   }
 
-  public CeTaskQuery setComponentUuid(@Nullable String s) {
+  public CeTaskQuery setMainComponentUuid(@Nullable String s) {
     if (s == null) {
-      this.componentUuids = null;
+      this.mainComponentUuids = null;
     } else {
-      this.componentUuids = newArrayList(s);
+      this.mainComponentUuids = newArrayList(s);
     }
     return this;
   }
@@ -85,6 +94,16 @@ public class CeTaskQuery {
   }
 
   @CheckForNull
+  public List<String> getErrorTypes() {
+    return errorTypes;
+  }
+
+  public CeTaskQuery setErrorTypes(@Nullable List<String> l) {
+    this.errorTypes = l == null ? null : newArrayList(l);
+    return this;
+  }
+
+  @CheckForNull
   public String getType() {
     return type;
   }
@@ -101,6 +120,16 @@ public class CeTaskQuery {
 
   public CeTaskQuery setMaxExecutedAt(@Nullable Long l) {
     this.maxExecutedAt = l;
+    return this;
+  }
+
+  @CheckForNull
+  public Long getMinExecutedAt() {
+    return minExecutedAt;
+  }
+
+  public CeTaskQuery setMinExecutedAt(@Nullable Long l) {
+    this.minExecutedAt = l;
     return this;
   }
 

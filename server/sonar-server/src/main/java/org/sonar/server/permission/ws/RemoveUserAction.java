@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,18 +27,18 @@ import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.organization.OrganizationDto;
 import org.sonar.server.permission.PermissionChange;
+import org.sonar.server.permission.PermissionService;
 import org.sonar.server.permission.PermissionUpdater;
 import org.sonar.server.permission.ProjectId;
 import org.sonar.server.permission.UserId;
 import org.sonar.server.permission.UserPermissionChange;
 import org.sonar.server.user.UserSession;
 
-import static java.util.Arrays.asList;
+import static java.util.Collections.singletonList;
 import static org.sonar.server.permission.PermissionPrivilegeChecker.checkProjectAdmin;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createOrganizationParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createPermissionParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createProjectParameters;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createUserLoginParameter;
+import static org.sonar.server.permission.ws.WsParameters.createOrganizationParameter;
+import static org.sonar.server.permission.ws.WsParameters.createProjectParameters;
+import static org.sonar.server.permission.ws.WsParameters.createUserLoginParameter;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_ORGANIZATION;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_PERMISSION;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_USER_LOGIN;
@@ -50,13 +50,18 @@ public class RemoveUserAction implements PermissionsWsAction {
   private final DbClient dbClient;
   private final UserSession userSession;
   private final PermissionUpdater permissionUpdater;
-  private final PermissionWsSupport support;
+  private final PermissionWsSupport wsSupport;
+  private final WsParameters wsParameters;
+  private final PermissionService permissionService;
 
-  public RemoveUserAction(DbClient dbClient, UserSession userSession, PermissionUpdater permissionUpdater, PermissionWsSupport support) {
+  public RemoveUserAction(DbClient dbClient, UserSession userSession, PermissionUpdater permissionUpdater, PermissionWsSupport wsSupport,
+    WsParameters wsParameters, PermissionService permissionService) {
     this.dbClient = dbClient;
     this.userSession = userSession;
     this.permissionUpdater = permissionUpdater;
-    this.support = support;
+    this.wsSupport = wsSupport;
+    this.wsParameters = wsParameters;
+    this.permissionService = permissionService;
   }
 
   @Override
@@ -73,7 +78,7 @@ public class RemoveUserAction implements PermissionsWsAction {
       .setPost(true)
       .setHandler(this);
 
-    createPermissionParameter(action);
+    wsParameters.createPermissionParameter(action);
     createUserLoginParameter(action);
     createProjectParameters(action);
     createOrganizationParameter(action).setSince("6.2");
@@ -82,9 +87,9 @@ public class RemoveUserAction implements PermissionsWsAction {
   @Override
   public void handle(Request request, Response response) throws Exception {
     try (DbSession dbSession = dbClient.openSession(false)) {
-      UserId user = support.findUser(dbSession, request.mandatoryParam(PARAM_USER_LOGIN));
-      Optional<ProjectId> projectId = support.findProjectId(dbSession, request);
-      OrganizationDto org = support.findOrganization(dbSession, request.param(PARAM_ORGANIZATION));
+      UserId user = wsSupport.findUser(dbSession, request.mandatoryParam(PARAM_USER_LOGIN));
+      Optional<ProjectId> projectId = wsSupport.findProjectId(dbSession, request);
+      OrganizationDto org = wsSupport.findOrganization(dbSession, request.param(PARAM_ORGANIZATION));
 
       checkProjectAdmin(userSession, org.getUuid(), projectId);
 
@@ -93,8 +98,8 @@ public class RemoveUserAction implements PermissionsWsAction {
         org.getUuid(),
         request.mandatoryParam(PARAM_PERMISSION),
         projectId.orElse(null),
-        user);
-      permissionUpdater.apply(dbSession, asList(change));
+        user, permissionService);
+      permissionUpdater.apply(dbSession, singletonList(change));
       response.noContent();
     }
   }

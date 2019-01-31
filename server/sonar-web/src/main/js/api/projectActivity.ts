@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,24 +19,10 @@
  */
 import { getJSON, postJSON, post, RequestData } from '../helpers/request';
 import throwGlobalError from '../app/utils/throwGlobalError';
-import { Paging, BranchParameters } from '../app/types';
-
-export interface Event {
-  key: string;
-  name: string;
-  category: string;
-  description?: string;
-}
-
-export interface Analysis {
-  key: string;
-  date: string;
-  events: Event[];
-}
 
 export function getProjectActivity(
-  data: { project: string; category?: string; p?: number; ps?: number } & BranchParameters
-): Promise<{ analyses: Analysis[]; paging: Paging }> {
+  data: { project: string; category?: string; p?: number; ps?: number } & T.BranchParameters
+): Promise<{ analyses: T.Analysis[]; paging: T.Paging }> {
   return getJSON('/api/project_analyses/search', data).catch(throwGlobalError);
 }
 

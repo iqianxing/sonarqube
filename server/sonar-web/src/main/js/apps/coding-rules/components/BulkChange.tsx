@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,6 +26,7 @@ import { Button } from '../../../components/ui/buttons';
 import { translate } from '../../../helpers/l10n';
 
 interface Props {
+  languages: T.Languages;
   organization: string | undefined;
   query: Query;
   referencedProfiles: { [profile: string]: Profile };
@@ -129,6 +130,7 @@ export default class BulkChange extends React.PureComponent<Props, State> {
           this.state.action && (
             <BulkChangeModal
               action={this.state.action}
+              languages={this.props.languages}
               onClose={this.closeModal}
               organization={this.props.organization}
               profile={this.state.profile}

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,29 +19,10 @@
  */
 package org.sonar.ce.task.projectanalysis.component;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import org.sonar.core.util.Uuids;
-import org.sonar.db.DbClient;
-import org.sonar.db.DbSession;
-import org.sonar.db.component.KeyWithUuidDto;
-
-public class ComponentUuidFactory {
-
-  private final Map<String, String> uuidsByKey = new HashMap<>();
-
-  public ComponentUuidFactory(DbClient dbClient, DbSession dbSession, String rootKey) {
-    List<KeyWithUuidDto> keys = dbClient.componentDao().selectUuidsByKeyFromProjectKey(dbSession, rootKey);
-    for (KeyWithUuidDto dto : keys) {
-      uuidsByKey.put(dto.key(), dto.uuid());
-    }
-  }
+public interface ComponentUuidFactory {
 
   /**
    * Get UUID from database if it exists, otherwise generate a new one.
    */
-  public String getOrCreateForKey(String key) {
-    return uuidsByKey.computeIfAbsent(key, k -> Uuids.create());
-  }
+  String getOrCreateForKey(String key);
 }

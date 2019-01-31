@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,50 +25,32 @@ import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
 
 /**
- * Component properties which are specific to the Batch Report.
+ * Component properties which are specific to the Scanner Report.
  */
 @Immutable
 public class ReportAttributes {
-  private final int ref;
   @CheckForNull
-  private final String version;
-  @CheckForNull
-  private final String path;
+  private final Integer ref;
   @CheckForNull
   private final String scmPath;
 
   private ReportAttributes(Builder builder) {
     this.ref = builder.ref;
-    this.version = builder.version;
-    this.path = builder.path;
     this.scmPath = builder.scmPath;
   }
 
-  public static Builder newBuilder(int ref) {
+  public static Builder newBuilder(@Nullable Integer ref) {
     return new Builder(ref);
   }
 
   public static class Builder {
-    private final int ref;
     @CheckForNull
-    private String version;
-    @CheckForNull
-    private String path;
+    private final Integer ref;
     @CheckForNull
     private String scmPath;
 
-    private Builder(int ref) {
+    private Builder(@Nullable Integer ref) {
       this.ref = ref;
-    }
-
-    public Builder setVersion(@Nullable String version) {
-      this.version = version;
-      return this;
-    }
-
-    public Builder setPath(@Nullable String path) {
-      this.path = path;
-      return this;
     }
 
     public Builder setScmPath(@Nullable String scmPath) {
@@ -83,25 +65,11 @@ public class ReportAttributes {
 
   /**
    * The component ref in the batch report.
+   * Will be null for directories.
    */
-  public int getRef() {
+  @CheckForNull
+  public Integer getRef() {
     return ref;
-  }
-
-  /**
-   * The project or module version as defined in the batch report.
-   */
-  @CheckForNull
-  public String getVersion() {
-    return this.version;
-  }
-
-  /**
-   * The path of the report component, must be non null for module, directories and files.
-   */
-  @CheckForNull
-  public String getPath() {
-    return path;
   }
 
   /**
@@ -118,8 +86,6 @@ public class ReportAttributes {
   public String toString() {
     return "ReportAttributes{" +
       "ref=" + ref +
-      ", version='" + version + '\'' +
-      ", path='" + path + '\'' +
       ", scmPath='" + scmPath + '\'' +
       '}';
   }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,9 +25,7 @@ const routes = [
     indexRoute: {
       component: lazyLoad(
         () =>
-          isSonarCloud()
-            ? import('./onboarding/OnboardingPage')
-            : import('./projectOnboarding/ProjectOnboardingPage')
+          isSonarCloud() ? import('./onboarding/OnboardingPage') : import('./ProjectOnboardingPage')
       )
     }
   }

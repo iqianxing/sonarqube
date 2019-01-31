@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,12 +23,12 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
-import org.junit.rules.TemporaryFolder;
 import org.slf4j.Logger;
-import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.config.internal.MapSettings;
 import org.sonar.api.utils.MessageException;
+import org.sonar.scanner.scan.branch.BranchConfiguration;
+import org.sonar.scanner.scan.filesystem.InputComponentStore;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
@@ -37,19 +37,16 @@ import static org.mockito.Mockito.when;
 public class QProfileVerifierTest {
 
   @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
-
-  @Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  private DefaultFileSystem fs;
-  private ModuleQProfiles profiles;
+  private InputComponentStore store;
+  private QualityProfiles profiles;
   private MapSettings settings = new MapSettings();
 
   @Before
   public void before() throws Exception {
-    fs = new DefaultFileSystem(temp.newFolder().toPath());
-    profiles = mock(ModuleQProfiles.class);
+    store = new InputComponentStore(mock(BranchConfiguration.class));
+    profiles = mock(QualityProfiles.class);
     QProfile javaProfile = new QProfile("p1", "My Java profile", "java", null);
     when(profiles.findByLanguage("java")).thenReturn(javaProfile);
     QProfile cobolProfile = new QProfile("p2", "My Cobol profile", "cobol", null);
@@ -58,10 +55,10 @@ public class QProfileVerifierTest {
 
   @Test
   public void should_log_all_used_profiles() {
-    fs.add(new TestInputFileBuilder("foo", "src/Bar.java").setLanguage("java").build());
-    fs.add(new TestInputFileBuilder("foo", "src/Baz.cbl").setLanguage("cobol").build());
+    store.put("foo", new TestInputFileBuilder("foo", "src/Bar.java").setLanguage("java").build());
+    store.put("foo", new TestInputFileBuilder("foo", "src/Baz.cbl").setLanguage("cobol").build());
 
-    QProfileVerifier profileLogger = new QProfileVerifier(settings.asConfig(), fs, profiles);
+    QProfileVerifier profileLogger = new QProfileVerifier(settings.asConfig(), store, profiles);
     Logger logger = mock(Logger.class);
     profileLogger.execute(logger);
 
@@ -71,11 +68,11 @@ public class QProfileVerifierTest {
 
   @Test
   public void should_fail_if_default_profile_not_used() {
-    fs.add(new TestInputFileBuilder("foo", "src/Bar.java").setLanguage("java").build());
+    store.put("foo", new TestInputFileBuilder("foo", "src/Bar.java").setLanguage("java").build());
 
     settings.setProperty("sonar.profile", "Unknown");
 
-    QProfileVerifier profileLogger = new QProfileVerifier(settings.asConfig(), fs, profiles);
+    QProfileVerifier profileLogger = new QProfileVerifier(settings.asConfig(), store, profiles);
 
     thrown.expect(MessageException.class);
     thrown.expectMessage("sonar.profile was set to 'Unknown' but didn't match any profile for any language. Please check your configuration.");
@@ -87,7 +84,7 @@ public class QProfileVerifierTest {
   public void should_not_fail_if_no_language_on_project() {
     settings.setProperty("sonar.profile", "Unknown");
 
-    QProfileVerifier profileLogger = new QProfileVerifier(settings.asConfig(), fs, profiles);
+    QProfileVerifier profileLogger = new QProfileVerifier(settings.asConfig(), store, profiles);
 
     profileLogger.execute();
 
@@ -95,11 +92,11 @@ public class QProfileVerifierTest {
 
   @Test
   public void should_not_fail_if_default_profile_used_at_least_once() {
-    fs.add(new TestInputFileBuilder("foo", "src/Bar.java").setLanguage("java").build());
+    store.put("foo", new TestInputFileBuilder("foo", "src/Bar.java").setLanguage("java").build());
 
     settings.setProperty("sonar.profile", "My Java profile");
 
-    QProfileVerifier profileLogger = new QProfileVerifier(settings.asConfig(), fs, profiles);
+    QProfileVerifier profileLogger = new QProfileVerifier(settings.asConfig(), store, profiles);
 
     profileLogger.execute();
   }

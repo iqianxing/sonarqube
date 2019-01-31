@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,19 +27,16 @@ import Coverage from '../main/Coverage';
 import Duplications from '../main/Duplications';
 import MetaContainer from '../meta/MetaContainer';
 import QualityGate from '../qualityGate/QualityGate';
-import throwGlobalError from '../../../app/utils/throwGlobalError';
 import { getMeasuresAndMeta } from '../../../api/measures';
-import { getAllTimeMachineData, History } from '../../../api/time-machine';
+import { getAllTimeMachineData } from '../../../api/time-machine';
 import { parseDate } from '../../../helpers/dates';
 import { enhanceMeasuresWithMetrics } from '../../../helpers/measures';
-import { getLeakPeriod, Period } from '../../../helpers/periods';
-import { get } from '../../../helpers/storage';
+import { getLeakPeriod } from '../../../helpers/periods';
 import { METRICS, HISTORY_METRICS_LIST } from '../utils';
 import {
   DEFAULT_GRAPH,
   getDisplayedHistoryMetrics,
-  PROJECT_ACTIVITY_GRAPH,
-  PROJECT_ACTIVITY_GRAPH_CUSTOM
+  getProjectActivityGraph
 } from '../../projectActivity/utils';
 import {
   isSameBranchLike,
@@ -47,33 +44,26 @@ import {
   isLongLivingBranch
 } from '../../../helpers/branches';
 import { fetchMetrics } from '../../../store/rootActions';
-import { getMetrics } from '../../../store/rootReducer';
-import { BranchLike, Component, Metric, MeasureEnhanced } from '../../../app/types';
+import { getMetrics, Store } from '../../../store/rootReducer';
 import { translate } from '../../../helpers/l10n';
 import '../styles.css';
 
-interface OwnProps {
-  branchLike?: BranchLike;
-  component: Component;
-  onComponentChange: (changes: {}) => void;
-}
-
-interface StateToProps {
-  metrics: { [key: string]: Metric };
-}
-
-interface DispatchToProps {
+interface Props {
+  branchLike?: T.BranchLike;
+  component: T.Component;
   fetchMetrics: () => void;
+  onComponentChange: (changes: {}) => void;
+  metrics: { [key: string]: T.Metric };
 }
-
-type Props = StateToProps & DispatchToProps & OwnProps;
 
 interface State {
-  history?: History;
+  history?: {
+    [metric: string]: Array<{ date: Date; value?: string }>;
+  };
   historyStartDate?: Date;
   loading: boolean;
-  measures: MeasureEnhanced[];
-  periods?: Period[];
+  measures: T.MeasureEnhanced[];
+  periods?: T.Period[];
 }
 
 export class OverviewApp extends React.PureComponent<Props, State> {
@@ -99,40 +89,24 @@ export class OverviewApp extends React.PureComponent<Props, State> {
     this.mounted = false;
   }
 
-  loadMeasures() {
-    const { branchLike, component } = this.props;
-    this.setState({ loading: true });
+  getApplicationLeakPeriod = () => {
+    return this.state.measures.find(measure => measure.metric.key === 'new_bugs')
+      ? ({ index: 1 } as T.Period)
+      : undefined;
+  };
 
-    return getMeasuresAndMeta(component.key, METRICS, {
-      additionalFields: 'metrics,periods',
-      ...getBranchLikeQuery(branchLike)
-    }).then(
-      r => {
-        if (this.mounted && r.metrics) {
-          this.setState({
-            loading: false,
-            measures: enhanceMeasuresWithMetrics(r.component.measures, r.metrics),
-            periods: r.periods
-          });
-        }
-      },
-      error => {
-        throwGlobalError(error);
-        if (this.mounted) {
-          this.setState({ loading: false });
-        }
-      }
+  isEmpty = () => {
+    return (
+      this.state.measures === undefined ||
+      this.state.measures.find(measure => measure.metric.key === 'ncloc') === undefined
     );
-  }
+  };
 
   loadHistory = () => {
     const { branchLike, component } = this.props;
 
-    const customGraphs = get(PROJECT_ACTIVITY_GRAPH_CUSTOM);
-    let graphMetrics = getDisplayedHistoryMetrics(
-      get(PROJECT_ACTIVITY_GRAPH) || 'issues',
-      customGraphs ? customGraphs.split(',') : []
-    );
+    const { graph, customGraphs } = getProjectActivityGraph(component.key);
+    let graphMetrics = getDisplayedHistoryMetrics(graph, customGraphs);
     if (!graphMetrics || graphMetrics.length <= 0) {
       graphMetrics = getDisplayedHistoryMetrics(DEFAULT_GRAPH, []);
     }
@@ -144,7 +118,7 @@ export class OverviewApp extends React.PureComponent<Props, State> {
       metrics: metrics.join()
     }).then(r => {
       if (this.mounted) {
-        const history: History = {};
+        const history: { [metric: string]: Array<{ date: Date; value?: string }> } = {};
         r.measures.forEach(measure => {
           const measureHistory = measure.history.map(analysis => ({
             date: parseDate(analysis.date),
@@ -158,24 +132,32 @@ export class OverviewApp extends React.PureComponent<Props, State> {
     });
   };
 
-  getApplicationLeakPeriod = () =>
-    this.state.measures.find(measure => measure.metric.key === 'new_bugs')
-      ? ({ index: 1 } as Period)
-      : undefined;
+  loadMeasures = () => {
+    const { branchLike, component } = this.props;
+    this.setState({ loading: true });
 
-  isEmpty = () =>
-    this.state.measures === undefined ||
-    this.state.measures.find(measure => measure.metric.key === 'ncloc') === undefined;
-
-  renderLoading() {
-    return (
-      <div className="text-center">
-        <i className="spinner spinner-margin" />
-      </div>
+    return getMeasuresAndMeta(component.key, METRICS, {
+      additionalFields: 'metrics,periods',
+      ...getBranchLikeQuery(branchLike)
+    }).then(
+      ({ component, metrics, periods }) => {
+        if (this.mounted && metrics && component.measures) {
+          this.setState({
+            loading: false,
+            measures: enhanceMeasuresWithMetrics(component.measures, metrics),
+            periods
+          });
+        }
+      },
+      () => {
+        if (this.mounted) {
+          this.setState({ loading: false });
+        }
+      }
     );
-  }
+  };
 
-  renderEmpty() {
+  renderEmpty = () => {
     const { component } = this.props;
     const isApp = component.qualifier === 'APP';
     return (
@@ -190,9 +172,17 @@ export class OverviewApp extends React.PureComponent<Props, State> {
         </h3>
       </div>
     );
-  }
+  };
 
-  renderMain() {
+  renderLoading = () => {
+    return (
+      <div className="text-center">
+        <i className="spinner spinner-margin" />
+      </div>
+    );
+  };
+
+  renderMain = () => {
     const { branchLike, component } = this.props;
     const { periods, measures, history, historyStartDate } = this.state;
     const leakPeriod =
@@ -229,7 +219,7 @@ export class OverviewApp extends React.PureComponent<Props, State> {
         </div>
       </div>
     );
-  }
+  };
 
   render() {
     const { branchLike, component } = this.props;
@@ -260,13 +250,11 @@ export class OverviewApp extends React.PureComponent<Props, State> {
   }
 }
 
-const mapDispatchToProps: DispatchToProps = { fetchMetrics };
+const mapDispatchToProps = { fetchMetrics };
 
-const mapStateToProps = (state: any): StateToProps => ({
-  metrics: getMetrics(state)
-});
+const mapStateToProps = (state: Store) => ({ metrics: getMetrics(state) });
 
-export default connect<StateToProps, DispatchToProps, OwnProps>(
+export default connect(
   mapStateToProps,
   mapDispatchToProps
 )(OverviewApp);

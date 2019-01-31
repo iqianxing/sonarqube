@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,14 +19,13 @@
  */
 package org.sonar.ce.task.projectanalysis.issue.commonrule;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 import javax.annotation.CheckForNull;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.ce.task.projectanalysis.component.Component;
-import org.sonar.core.issue.DefaultIssue;
-import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.ce.task.projectanalysis.qualityprofile.ActiveRule;
 import org.sonar.ce.task.projectanalysis.qualityprofile.ActiveRulesHolder;
+import org.sonar.core.issue.DefaultIssue;
 
 import static org.apache.commons.lang.StringUtils.isNotBlank;
 import static org.sonar.server.rule.CommonRuleKeys.commonRepositoryForLang;

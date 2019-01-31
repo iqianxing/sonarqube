@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,14 +17,13 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 import * as React from 'react';
 import EditionBox from './components/EditionBox';
-import { EDITIONS, EditionKey } from './utils';
+import { EDITIONS } from './utils';
 import { getMarketplaceNavigation } from '../../api/nav';
 
 export interface Props {
-  currentEdition?: EditionKey;
+  currentEdition?: T.EditionKey;
 }
 
 interface State {

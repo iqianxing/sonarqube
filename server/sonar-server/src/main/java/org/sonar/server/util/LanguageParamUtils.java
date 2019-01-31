@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,13 +19,11 @@
  */
 package org.sonar.server.util;
 
-import com.google.common.base.Function;
-import com.google.common.collect.Collections2;
 import java.util.Arrays;
-import java.util.Collection;
-import javax.annotation.Nonnull;
+import java.util.List;
 import org.sonar.api.resources.Language;
 import org.sonar.api.resources.Languages;
+import org.sonar.core.util.stream.MoreCollectors;
 
 public class LanguageParamUtils {
 
@@ -42,16 +40,11 @@ public class LanguageParamUtils {
     }
   }
 
-  public static Collection<String> getLanguageKeys(Languages languages) {
-    return Collections2.transform(Arrays.asList(languages.all()), LanguageToKeyFunction.INSTANCE);
-  }
-
-  private enum LanguageToKeyFunction implements Function<Language, java.lang.String> {
-    INSTANCE;
-
-    @Override
-    public String apply(@Nonnull Language input) {
-      return input.getKey();
-    }
+  public static List<String> getOrderedLanguageKeys(Languages languages) {
+    Language[] all = languages.all();
+    return Arrays.stream(all)
+      .map(Language::getKey)
+      .sorted()
+      .collect(MoreCollectors.toList(all.length));
   }
 }

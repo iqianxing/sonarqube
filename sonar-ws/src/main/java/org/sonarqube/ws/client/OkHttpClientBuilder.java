@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -142,8 +142,9 @@ public class OkHttpClientBuilder {
   /**
    * Set credentials that will be passed on every request
    */
-  public void setCredentials(String credentials) {
+  public OkHttpClientBuilder setCredentials(String credentials) {
     this.credentials = credentials;
+    return this;
   }
 
   /**

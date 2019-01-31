@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,8 +19,9 @@
  */
 package org.sonar.ce.task.projectanalysis.qualitymodel;
 
-import com.google.common.base.Optional;
 import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.utils.KeyValueFormat;
@@ -35,11 +36,7 @@ import org.sonar.ce.task.projectanalysis.measure.Measure;
 import org.sonar.ce.task.projectanalysis.measure.MeasureRepository;
 import org.sonar.ce.task.projectanalysis.metric.Metric;
 import org.sonar.ce.task.projectanalysis.metric.MetricRepository;
-import org.sonar.ce.task.projectanalysis.period.Period;
-import org.sonar.ce.task.projectanalysis.period.PeriodHolder;
-import org.sonar.ce.task.projectanalysis.scm.Changeset;
-import org.sonar.ce.task.projectanalysis.scm.ScmInfo;
-import org.sonar.ce.task.projectanalysis.scm.ScmInfoRepository;
+import org.sonar.ce.task.projectanalysis.source.NewLinesRepository;
 
 import static org.sonar.api.measures.CoreMetrics.NCLOC_DATA_KEY;
 import static org.sonar.api.measures.CoreMetrics.NEW_DEVELOPMENT_COST_KEY;
@@ -53,7 +50,6 @@ import static org.sonar.ce.task.projectanalysis.measure.Measure.newMeasureBuilde
 /**
  * This visitor depends on {@link IntegrateIssuesVisitor} for the computation of
  * metric {@link CoreMetrics#NEW_TECHNICAL_DEBT}.
- *
  * Compute following measure :
  * {@link CoreMetrics#NEW_SQALE_DEBT_RATIO_KEY}
  * {@link CoreMetrics#NEW_MAINTAINABILITY_RATING_KEY}
@@ -61,9 +57,8 @@ import static org.sonar.ce.task.projectanalysis.measure.Measure.newMeasureBuilde
 public class NewMaintainabilityMeasuresVisitor extends PathAwareVisitorAdapter<NewMaintainabilityMeasuresVisitor.Counter> {
   private static final Logger LOG = Loggers.get(NewMaintainabilityMeasuresVisitor.class);
 
-  private final ScmInfoRepository scmInfoRepository;
   private final MeasureRepository measureRepository;
-  private final PeriodHolder periodHolder;
+  private final NewLinesRepository newLinesRepository;
   private final RatingSettings ratingSettings;
 
   private final Metric newDebtMetric;
@@ -73,12 +68,11 @@ public class NewMaintainabilityMeasuresVisitor extends PathAwareVisitorAdapter<N
   private final Metric newDebtRatioMetric;
   private final Metric newMaintainabilityRatingMetric;
 
-  public NewMaintainabilityMeasuresVisitor(MetricRepository metricRepository, MeasureRepository measureRepository, ScmInfoRepository scmInfoRepository,
-    PeriodHolder periodHolder, RatingSettings ratingSettings) {
+  public NewMaintainabilityMeasuresVisitor(MetricRepository metricRepository, MeasureRepository measureRepository, NewLinesRepository newLinesRepository,
+    RatingSettings ratingSettings) {
     super(CrawlerDepthLimit.FILE, POST_ORDER, CounterFactory.INSTANCE);
     this.measureRepository = measureRepository;
-    this.scmInfoRepository = scmInfoRepository;
-    this.periodHolder = periodHolder;
+    this.newLinesRepository = newLinesRepository;
     this.ratingSettings = ratingSettings;
 
     // computed by NewDebtAggregator which is executed by IntegrateIssuesVisitor
@@ -98,12 +92,6 @@ public class NewMaintainabilityMeasuresVisitor extends PathAwareVisitorAdapter<N
   }
 
   @Override
-  public void visitModule(Component module, Path<Counter> path) {
-    computeAndSaveNewDebtRatioMeasure(module, path);
-    increaseNewDebtAndDevCostOfParent(path);
-  }
-
-  @Override
   public void visitDirectory(Component directory, Path<Counter> path) {
     computeAndSaveNewDebtRatioMeasure(directory, path);
     increaseNewDebtAndDevCostOfParent(path);
@@ -117,7 +105,7 @@ public class NewMaintainabilityMeasuresVisitor extends PathAwareVisitorAdapter<N
   }
 
   private void computeAndSaveNewDebtRatioMeasure(Component component, Path<Counter> path) {
-    if (!periodHolder.hasPeriod()) {
+    if (!newLinesRepository.newLinesAvailable()) {
       return;
     }
     double density = computeDensity(path.current());
@@ -141,10 +129,7 @@ public class NewMaintainabilityMeasuresVisitor extends PathAwareVisitorAdapter<N
   }
 
   private static long getLongValue(Optional<Measure> measure) {
-    if (!measure.isPresent()) {
-      return 0L;
-    }
-    return getLongValue(measure.get());
+    return measure.map(NewMaintainabilityMeasuresVisitor::getLongValue).orElse(0L);
   }
 
   private static long getLongValue(Measure measure) {
@@ -156,7 +141,14 @@ public class NewMaintainabilityMeasuresVisitor extends PathAwareVisitorAdapter<N
 
   private void initNewDebtRatioCounter(Component file, Path<Counter> path) {
     // first analysis, no period, no differential value to compute, save processing time and return now
-    if (!periodHolder.hasPeriod()) {
+    if (!newLinesRepository.newLinesAvailable()) {
+      return;
+    }
+
+    Optional<Set<Integer>> changedLines = newLinesRepository.getNewLines(file);
+
+    if (!changedLines.isPresent()) {
+      LOG.trace(String.format("No information about changed lines is available for file '%s'. Dev cost will be zero.", file.getKey()));
       return;
     }
 
@@ -165,28 +157,17 @@ public class NewMaintainabilityMeasuresVisitor extends PathAwareVisitorAdapter<N
       return;
     }
 
-    java.util.Optional<ScmInfo> scmInfoOptional = scmInfoRepository.getScmInfo(file);
-    if (!scmInfoOptional.isPresent()) {
-      LOG.trace(String.format("No changeset for file %s. Dev cost will be zero.", file.getKey()));
-      return;
-    }
-
-    ScmInfo scmInfo = scmInfoOptional.get();
-    initNewDebtRatioCounter(path.current(), file, nclocDataMeasure.get(), scmInfo);
+    initNewDebtRatioCounter(path.current(), file, nclocDataMeasure.get(), changedLines.get());
   }
 
-  private void initNewDebtRatioCounter(Counter devCostCounter, Component file, Measure nclocDataMeasure, ScmInfo scmInfo) {
+  private void initNewDebtRatioCounter(Counter devCostCounter, Component file, Measure nclocDataMeasure, Set<Integer> changedLines) {
     boolean hasDevCost = false;
 
     long lineDevCost = ratingSettings.getDevCost(file.getFileAttributes().getLanguageKey());
     for (Integer nclocLineIndex : nclocLineIndexes(nclocDataMeasure)) {
-      if (scmInfo.hasChangesetForLine(nclocLineIndex)) {
-        Changeset changeset = scmInfo.getChangesetForLine(nclocLineIndex);
-        Period period = periodHolder.getPeriod();
-        if (isLineInPeriod(changeset.getDate(), period)) {
-          devCostCounter.incrementDevCost(lineDevCost);
-          hasDevCost = true;
-        }
+      if (changedLines.contains(nclocLineIndex)) {
+        devCostCounter.incrementDevCost(lineDevCost);
+        hasDevCost = true;
       }
     }
     if (hasDevCost) {
@@ -200,16 +181,8 @@ public class NewMaintainabilityMeasuresVisitor extends PathAwareVisitorAdapter<N
   }
 
   /**
-   * A line belongs to a Period if its date is older than the SNAPSHOT's date of the period.
-   */
-  private static boolean isLineInPeriod(long lineDate, Period period) {
-    return lineDate > period.getSnapshotDate();
-  }
-
-  /**
    * NCLOC_DATA contains Key-value pairs, where key - is a number of line, and value - is an indicator of whether line
    * contains code (1) or not (0).
-   *
    * This method parses the value of the NCLOC_DATA measure and return the line numbers of lines which contain code.
    */
   private static Iterable<Integer> nclocLineIndexes(Measure nclocDataMeasure) {

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,9 +26,9 @@ import javax.annotation.CheckForNull;
 
 public interface Component {
   enum Type {
-    PROJECT(0), MODULE(1), DIRECTORY(2), FILE(3), VIEW(0), SUBVIEW(1), PROJECT_VIEW(2);
+    PROJECT(0), DIRECTORY(2), FILE(3), VIEW(0), SUBVIEW(1), PROJECT_VIEW(2);
 
-    private static final Set<Type> REPORT_TYPES = EnumSet.of(PROJECT, MODULE, DIRECTORY, FILE);
+    private static final Set<Type> REPORT_TYPES = EnumSet.of(PROJECT, DIRECTORY, FILE);
     private static final Set<Type> VIEWS_TYPES = EnumSet.of(VIEW, SUBVIEW, PROJECT_VIEW);
 
     private final int depth;
@@ -58,6 +58,10 @@ public interface Component {
     }
   }
 
+  /**
+   * On a long-living branch, CHANGED and ADDED are relative to the previous analysis.
+   * On a short-living branch and pull request, these are relative to the base branch.
+   */
   enum Status {
     UNAVAILABLE, SAME, CHANGED, ADDED
   }
@@ -76,20 +80,24 @@ public interface Component {
    * It may differ from keys listed in scanner report
    * when analyzing a branch.
    */
-  String getKey();
+  String getDbKey();
 
   /**
    * Returns the key as it will be displayed in the ui.
    * If legacy branch feature is used, the key will contain the branch name
    * If new branch feature is used, the key will not contain the branch name
    */
-  // TODO to be renamed getKey() and rename existing getKey to getDbKey
-  String getPublicKey();
+  String getKey();
 
   /**
-   * The component name.
+   * The component long name. For files and directories this is the project relative path.
    */
   String getName();
+
+  /**
+   * The component short name. For files and directories this is the parent relative path (ie filename for files). For projects and view this is the same as {@link #getName()}
+   */
+  String getShortName();
 
   /**
    * The optional description of the component.
@@ -98,6 +106,13 @@ public interface Component {
   String getDescription();
 
   List<Component> getChildren();
+
+  /**
+   * Returns the attributes specific to components of type {@link Type#PROJECT}.
+   *
+   * @throws IllegalStateException when the component's type is not {@link Type#PROJECT}.
+   */
+  ProjectAttributes getProjectAttributes();
 
   /**
    * Returns the attributes specific to components of type {@link Type#PROJECT}, {@link Type#MODULE},

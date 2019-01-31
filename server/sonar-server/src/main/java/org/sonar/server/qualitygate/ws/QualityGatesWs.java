@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,19 +19,21 @@
  */
 package org.sonar.server.qualitygate.ws;
 
+import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 import org.sonar.api.server.ws.Change;
 import org.sonar.api.server.ws.Request;
 import org.sonar.api.server.ws.WebService;
-import org.sonar.db.qualitygate.QualityGateConditionDto;
 import org.sonar.server.exceptions.BadRequestException;
+import org.sonar.server.qualitygate.Condition;
 import org.sonar.server.ws.RemovedWebServiceHandler;
 
 import static org.sonar.server.qualitygate.ws.QualityGatesWsParameters.CONTROLLER_QUALITY_GATES;
 import static org.sonar.server.qualitygate.ws.QualityGatesWsParameters.PARAM_ERROR;
 import static org.sonar.server.qualitygate.ws.QualityGatesWsParameters.PARAM_METRIC;
 import static org.sonar.server.qualitygate.ws.QualityGatesWsParameters.PARAM_OPERATOR;
-import static org.sonar.server.qualitygate.ws.QualityGatesWsParameters.PARAM_PERIOD;
-import static org.sonar.server.qualitygate.ws.QualityGatesWsParameters.PARAM_WARNING;
+
 
 public class QualityGatesWs implements WebService {
 
@@ -70,33 +72,33 @@ public class QualityGatesWs implements WebService {
   static void addConditionParams(NewAction action) {
     action
       .createParam(PARAM_METRIC)
-      .setDescription("Condition metric")
+      .setDescription("Condition metric.<br/>" +
+        " Only metric of the following types are allowed:" +
+        "<ul>" +
+        "<li>INT</li>" +
+        "<li>MILLISEC</li>" +
+        "<li>RATING</li>" +
+        "<li>WORK_DUR</li>" +
+        "<li>FLOAT</li>" +
+        "<li>PERCENT</li>" +
+        "<li>LEVEL</li>" +
+        "")
       .setRequired(true)
       .setExampleValue("blocker_violations");
 
     action.createParam(PARAM_OPERATOR)
       .setDescription("Condition operator:<br/>" +
         "<ul>" +
-        "<li>EQ = equals</li>" +
-        "<li>NE = is not</li>" +
         "<li>LT = is lower than</li>" +
         "<li>GT = is greater than</li>" +
         "</ui>")
-      .setExampleValue(QualityGateConditionDto.OPERATOR_EQUALS)
-      .setPossibleValues(QualityGateConditionDto.ALL_OPERATORS);
-
-    action.createParam(PARAM_PERIOD)
-      .setDescription("Condition period. If not set, the absolute value is considered.")
-      .setPossibleValues("1");
-
-    action.createParam(PARAM_WARNING)
-      .setMaximumLength(CONDITION_MAX_LENGTH)
-      .setDescription("Condition warning threshold")
-      .setExampleValue("5");
+      .setExampleValue(Condition.Operator.GREATER_THAN.getDbValue())
+      .setPossibleValues(getPossibleOperators());
 
     action.createParam(PARAM_ERROR)
       .setMaximumLength(CONDITION_MAX_LENGTH)
       .setDescription("Condition error threshold")
+      .setRequired(true)
       .setExampleValue("10");
   }
 
@@ -108,4 +110,9 @@ public class QualityGatesWs implements WebService {
     }
   }
 
+  private static Set<String> getPossibleOperators() {
+    return Stream.of(Condition.Operator.values())
+      .map(Condition.Operator::getDbValue)
+      .collect(Collectors.toSet());
+  }
 }

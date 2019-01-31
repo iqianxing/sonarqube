@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,7 @@
  */
 package org.sonar.ce.task.projectanalysis.qualityprofile;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.api.rule.Severity;
 
@@ -28,7 +28,7 @@ import static java.util.Collections.emptyMap;
 public class AlwaysActiveRulesHolderImpl implements ActiveRulesHolder {
   @Override
   public Optional<ActiveRule> get(RuleKey ruleKey) {
-    return Optional.of(new ActiveRule(ruleKey, Severity.MAJOR, emptyMap(), 1_000L, null));
+    return Optional.of(new ActiveRule(ruleKey, Severity.MAJOR, emptyMap(), 1_000L, null, "qp1"));
   }
 
 }

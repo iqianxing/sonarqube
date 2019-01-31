@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 package org.sonar.server.permission.ws;
 
 import org.sonar.core.platform.Module;
+import org.sonar.server.permission.PermissionServiceImpl;
 import org.sonar.server.permission.ws.template.AddGroupToTemplateAction;
 import org.sonar.server.permission.ws.template.AddProjectCreatorToTemplateAction;
 import org.sonar.server.permission.ws.template.AddUserToTemplateAction;
@@ -66,6 +67,9 @@ public class PermissionsWsModule extends Module {
       TemplateGroupsAction.class,
       BulkApplyTemplateAction.class,
       // utility classes
-      PermissionWsSupport.class);
+      PermissionWsSupport.class,
+      PermissionServiceImpl.class,
+      RequestValidator.class,
+      WsParameters.class);
   }
 }

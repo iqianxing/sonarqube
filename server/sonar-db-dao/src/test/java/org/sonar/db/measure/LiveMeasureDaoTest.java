@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,11 @@ package org.sonar.db.measure;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
+import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -133,6 +137,33 @@ public class LiveMeasureDaoTest {
     List<LiveMeasureDto> selected = underTest.selectByComponentUuidsAndMetricKeys(db.getSession(), singletonList("_missing_"), singletonList(metric.getKey()));
 
     assertThat(selected).isEmpty();
+  }
+
+  @Test
+  public void selectByComponentUuidAndMetricKey() {
+    LiveMeasureDto measure = newLiveMeasure().setMetricId(metric.getId());
+    underTest.insert(db.getSession(), measure);
+
+    Optional<LiveMeasureDto> selected = underTest.selectByComponentUuidAndMetricKey(db.getSession(), measure.getComponentUuid(), metric.getKey());
+
+    assertThat(selected).isNotEmpty();
+    assertThat(selected.get()).isEqualToComparingFieldByField(measure);
+  }
+
+  @Test
+  public void selectByComponentUuidAndMetricKey_return_empty_if_component_does_not_match() {
+    LiveMeasureDto measure = newLiveMeasure().setMetricId(metric.getId());
+    underTest.insert(db.getSession(), measure);
+
+    assertThat(underTest.selectByComponentUuidAndMetricKey(db.getSession(), "_missing_", metric.getKey())).isEmpty();
+  }
+
+  @Test
+  public void selectByComponentUuidAndMetricKey_return_empty_if_metric_does_not_match() {
+    LiveMeasureDto measure = newLiveMeasure().setMetricId(metric.getId());
+    underTest.insert(db.getSession(), measure);
+
+    assertThat(underTest.selectByComponentUuidAndMetricKey(db.getSession(), measure.getComponentUuid(), "_missing_")).isEmpty();
   }
 
   @Test
@@ -289,7 +320,7 @@ public class LiveMeasureDaoTest {
   public void insertOrUpdate() {
     // insert
     LiveMeasureDto dto = newLiveMeasure();
-    underTest.insertOrUpdate(db.getSession(), dto, "foo");
+    underTest.insertOrUpdate(db.getSession(), dto);
     verifyPersisted(dto);
     verifyTableSize(1);
 
@@ -297,31 +328,229 @@ public class LiveMeasureDaoTest {
     dto.setValue(dto.getValue() + 1);
     dto.setVariation(dto.getVariation() + 10);
     dto.setData(dto.getDataAsString() + "_new");
-    underTest.insertOrUpdate(db.getSession(), dto, "foo");
+    underTest.insertOrUpdate(db.getSession(), dto);
     verifyPersisted(dto);
     verifyTableSize(1);
   }
 
   @Test
-  public void deleteByProjectUuidExcludingMarker() {
-    LiveMeasureDto measure1 = newLiveMeasure().setProjectUuid("P1");
-    LiveMeasureDto measure2 = newLiveMeasure().setProjectUuid("P1");
-    LiveMeasureDto measure3DifferentMarker = newLiveMeasure().setProjectUuid("P1");
-    LiveMeasureDto measure4NoMarker = newLiveMeasure().setProjectUuid("P1");
-    LiveMeasureDto measure5OtherProject = newLiveMeasure().setProjectUuid("P2");
-    underTest.insertOrUpdate(db.getSession(), measure1, "foo");
-    underTest.insertOrUpdate(db.getSession(), measure2, "foo");
-    underTest.insertOrUpdate(db.getSession(), measure3DifferentMarker, "bar");
-    underTest.insertOrUpdate(db.getSession(), measure4NoMarker, null);
-    underTest.insertOrUpdate(db.getSession(), measure5OtherProject, "foo");
+  public void deleteByComponentUuidExcludingMetricIds() {
+    LiveMeasureDto measure1 = newLiveMeasure().setComponentUuid("C1").setMetricId(1);
+    LiveMeasureDto measure2 = newLiveMeasure().setComponentUuid("C1").setMetricId(2);
+    LiveMeasureDto measure3 = newLiveMeasure().setComponentUuid("C1").setMetricId(3);
+    LiveMeasureDto measureOtherComponent = newLiveMeasure().setComponentUuid("C2").setMetricId(3);
+    underTest.insertOrUpdate(db.getSession(), measure1);
+    underTest.insertOrUpdate(db.getSession(), measure2);
+    underTest.insertOrUpdate(db.getSession(), measure3);
+    underTest.insertOrUpdate(db.getSession(), measureOtherComponent);
 
-    int count = underTest.deleteByProjectUuidExcludingMarker(db.getSession(), "P1", "foo");
+    int count = underTest.deleteByComponentUuidExcludingMetricIds(db.getSession(), "C1", Arrays.asList(1, 2));
 
     verifyTableSize(3);
     verifyPersisted(measure1);
     verifyPersisted(measure2);
-    verifyPersisted(measure5OtherProject);
+    verifyPersisted(measureOtherComponent);
+    assertThat(count).isEqualTo(1);
+  }
+
+  @Test
+  public void deleteByComponentUuidExcludingMetricIds_with_empty_metrics() {
+    LiveMeasureDto measure1 = newLiveMeasure().setComponentUuid("C1").setMetricId(1);
+    LiveMeasureDto measure2 = newLiveMeasure().setComponentUuid("C1").setMetricId(2);
+    LiveMeasureDto measureOnOtherComponent = newLiveMeasure().setComponentUuid("C2").setMetricId(2);
+    underTest.insertOrUpdate(db.getSession(), measure1);
+    underTest.insertOrUpdate(db.getSession(), measure2);
+    underTest.insertOrUpdate(db.getSession(), measureOnOtherComponent);
+
+    int count = underTest.deleteByComponentUuidExcludingMetricIds(db.getSession(), "C1", Collections.emptyList());
+
     assertThat(count).isEqualTo(2);
+    verifyTableSize(1);
+    verifyPersisted(measureOnOtherComponent);
+  }
+
+  @Test
+  public void upsert_inserts_or_updates_row() {
+    if (!db.getDbClient().getDatabase().getDialect().supportsUpsert()) {
+      return;
+    }
+
+    // insert
+    LiveMeasureDto dto = newLiveMeasure();
+    int count = underTest.upsert(db.getSession(), dto);
+    verifyPersisted(dto);
+    verifyTableSize(1);
+    assertThat(count).isEqualTo(1);
+
+    // update
+    dto.setValue(dto.getValue() + 1);
+    dto.setVariation(dto.getVariation() + 10);
+    dto.setData(dto.getDataAsString() + "_new");
+    count = underTest.upsert(db.getSession(), dto);
+    assertThat(count).isEqualTo(1);
+    verifyPersisted(dto);
+    verifyTableSize(1);
+  }
+
+  @Test
+  public void upsert_does_not_update_row_if_values_are_not_changed() {
+    if (!db.getDbClient().getDatabase().getDialect().supportsUpsert()) {
+      return;
+    }
+
+    LiveMeasureDto dto = newLiveMeasure();
+    underTest.upsert(db.getSession(), dto);
+
+    // update
+    int count = underTest.upsert(db.getSession(), dto);
+    assertThat(count).isEqualTo(0);
+    verifyPersisted(dto);
+    verifyTableSize(1);
+  }
+
+  @Test
+  public void upsert_updates_row_if_lob_data_is_changed() {
+    if (!db.getDbClient().getDatabase().getDialect().supportsUpsert()) {
+      return;
+    }
+
+    LiveMeasureDto dto = newLiveMeasure().setData(RandomStringUtils.random(10_000));
+    underTest.upsert(db.getSession(), dto);
+
+    // update
+    dto.setData(RandomStringUtils.random(dto.getDataAsString().length() + 10));
+    int count = underTest.upsert(db.getSession(), dto);
+    assertThat(count).isEqualTo(1);
+    verifyPersisted(dto);
+    verifyTableSize(1);
+  }
+
+  @Test
+  public void upsert_does_not_update_row_if_lob_data_is_not_changed() {
+    if (!db.getDbClient().getDatabase().getDialect().supportsUpsert()) {
+      return;
+    }
+    LiveMeasureDto dto = newLiveMeasure().setData(RandomStringUtils.random(10_000));
+    underTest.upsert(db.getSession(), dto);
+
+    // update
+    int count = underTest.upsert(db.getSession(), dto);
+    assertThat(count).isEqualTo(0);
+    verifyPersisted(dto);
+    verifyTableSize(1);
+  }
+
+  @Test
+  public void upsert_updates_row_if_lob_data_is_removed() {
+    if (!db.getDbClient().getDatabase().getDialect().supportsUpsert()) {
+      return;
+    }
+
+    LiveMeasureDto dto = newLiveMeasure().setData(RandomStringUtils.random(10_000));
+    underTest.upsert(db.getSession(), dto);
+
+    // update
+    dto.setData((String)null);
+    int count = underTest.upsert(db.getSession(), dto);
+    assertThat(count).isEqualTo(1);
+    verifyPersisted(dto);
+    verifyTableSize(1);
+  }
+
+  @Test
+  public void upsert_updates_row_if_variation_is_changed() {
+    if (!db.getDbClient().getDatabase().getDialect().supportsUpsert()) {
+      return;
+    }
+    LiveMeasureDto dto = newLiveMeasure().setVariation(40.0);
+    underTest.upsert(db.getSession(), dto);
+
+    // update
+    dto.setVariation(50.0);
+    int count = underTest.upsert(db.getSession(), dto);
+    assertThat(count).isEqualTo(1);
+    verifyPersisted(dto);
+    verifyTableSize(1);
+  }
+
+  @Test
+  public void upsert_updates_row_if_variation_is_removed() {
+    if (!db.getDbClient().getDatabase().getDialect().supportsUpsert()) {
+      return;
+    }
+    LiveMeasureDto dto = newLiveMeasure().setVariation(40.0);
+    underTest.upsert(db.getSession(), dto);
+
+    // update
+    dto.setVariation(null);
+    int count = underTest.upsert(db.getSession(), dto);
+    assertThat(count).isEqualTo(1);
+    verifyPersisted(dto);
+    verifyTableSize(1);
+  }
+
+  @Test
+  public void upsert_updates_row_if_variation_is_added() {
+    if (!db.getDbClient().getDatabase().getDialect().supportsUpsert()) {
+      return;
+    }
+    LiveMeasureDto dto = newLiveMeasure().setVariation(null);
+    underTest.upsert(db.getSession(), dto);
+
+    // update
+    dto.setVariation(40.0);
+    int count = underTest.upsert(db.getSession(), dto);
+    assertThat(count).isEqualTo(1);
+    verifyPersisted(dto);
+    verifyTableSize(1);
+  }
+
+  @Test
+  public void upsert_updates_row_if_value_is_changed() {
+    if (!db.getDbClient().getDatabase().getDialect().supportsUpsert()) {
+      return;
+    }
+    LiveMeasureDto dto = newLiveMeasure().setValue(40.0);
+    underTest.upsert(db.getSession(), dto);
+
+    // update
+    dto.setValue(50.0);
+    int count = underTest.upsert(db.getSession(), dto);
+    assertThat(count).isEqualTo(1);
+    verifyPersisted(dto);
+    verifyTableSize(1);
+  }
+
+  @Test
+  public void upsert_updates_row_if_value_is_removed() {
+    if (!db.getDbClient().getDatabase().getDialect().supportsUpsert()) {
+      return;
+    }
+    LiveMeasureDto dto = newLiveMeasure().setValue(40.0);
+    underTest.upsert(db.getSession(), dto);
+
+    // update
+    dto.setValue(null);
+    int count = underTest.upsert(db.getSession(), dto);
+    assertThat(count).isEqualTo(1);
+    verifyPersisted(dto);
+    verifyTableSize(1);
+  }
+
+  @Test
+  public void upsert_updates_row_if_value_is_added() {
+    if (!db.getDbClient().getDatabase().getDialect().supportsUpsert()) {
+      return;
+    }
+    LiveMeasureDto dto = newLiveMeasure().setValue(null);
+    underTest.upsert(db.getSession(), dto);
+
+    // update
+    dto.setValue(40.0);
+    int count = underTest.upsert(db.getSession(), dto);
+    assertThat(count).isEqualTo(1);
+    verifyPersisted(dto);
+    verifyTableSize(1);
   }
 
   private void verifyTableSize(int expectedSize) {

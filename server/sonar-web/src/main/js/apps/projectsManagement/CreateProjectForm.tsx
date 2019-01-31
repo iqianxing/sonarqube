@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,18 +21,19 @@ import * as React from 'react';
 import { Link } from 'react-router';
 import { FormattedMessage } from 'react-intl';
 import { createProject } from '../../api/components';
-import { Organization, Visibility } from '../../app/types';
-import UpgradeOrganizationBox from '../../components/common/UpgradeOrganizationBox';
+import UpgradeOrganizationBox from '../create/components/UpgradeOrganizationBox';
 import VisibilitySelector from '../../components/common/VisibilitySelector';
 import Modal from '../../components/controls/Modal';
 import { SubmitButton, ResetButtonLink } from '../../components/ui/buttons';
 import { translate } from '../../helpers/l10n';
 import { getProjectUrl } from '../../helpers/urls';
+import { Alert } from '../../components/ui/Alert';
 
 interface Props {
   onClose: () => void;
   onProjectCreated: () => void;
-  organization: Organization;
+  onOrganizationUpgrade: () => void;
+  organization: T.Organization;
 }
 
 interface State {
@@ -40,7 +41,7 @@ interface State {
   key: string;
   loading: boolean;
   name: string;
-  visibility?: Visibility;
+  visibility?: T.Visibility;
   // add index declaration to be able to do `this.setState({ [name]: value });`
   [x: string]: any;
 }
@@ -81,7 +82,7 @@ export default class CreateProjectForm extends React.PureComponent<Props, State>
     this.setState({ [name]: value });
   };
 
-  handleVisibilityChange = (visibility: Visibility) => {
+  handleVisibilityChange = (visibility: T.Visibility) => {
     this.setState({ visibility });
   };
 
@@ -124,7 +125,7 @@ export default class CreateProjectForm extends React.PureComponent<Props, State>
             </header>
 
             <div className="modal-body">
-              <div className="alert alert-success">
+              <Alert variant="success">
                 <FormattedMessage
                   defaultMessage={translate(
                     'projects_management.project_has_been_successfully_created'
@@ -136,7 +137,7 @@ export default class CreateProjectForm extends React.PureComponent<Props, State>
                     )
                   }}
                 />
-              </div>
+              </Alert>
             </div>
 
             <footer className="modal-foot">
@@ -194,12 +195,18 @@ export default class CreateProjectForm extends React.PureComponent<Props, State>
                   onChange={this.handleVisibilityChange}
                   visibility={this.state.visibility}
                 />
-                {!organization.canUpdateProjectsVisibilityToPrivate && (
-                  <div className="spacer-top">
-                    <UpgradeOrganizationBox organization={organization.key} />
+              </div>
+              {organization.actions &&
+                organization.actions.admin &&
+                !organization.canUpdateProjectsVisibilityToPrivate && (
+                  <div className="spacer-top display-flex-space-around">
+                    <UpgradeOrganizationBox
+                      insideModal={true}
+                      onOrganizationUpgrade={this.props.onOrganizationUpgrade}
+                      organization={organization}
+                    />
                   </div>
                 )}
-              </div>
             </div>
 
             <footer className="modal-foot">

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -64,7 +64,7 @@ public class ReportAnalysisFailureNotificationExecutionListener implements CeWor
     if (status == CeActivityDto.Status.SUCCESS) {
       return;
     }
-    String projectUuid = ceTask.getComponentUuid();
+    String projectUuid = ceTask.getComponent().map(CeTask.Component::getUuid).orElse(null);
     if (!CeTaskTypes.REPORT.equals(ceTask.getType()) || projectUuid == null) {
       return;
     }

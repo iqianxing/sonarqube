@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,10 +22,9 @@ import { uniq } from 'lodash';
 import ConciseIssueLocationsNavigatorLocation from './ConciseIssueLocationsNavigatorLocation';
 import CrossFileLocationsNavigator from './CrossFileLocationsNavigator';
 import { getLocations } from '../utils';
-import { Issue } from '../../../app/types';
 
 interface Props {
-  issue: Pick<Issue, 'component' | 'key' | 'flows' | 'secondaryLocations'>;
+  issue: Pick<T.Issue, 'component' | 'key' | 'flows' | 'secondaryLocations'>;
   onLocationSelect: (index: number) => void;
   scroll: (element: Element) => void;
   selectedFlowIndex: number | undefined;

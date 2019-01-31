@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,14 +27,13 @@ import ActionsDropdown, {
   ActionsDropdownDivider,
   ActionsDropdownItem
 } from '../../components/controls/ActionsDropdown';
-import { Group, Organization, OrganizationMember } from '../../app/types';
 
 interface Props {
-  member: OrganizationMember;
-  organization: Organization;
-  organizationGroups: Group[];
-  removeMember: (member: OrganizationMember) => void;
-  updateMemberGroups: (member: OrganizationMember, add: string[], remove: string[]) => void;
+  member: T.OrganizationMember;
+  organization: T.Organization;
+  organizationGroups: T.Group[];
+  removeMember: (member: T.OrganizationMember) => void;
+  updateMemberGroups: (member: T.OrganizationMember, add: string[], remove: string[]) => void;
 }
 
 interface State {
@@ -78,6 +77,7 @@ export default class MembersListItem extends React.PureComponent<Props, State> {
 
   render() {
     const { member, organization } = this.props;
+    const { actions = {} } = organization;
     return (
       <tr>
         <td className="thin nowrap">
@@ -87,7 +87,7 @@ export default class MembersListItem extends React.PureComponent<Props, State> {
           <strong>{member.name}</strong>
           <span className="note little-spacer-left">{member.login}</span>
         </td>
-        {organization.canAdmin && (
+        {actions.admin && (
           <td className="text-right text-middle">
             {translateWithParameters(
               'organization.members.x_groups',
@@ -95,7 +95,7 @@ export default class MembersListItem extends React.PureComponent<Props, State> {
             )}
           </td>
         )}
-        {organization.canAdmin && (
+        {actions.admin && (
           <React.Fragment>
             <td className="nowrap text-middle text-right">
               <ActionsDropdown>

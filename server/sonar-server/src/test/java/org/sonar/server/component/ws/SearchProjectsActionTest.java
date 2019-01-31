@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,6 +25,7 @@ import com.tngtech.java.junit.dataprovider.DataProviderRunner;
 import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import java.util.Arrays;
 import java.util.Date;
+import java.util.List;
 import java.util.function.Consumer;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -970,14 +971,14 @@ public class SearchProjectsActionTest {
     OrganizationDto organization = db.organizations().insert();
     MetricDto qualityGateStatus = db.measures().insertMetric(c -> c.setKey(QUALITY_GATE_STATUS).setValueType(LEVEL.name()));
     ComponentDto project1 = insertProject(organization, c -> c.setName("Sonar Java"), new Measure(qualityGateStatus, c -> c.setValue(null).setData("ERROR")));
-    ComponentDto project2 = insertProject(organization, c -> c.setName("Sonar Groovy"), new Measure(qualityGateStatus, c -> c.setValue(null).setData("WARN")));
+    ComponentDto project2 = insertProject(organization, c -> c.setName("Sonar Groovy"), new Measure(qualityGateStatus, c -> c.setValue(null).setData("ERROR")));
     ComponentDto project3 = insertProject(organization, c -> c.setName("Sonar Markdown"), new Measure(qualityGateStatus, c -> c.setValue(null).setData("OK")));
     ComponentDto project4 = insertProject(organization, c -> c.setName("Sonar Qube"), new Measure(qualityGateStatus, c -> c.setValue(null).setData("OK")));
 
     assertThat(call(request.setSort(QUALITY_GATE_STATUS).setAsc(true)).getComponentsList()).extracting(Component::getKey)
       .containsExactly(project3.getDbKey(), project4.getDbKey(), project2.getDbKey(), project1.getDbKey());
     assertThat(call(request.setSort(QUALITY_GATE_STATUS).setAsc(false)).getComponentsList()).extracting(Component::getKey)
-      .containsExactly(project1.getDbKey(), project2.getDbKey(), project3.getDbKey(), project4.getDbKey());
+      .containsExactly(project2.getDbKey(), project1.getDbKey(), project3.getDbKey(), project4.getDbKey());
   }
 
   @Test
@@ -1084,6 +1085,25 @@ public class SearchProjectsActionTest {
 
     assertThat(result.getComponentsList()).extracting(Component::getKey)
       .containsExactlyInAnyOrder(project.getDbKey());
+  }
+
+  @Test
+  public void use_deprecated_warning_quality_gate_in_filter() {
+    userSession.logIn();
+    OrganizationDto organization = db.organizations().insert();
+    MetricDto qualityGateStatus = db.measures().insertMetric(c -> c.setKey(QUALITY_GATE_STATUS).setValueType(LEVEL.name()));
+    ComponentDto project1 = insertProject(organization, c -> c.setName("Sonar Java"), new Measure(qualityGateStatus, c -> c.setValue(null).setData("ERROR")));
+    ComponentDto project2 = insertProject(organization, c -> c.setName("Sonar Groovy"), new Measure(qualityGateStatus, c -> c.setValue(null).setData("WARN")));
+    ComponentDto project3 = insertProject(organization, c -> c.setName("Sonar Markdown"), new Measure(qualityGateStatus, c -> c.setValue(null).setData("WARN")));
+    ComponentDto project4 = insertProject(organization, c -> c.setName("Sonar Qube"), new Measure(qualityGateStatus, c -> c.setValue(null).setData("OK")));
+
+    List<Component> projects = call(request
+      .setFilter("alert_status = WARN"))
+      .getComponentsList();
+
+    assertThat(projects)
+      .extracting(Component::getKey)
+      .containsExactly(project2.getKey(), project3.getKey());
   }
 
   @Test

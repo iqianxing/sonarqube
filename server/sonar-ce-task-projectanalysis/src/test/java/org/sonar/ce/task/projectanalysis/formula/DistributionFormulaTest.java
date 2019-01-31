@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,8 +19,7 @@
  */
 package org.sonar.ce.task.projectanalysis.formula;
 
-import com.google.common.base.Optional;
-import org.assertj.guava.api.Assertions;
+import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -28,7 +27,6 @@ import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.ce.task.projectanalysis.component.ReportComponent;
 import org.sonar.ce.task.projectanalysis.measure.Measure;
 import org.sonar.ce.task.projectanalysis.metric.Metric;
-import org.sonar.ce.task.projectanalysis.period.PeriodHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -44,9 +42,9 @@ public class DistributionFormulaTest {
 
   CounterInitializationContext counterInitializationContext = mock(CounterInitializationContext.class);
   CreateMeasureContext projectCreateMeasureContext = new DumbCreateMeasureContext(
-    ReportComponent.builder(Component.Type.PROJECT, 1).build(), mock(Metric.class), mock(PeriodHolder.class));
+    ReportComponent.builder(Component.Type.PROJECT, 1).build(), mock(Metric.class));
   CreateMeasureContext fileCreateMeasureContext = new DumbCreateMeasureContext(
-    ReportComponent.builder(Component.Type.FILE, 1).build(), mock(Metric.class), mock(PeriodHolder.class));
+    ReportComponent.builder(Component.Type.FILE, 1).build(), mock(Metric.class));
 
   @Test
   public void check_new_counter_class() {
@@ -90,10 +88,10 @@ public class DistributionFormulaTest {
   @Test
   public void create_no_measure_when_no_value() {
     DistributionFormula.DistributionCounter counter = BASIC_DISTRIBUTION_FORMULA.createNewCounter();
-    when(counterInitializationContext.getMeasure(FUNCTION_COMPLEXITY_DISTRIBUTION_KEY)).thenReturn(Optional.absent());
+    when(counterInitializationContext.getMeasure(FUNCTION_COMPLEXITY_DISTRIBUTION_KEY)).thenReturn(Optional.empty());
     counter.initialize(counterInitializationContext);
 
-    Assertions.assertThat(BASIC_DISTRIBUTION_FORMULA.createMeasure(counter, projectCreateMeasureContext)).isAbsent();
+    assertThat(BASIC_DISTRIBUTION_FORMULA.createMeasure(counter, projectCreateMeasureContext)).isNotPresent();
   }
 
   @Test
@@ -102,7 +100,7 @@ public class DistributionFormulaTest {
     addMeasure(FUNCTION_COMPLEXITY_DISTRIBUTION_KEY, "0=3;3=7;6=10");
     counter.initialize(counterInitializationContext);
 
-    Assertions.assertThat(BASIC_DISTRIBUTION_FORMULA.createMeasure(counter, fileCreateMeasureContext)).isAbsent();
+    assertThat(BASIC_DISTRIBUTION_FORMULA.createMeasure(counter, fileCreateMeasureContext)).isNotPresent();
   }
 
   private void addMeasure(String metricKey, String value) {

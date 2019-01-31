@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -55,6 +55,11 @@ class PurgeCommands {
   }
 
   void deleteAnalyses(String rootComponentUuid) {
+    profiler.start("deleteAnalyses (event_component_changes)");
+    purgeMapper.deleteEventComponentChangesByComponentUuid(rootComponentUuid);
+    session.commit();
+    profiler.stop();
+
     profiler.start("deleteAnalyses (events)");
     purgeMapper.deleteEventsByComponentUuid(rootComponentUuid);
     session.commit();
@@ -94,6 +99,11 @@ class PurgeCommands {
     List<List<String>> analysisUuidsPartitions = Lists.partition(IdUuidPairs.uuids(analysisIdUuids), MAX_SNAPSHOTS_PER_QUERY);
 
     deleteAnalysisDuplications(analysisUuidsPartitions);
+
+    profiler.start("deleteAnalyses (event_component_changes)");
+    analysisUuidsPartitions.forEach(purgeMapper::deleteAnalysisEventComponentChanges);
+    session.commit();
+    profiler.stop();
 
     profiler.start("deleteAnalyses (events)");
     analysisUuidsPartitions.forEach(purgeMapper::deleteAnalysisEvents);
@@ -248,38 +258,53 @@ class PurgeCommands {
 
   void deleteCeActivity(String rootUuid) {
     profiler.start("deleteCeActivity (ce_scanner_context)");
-    purgeMapper.deleteCeScannerContextOfCeActivityByProjectUuid(rootUuid);
+    purgeMapper.deleteCeScannerContextOfCeActivityByRootUuid(rootUuid);
     session.commit();
     profiler.stop();
     profiler.start("deleteCeActivity (ce_task_characteristics)");
-    purgeMapper.deleteCeTaskCharacteristicsOfCeActivityByProjectUuid(rootUuid);
+    purgeMapper.deleteCeTaskCharacteristicsOfCeActivityByRootUuid(rootUuid);
     session.commit();
     profiler.stop();
     profiler.start("deleteCeActivity (ce_task_input)");
-    purgeMapper.deleteCeTaskInputOfCeActivityByProjectUuid(rootUuid);
+    purgeMapper.deleteCeTaskInputOfCeActivityByRootUuid(rootUuid);
+    session.commit();
+    profiler.stop();
+    profiler.start("deleteCeActivity (ce_task_message)");
+    purgeMapper.deleteCeTaskMessageOfCeActivityByRootUuid(rootUuid);
     session.commit();
     profiler.stop();
     profiler.start("deleteCeActivity (ce_activity)");
-    purgeMapper.deleteCeActivityByProjectUuid(rootUuid);
+    purgeMapper.deleteCeActivityByRootUuid(rootUuid);
     session.commit();
     profiler.stop();
   }
 
   void deleteCeQueue(String rootUuid) {
     profiler.start("deleteCeQueue (ce_scanner_context)");
-    purgeMapper.deleteCeScannerContextOfCeQueueByProjectUuid(rootUuid);
+    purgeMapper.deleteCeScannerContextOfCeQueueByRootUuid(rootUuid);
     session.commit();
     profiler.stop();
     profiler.start("deleteCeQueue (ce_task_characteristics)");
-    purgeMapper.deleteCeTaskCharacteristicsOfCeQueueByProjectUuid(rootUuid);
+    purgeMapper.deleteCeTaskCharacteristicsOfCeQueueByRootUuid(rootUuid);
     session.commit();
     profiler.stop();
     profiler.start("deleteCeQueue (ce_task_input)");
-    purgeMapper.deleteCeTaskInputOfCeQueueByProjectUuid(rootUuid);
+    purgeMapper.deleteCeTaskInputOfCeQueueByRootUuid(rootUuid);
+    session.commit();
+    profiler.stop();
+    profiler.start("deleteCeQueue (ce_task_message)");
+    purgeMapper.deleteCeTaskMessageOfCeQueueByRootUuid(rootUuid);
     session.commit();
     profiler.stop();
     profiler.start("deleteCeQueue (ce_queue)");
-    purgeMapper.deleteCeQueueByProjectUuid(rootUuid);
+    purgeMapper.deleteCeQueueByRootUuid(rootUuid);
+    session.commit();
+    profiler.stop();
+  }
+
+  void deleteWebhooks(String rootUuid) {
+    profiler.start("deleteWebhooks (webhooks)");
+    purgeMapper.deleteWebhooksByProjectUuid(rootUuid);
     session.commit();
     profiler.stop();
   }

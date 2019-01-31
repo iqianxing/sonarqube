@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -37,6 +37,17 @@ it('should render custom link', () => {
     shallow(
       <LinkRow
         link={{ id: '12', name: 'foo', type: 'foo', url: 'http://example.com' }}
+        onDelete={jest.fn()}
+      />
+    )
+  ).toMatchSnapshot();
+});
+
+it('should render dangerous code as plain text', () => {
+  expect(
+    shallow(
+      <LinkRow
+        link={{ id: '12', name: 'dangerous', type: 'dangerous', url: 'javascript:alert("Hello")' }}
         onDelete={jest.fn()}
       />
     )

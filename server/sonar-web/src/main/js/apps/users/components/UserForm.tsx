@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,15 +21,15 @@ import * as React from 'react';
 import { uniq } from 'lodash';
 import UserScmAccountInput from './UserScmAccountInput';
 import { createUser, updateUser } from '../../../api/users';
-import { User } from '../../../app/types';
 import throwGlobalError from '../../../app/utils/throwGlobalError';
 import Modal from '../../../components/controls/Modal';
 import { Button, ResetButtonLink, SubmitButton } from '../../../components/ui/buttons';
 import { translate, translateWithParameters } from '../../../helpers/l10n';
 import { parseError } from '../../../helpers/request';
+import { Alert } from '../../../components/ui/Alert';
 
 export interface Props {
-  user?: User;
+  user?: T.User;
   onClose: () => void;
   onUpdateUsers: () => void;
 }
@@ -163,7 +163,7 @@ export default class UserForm extends React.PureComponent<Props, State> {
           </header>
 
           <div className="modal-body">
-            {error && <p className="alert alert-danger">{error}</p>}
+            {error && <Alert variant="error">{error}</Alert>}
 
             {!user && (
               <div className="modal-field">

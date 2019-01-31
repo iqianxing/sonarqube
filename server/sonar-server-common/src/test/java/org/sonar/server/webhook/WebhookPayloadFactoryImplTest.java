@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,7 +27,6 @@ import org.junit.Test;
 import org.sonar.api.measures.Metric;
 import org.sonar.api.platform.Server;
 import org.sonar.api.utils.System2;
-import org.sonar.server.project.Project;
 import org.sonar.server.qualitygate.Condition;
 import org.sonar.server.qualitygate.EvaluatedCondition;
 import org.sonar.server.qualitygate.EvaluatedQualityGate;
@@ -58,11 +57,11 @@ public class WebhookPayloadFactoryImplTest {
   @Test
   public void create_payload_for_successful_analysis() {
     CeTask task = new CeTask("#1", CeTask.Status.SUCCESS);
-    Condition condition = new Condition("coverage", Condition.Operator.GREATER_THAN, "70.0", "75.0", true);
+    Condition condition = new Condition("coverage", Condition.Operator.GREATER_THAN, "70.0");
     EvaluatedQualityGate gate = EvaluatedQualityGate.newBuilder()
       .setQualityGate(new QualityGate("G1", "Gate One", singleton(condition)))
-      .setStatus(Metric.Level.WARN)
-      .addCondition(condition, EvaluatedCondition.EvaluationStatus.WARN, "74.0")
+      .setStatus(Metric.Level.ERROR)
+      .addCondition(condition, EvaluatedCondition.EvaluationStatus.ERROR, "74.0")
       .build();
     ProjectAnalysis analysis = newAnalysis(task, gate, null, 1_500_000_000_000L, emptyMap());
 
@@ -82,16 +81,14 @@ public class WebhookPayloadFactoryImplTest {
         "  }," +
         "  \"qualityGate\": {" +
         "    \"name\": \"Gate One\"," +
-        "    \"status\": \"WARN\"," +
+        "    \"status\": \"ERROR\"," +
         "    \"conditions\": [" +
         "      {" +
         "        \"metric\": \"coverage\"," +
         "        \"operator\": \"GREATER_THAN\"," +
         "        \"value\": \"74.0\"," +
-        "        \"status\": \"WARN\"," +
-        "        \"onLeakPeriod\": true," +
-        "        \"errorThreshold\": \"70.0\"," +
-        "        \"warningThreshold\": \"75.0\"" +
+        "        \"status\": \"ERROR\"," +
+        "        \"errorThreshold\": \"70.0\"" +
         "      }" +
         "    ]" +
         "  }," +
@@ -104,10 +101,10 @@ public class WebhookPayloadFactoryImplTest {
   public void create_payload_with_gate_conditions_without_value() {
     CeTask task = new CeTask("#1", CeTask.Status.SUCCESS);
 
-    Condition condition = new Condition("coverage", Condition.Operator.GREATER_THAN, "70.0", "75.0", false);
+    Condition condition = new Condition("coverage", Condition.Operator.GREATER_THAN, "70.0");
     EvaluatedQualityGate gate = EvaluatedQualityGate.newBuilder()
       .setQualityGate(new QualityGate("G1", "Gate One", singleton(condition)))
-      .setStatus(Metric.Level.WARN)
+      .setStatus(Metric.Level.ERROR)
       .addCondition(condition, EvaluatedCondition.EvaluationStatus.NO_VALUE, null)
       .build();
     ProjectAnalysis analysis = newAnalysis(task, gate, null, 1_500_000_000_000L, emptyMap());
@@ -128,15 +125,13 @@ public class WebhookPayloadFactoryImplTest {
         "  }," +
         "  \"qualityGate\": {" +
         "    \"name\": \"Gate One\"," +
-        "    \"status\": \"WARN\"," +
+        "    \"status\": \"ERROR\"," +
         "    \"conditions\": [" +
         "      {" +
         "        \"metric\": \"coverage\"," +
         "        \"operator\": \"GREATER_THAN\"," +
         "        \"status\": \"NO_VALUE\"," +
-        "        \"onLeakPeriod\": false," +
-        "        \"errorThreshold\": \"70.0\"," +
-        "        \"warningThreshold\": \"75.0\"" +
+        "        \"errorThreshold\": \"70.0\"" +
         "      }" +
         "    ]" +
         "  }" +
@@ -148,7 +143,7 @@ public class WebhookPayloadFactoryImplTest {
     CeTask task = new CeTask("#1", CeTask.Status.SUCCESS);
     EvaluatedQualityGate gate = EvaluatedQualityGate.newBuilder()
       .setQualityGate(new QualityGate("G1", "Gate One", emptySet()))
-      .setStatus(Metric.Level.WARN)
+      .setStatus(Metric.Level.ERROR)
       .build();
     Map<String, String> scannerProperties = ImmutableMap.of(
       "sonar.analysis.revision", "ab45d24",
@@ -172,7 +167,7 @@ public class WebhookPayloadFactoryImplTest {
         "  }," +
         "  \"qualityGate\": {" +
         "    \"name\": \"Gate One\"," +
-        "    \"status\": \"WARN\"," +
+        "    \"status\": \"ERROR\"," +
         "    \"conditions\": [" +
         "    ]" +
         "  }," +

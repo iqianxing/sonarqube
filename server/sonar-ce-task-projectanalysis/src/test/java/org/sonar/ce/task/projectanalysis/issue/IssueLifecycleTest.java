@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -392,6 +392,23 @@ public class IssueLifecycleTest {
     assertThat(raw.severity()).isEqualTo(BLOCKER);
 
     verify(updater, never()).setPastSeverity(raw, BLOCKER, issueChangeContext);
+  }
+
+  @Test
+  public void mergeExistingOpenIssue_with_base_changed() {
+    DefaultIssue raw = new DefaultIssue()
+      .setNew(true)
+      .setKey("RAW_KEY")
+      .setRuleKey(XOO_X1);
+    DefaultIssue base = new DefaultIssue()
+      .setChanged(true)
+      .setKey("BASE_KEY")
+      .setResolution(RESOLUTION_FALSE_POSITIVE)
+      .setStatus(STATUS_RESOLVED);
+
+    underTest.mergeExistingOpenIssue(raw, base);
+
+    assertThat(raw.isChanged()).isTrue();
   }
 
   @Test

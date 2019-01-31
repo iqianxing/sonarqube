@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,7 @@
  */
 package org.sonar.api.batch.rule;
 
-import org.sonar.api.batch.ScannerSide;
+import org.sonar.api.scanner.ScannerSide;
 import org.sonar.api.rule.RuleKey;
 
 import javax.annotation.CheckForNull;
@@ -32,7 +32,9 @@ import java.util.Collection;
  * be extended by plugins.
  *
  * @since 4.2
+ * @deprecated since 7.4 we plan to stop loading rules on scanner side
  */
+@Deprecated
 @ScannerSide
 @Immutable
 public interface Rules {

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,14 +19,9 @@
  */
 package org.sonar.ce.task.projectanalysis.batch;
 
-import com.google.common.base.Throwables;
-import com.google.protobuf.InvalidProtocolBufferException;
-import com.google.protobuf.Parser;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import javax.annotation.CheckForNull;
@@ -88,6 +83,12 @@ public class BatchReportReaderImpl implements BatchReportReader {
   }
 
   @Override
+  public CloseableIterator<ScannerReport.AdHocRule> readAdHocRules() {
+    ensureInitialized();
+    return delegate.readAdHocRules();
+  }
+
+  @Override
   public CloseableIterator<ScannerReport.Measure> readComponentMeasures(int componentRef) {
     ensureInitialized();
     return delegate.readComponentMeasures(componentRef);
@@ -111,7 +112,7 @@ public class BatchReportReaderImpl implements BatchReportReader {
     ensureInitialized();
     return delegate.readComponentIssues(componentRef);
   }
-  
+
   @Override
   public CloseableIterator<ScannerReport.ExternalIssue> readComponentExternalIssues(int componentRef) {
     ensureInitialized();
@@ -193,78 +194,26 @@ public class BatchReportReaderImpl implements BatchReportReader {
   }
 
   @Override
-  public CloseableIterator<ScannerReport.Test> readTests(int testFileRef) {
-    ensureInitialized();
-    File file = delegate.readTests(testFileRef);
-    if (file == null) {
-      return CloseableIterator.emptyCloseableIterator();
-    }
-
-    try {
-      return new ParserCloseableIterator<>(ScannerReport.Test.parser(), FileUtils.openInputStream(file));
-    } catch (IOException e) {
-      Throwables.propagate(e);
-      // actually never reached
-      return CloseableIterator.emptyCloseableIterator();
-    }
-  }
-
-  @Override
-  public CloseableIterator<ScannerReport.CoverageDetail> readCoverageDetails(int testFileRef) {
-    ensureInitialized();
-    File file = delegate.readCoverageDetails(testFileRef);
-    if (file == null) {
-      return CloseableIterator.emptyCloseableIterator();
-    }
-
-    try {
-      return new ParserCloseableIterator<>(ScannerReport.CoverageDetail.parser(), FileUtils.openInputStream(file));
-    } catch (IOException e) {
-      Throwables.propagate(e);
-      // actually never reached
-      return CloseableIterator.emptyCloseableIterator();
-    }
-  }
-
-  @Override
   public CloseableIterator<ScannerReport.ContextProperty> readContextProperties() {
     ensureInitialized();
     return delegate.readContextProperties();
-  }
-
-  private static class ParserCloseableIterator<T> extends CloseableIterator<T> {
-    private final Parser<T> parser;
-    private final FileInputStream fileInputStream;
-
-    public ParserCloseableIterator(Parser<T> parser, FileInputStream fileInputStream) {
-      this.parser = parser;
-      this.fileInputStream = fileInputStream;
-    }
-
-    @Override
-    protected T doNext() {
-      try {
-        return parser.parseDelimitedFrom(fileInputStream);
-      } catch (InvalidProtocolBufferException e) {
-        Throwables.propagate(e);
-        // actually never reached
-        return null;
-      }
-    }
-
-    @Override
-    protected void doClose() throws Exception {
-      fileInputStream.close();
-    }
-  }
-  
-  public boolean hasSignificantCode(int fileRef) {
-    return delegate.hasSignificantCode(fileRef);
   }
 
   @Override
   public Optional<CloseableIterator<LineSgnificantCode>> readComponentSignificantCode(int fileRef) {
     ensureInitialized();
     return Optional.ofNullable(delegate.readComponentSignificantCode(fileRef));
+  }
+
+  @Override
+  public Optional<ScannerReport.ChangedLines> readComponentChangedLines(int fileRef) {
+    ensureInitialized();
+    return Optional.ofNullable(delegate.readComponentChangedLines(fileRef));
+  }
+
+  @Override
+  public CloseableIterator<ScannerReport.AnalysisWarning> readAnalysisWarnings() {
+    ensureInitialized();
+    return delegate.readAnalysisWarnings();
   }
 }

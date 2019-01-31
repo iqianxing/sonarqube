@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -36,6 +36,11 @@ interface Props {
 export default function ProjectCardOverallMeasures({ measures }: Props) {
   if (measures === undefined) {
     return null;
+  }
+
+  const { ncloc } = measures;
+  if (!ncloc) {
+    return <div className="note">{translate('overview.project.empty')}</div>;
   }
 
   return (
@@ -139,6 +144,7 @@ export default function ProjectCardOverallMeasures({ measures }: Props) {
             </div>
             <div className="project-card-measure-label">
               <ProjectCardLanguagesContainer
+                className="project-card-languages"
                 distribution={measures['ncloc_language_distribution']}
               />
             </div>

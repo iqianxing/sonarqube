@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,13 +19,15 @@
  */
 package org.sonar.ce.task.projectanalysis.source.linereader;
 
-import com.google.common.base.Function;
-import com.google.common.base.Predicate;
-import com.google.common.collect.Ordering;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.sonar.ce.task.projectanalysis.duplication.Duplicate;
@@ -33,9 +35,6 @@ import org.sonar.ce.task.projectanalysis.duplication.Duplication;
 import org.sonar.ce.task.projectanalysis.duplication.InnerDuplicate;
 import org.sonar.ce.task.projectanalysis.duplication.TextBlock;
 import org.sonar.db.protobuf.DbFileSources;
-import org.sonar.ce.task.projectanalysis.duplication.Duplication;
-import org.sonar.ce.task.projectanalysis.duplication.InnerDuplicate;
-import org.sonar.ce.task.projectanalysis.duplication.TextBlock;
 
 import static com.google.common.collect.FluentIterable.from;
 import static com.google.common.collect.Iterables.size;
@@ -49,30 +48,29 @@ public class DuplicationLineReader implements LineReader {
   }
 
   @Override
-  public void read(DbFileSources.Line.Builder lineBuilder) {
+  public Optional<ReadError> read(DbFileSources.Line.Builder lineBuilder) {
     Predicate<Map.Entry<TextBlock, Integer>> containsLine = new TextBlockContainsLine(lineBuilder.getLine());
-    for (Integer textBlockIndex : from(duplicatedTextBlockIndexByTextBlock.entrySet())
+    // list is sorted to cope with the non-guaranteed order of Map entries which would trigger false detection of changes
+    // in {@link DbFileSources.Line#getDuplicationList()}
+    duplicatedTextBlockIndexByTextBlock.entrySet().stream()
       .filter(containsLine)
-      .transform(MapEntryToBlockId.INSTANCE)
-      // list is sorted to cope with the non-guaranteed order of Map entries which would trigger false detection of changes
-      // in {@link DbFileSources.Line#getDuplicationList()}
-      .toSortedList(Ordering.natural())) {
-      lineBuilder.addDuplication(textBlockIndex);
-    }
+      .map(Map.Entry::getValue)
+      .sorted(Comparator.naturalOrder())
+      .forEach(lineBuilder::addDuplication);
+
+    return Optional.empty();
   }
 
   /**
-   *
    * <p>
    * This method uses the natural order of TextBlocks to ensure that given the same set of TextBlocks, they get the same
    * index. It avoids false detections of changes in {@link DbFileSources.Line#getDuplicationList()}.
    * </p>
    */
   private static Map<TextBlock, Integer> createIndexOfDuplicatedTextBlocks(Iterable<Duplication> duplications) {
-    List<TextBlock> duplicatedTextBlocks = extractAllDuplicatedTextBlocks(duplications);
-    Collections.sort(duplicatedTextBlocks);
-    return from(duplicatedTextBlocks)
-      .toMap(new TextBlockIndexGenerator());
+    return extractAllDuplicatedTextBlocks(duplications)
+      .stream().sorted()
+      .collect(Collectors.toMap(e -> e, new TextBlockIndexGenerator(), (a, b) -> a, LinkedHashMap::new));
   }
 
   /**
@@ -103,22 +101,12 @@ public class DuplicationLineReader implements LineReader {
     }
 
     @Override
-    public boolean apply(@Nonnull Map.Entry<TextBlock, Integer> input) {
+    public boolean test(@Nonnull Map.Entry<TextBlock, Integer> input) {
       return isLineInBlock(input.getKey(), line);
     }
 
     private static boolean isLineInBlock(TextBlock range, int line) {
       return line >= range.getStart() && line <= range.getEnd();
-    }
-  }
-
-  private enum MapEntryToBlockId implements Function<Map.Entry<TextBlock, Integer>, Integer> {
-    INSTANCE;
-
-    @Override
-    @Nonnull
-    public Integer apply(@Nonnull Map.Entry<TextBlock, Integer> input) {
-      return input.getValue();
     }
   }
 

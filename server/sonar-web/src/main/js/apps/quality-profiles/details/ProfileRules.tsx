@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,11 +29,10 @@ import { getQualityProfile } from '../../../api/quality-profiles';
 import { getRulesUrl } from '../../../helpers/urls';
 import { translate } from '../../../helpers/l10n';
 import { Profile } from '../types';
-import { RuleType } from '../../../app/types';
 import { Button } from '../../../components/ui/buttons';
 import DocTooltip from '../../../components/docs/DocTooltip';
 
-const TYPES = [RuleType.Bug, RuleType.Vulnerability, RuleType.CodeSmell, RuleType.Hotspot];
+const TYPES = ['BUG', 'VULNERABILITY', 'CODE_SMELL', 'SECURITY_HOTSPOT'];
 
 interface Props {
   organization: string | null;
@@ -72,7 +71,7 @@ export default class ProfileRules extends React.PureComponent<Props, State> {
   }
 
   componentDidUpdate(prevProps: Props) {
-    if (prevProps.profile !== this.props.profile) {
+    if (prevProps.profile.key !== this.props.profile.key) {
       this.loadRules();
     }
   }

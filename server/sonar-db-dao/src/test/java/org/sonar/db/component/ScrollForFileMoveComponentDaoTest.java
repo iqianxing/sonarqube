@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -120,26 +120,6 @@ public class ScrollForFileMoveComponentDaoTest {
     assertThat(resultHandler.dtos).hasSize(3);
     verifyFileMoveRowDto(resultHandler, file1);
     verifyFileMoveRowDto(resultHandler, file2);
-    verifyFileMoveRowDto(resultHandler, file3);
-  }
-
-  @Test
-  public void scrollAllFilesForFileMove_ignores_file_source_of_type_TEST() {
-    OrganizationDto organization = db.organizations().insert();
-    ComponentDto project = random.nextBoolean() ? db.components().insertPrivateProject(organization) : db.components().insertPublicProject(organization);
-    ComponentDto module1 = db.components().insertComponent(ComponentTesting.newModuleDto(project));
-    ComponentDto module2 = db.components().insertComponent(ComponentTesting.newModuleDto(module1));
-    ComponentAndSource file1 = insertFileAndSource(project, FILE);
-    ComponentDto file2 = db.components().insertComponent(ComponentTesting.newFileDto(module1).setQualifier(UNIT_TEST_FILE));
-    db.fileSources().insertFileSource(file2, t -> t.setDataType(UNIT_TEST_FILE));
-    ComponentAndSource file3 = insertFileAndSource(module2, FILE);
-    db.fileSources().insertFileSource(file3.component, t -> t.setDataType(UNIT_TEST_FILE));
-    RecordingResultHandler resultHandler = new RecordingResultHandler();
-
-    underTest.scrollAllFilesForFileMove(dbSession, project.uuid(), resultHandler);
-
-    assertThat(resultHandler.dtos).hasSize(2);
-    verifyFileMoveRowDto(resultHandler, file1);
     verifyFileMoveRowDto(resultHandler, file3);
   }
 
@@ -267,6 +247,5 @@ public class ScrollForFileMoveComponentDaoTest {
     assertThat(dto.getPath()).isEqualTo(componentAndSource.component.path());
     assertThat(dto.getLineCount()).isEqualTo(componentAndSource.source.getLineCount());
   }
-
 
 }

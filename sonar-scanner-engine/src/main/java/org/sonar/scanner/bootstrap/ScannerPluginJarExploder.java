@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import org.apache.commons.io.FileUtils;
-import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.utils.ZipUtils;
 import org.sonar.core.platform.ExplodedPlugin;
 import org.sonar.core.platform.PluginInfo;
@@ -31,7 +30,6 @@ import org.sonar.core.platform.PluginJarExploder;
 
 import static org.sonar.core.util.FileUtils.deleteQuietly;
 
-@ScannerSide
 public class ScannerPluginJarExploder extends PluginJarExploder {
 
   private final PluginFiles pluginFiles;

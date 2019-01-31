@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,10 +19,9 @@
  */
 import * as React from 'react';
 import { shallow } from 'enzyme';
-import ComponentNavMenu from '../ComponentNavMenu';
-import { ShortLivingBranch, BranchType, LongLivingBranch, MainBranch } from '../../../../types';
+import { ComponentNavMenu } from '../ComponentNavMenu';
 
-const mainBranch: MainBranch = { isMain: true, name: 'master' };
+const mainBranch: T.MainBranch = { isMain: true, name: 'master' };
 
 const baseComponent = {
   breadcrumbs: [],
@@ -38,9 +37,13 @@ it('should work with extensions', () => {
     configuration: { showSettings: true, extensions: [{ key: 'foo', name: 'Foo' }] },
     extensions: [{ key: 'component-foo', name: 'ComponentFoo' }]
   };
-  const wrapper = shallow(<ComponentNavMenu branchLike={mainBranch} component={component} />, {
-    context: { branchesEnabled: true }
-  });
+  const wrapper = shallow(
+    <ComponentNavMenu
+      appState={{ branchesEnabled: true }}
+      branchLike={mainBranch}
+      component={component}
+    />
+  );
   expect(wrapper.find('Dropdown[data-test="extensions"]')).toMatchSnapshot();
   expect(wrapper.find('Dropdown[data-test="administration"]')).toMatchSnapshot();
 });
@@ -57,19 +60,23 @@ it('should work with multiple extensions', () => {
       { key: 'component-bar', name: 'ComponentBar' }
     ]
   };
-  const wrapper = shallow(<ComponentNavMenu branchLike={mainBranch} component={component} />, {
-    context: { branchesEnabled: true }
-  });
+  const wrapper = shallow(
+    <ComponentNavMenu
+      appState={{ branchesEnabled: true }}
+      branchLike={mainBranch}
+      component={component}
+    />
+  );
   expect(wrapper.find('Dropdown[data-test="extensions"]')).toMatchSnapshot();
   expect(wrapper.find('Dropdown[data-test="administration"]')).toMatchSnapshot();
 });
 
 it('should work for short-living branches', () => {
-  const branch: ShortLivingBranch = {
+  const branch: T.ShortLivingBranch = {
     isMain: false,
     mergeBranch: 'master',
     name: 'feature',
-    type: BranchType.SHORT
+    type: 'SHORT'
   };
   const component = {
     ...baseComponent,
@@ -77,41 +84,49 @@ it('should work for short-living branches', () => {
     extensions: [{ key: 'component-foo', name: 'ComponentFoo' }]
   };
   expect(
-    shallow(<ComponentNavMenu branchLike={branch} component={component} />, {
-      context: { branchesEnabled: true }
-    })
+    shallow(
+      <ComponentNavMenu
+        appState={{ branchesEnabled: true }}
+        branchLike={branch}
+        component={component}
+      />
+    )
   ).toMatchSnapshot();
 });
 
 it('should work for long-living branches', () => {
-  const branch: LongLivingBranch = { isMain: false, name: 'release', type: BranchType.LONG };
+  const branch: T.LongLivingBranch = { isMain: false, name: 'release', type: 'LONG' };
   [true, false].forEach(showSettings =>
     expect(
       shallow(
         <ComponentNavMenu
+          appState={{ branchesEnabled: true }}
           branchLike={branch}
           component={{
             ...baseComponent,
             configuration: { showSettings },
             extensions: [{ key: 'component-foo', name: 'ComponentFoo' }]
           }}
-        />,
-        { context: { branchesEnabled: true } }
+        />
       )
     ).toMatchSnapshot()
   );
 });
 
 it('should work for all qualifiers', () => {
-  ['TRK', 'BRC', 'VW', 'SVW', 'APP'].forEach(checkWithQualifier);
-  expect.assertions(5);
+  ['TRK', 'VW', 'SVW', 'APP'].forEach(checkWithQualifier);
+  expect.assertions(4);
 
   function checkWithQualifier(qualifier: string) {
     const component = { ...baseComponent, configuration: { showSettings: true }, qualifier };
     expect(
-      shallow(<ComponentNavMenu branchLike={mainBranch} component={component} />, {
-        context: { branchesEnabled: true }
-      })
+      shallow(
+        <ComponentNavMenu
+          appState={{ branchesEnabled: true }}
+          branchLike={mainBranch}
+          component={component}
+        />
+      )
     ).toMatchSnapshot();
   }
 });

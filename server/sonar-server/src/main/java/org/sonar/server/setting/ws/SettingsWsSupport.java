@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,13 +20,13 @@
 package org.sonar.server.setting.ws;
 
 import java.util.Optional;
-import java.util.function.Predicate;
 import java.util.stream.Collector;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import org.sonar.api.config.PropertyDefinition;
 import org.sonar.api.server.ServerSide;
 import org.sonar.api.server.ws.WebService;
+import org.sonar.api.web.UserRole;
 import org.sonar.db.component.ComponentDto;
 import org.sonar.db.permission.OrganizationPermission;
 import org.sonar.process.ProcessProperties;
@@ -37,7 +37,6 @@ import static java.lang.String.format;
 import static java.util.Arrays.stream;
 import static org.sonar.api.PropertyType.LICENSE;
 import static org.sonar.api.web.UserRole.ADMIN;
-import static org.sonar.core.permission.GlobalPermissions.SCAN_EXECUTION;
 import static org.sonar.server.setting.ws.SettingsWsParameters.PARAM_BRANCH;
 import static org.sonar.server.setting.ws.SettingsWsParameters.PARAM_PULL_REQUEST;
 import static org.sonar.server.ws.KeyExamples.KEY_BRANCH_EXAMPLE_001;
@@ -70,20 +69,16 @@ public class SettingsWsSupport {
       });
   }
 
-  Predicate<Setting> isSettingVisible(Optional<ComponentDto> component) {
-    return setting -> isVisible(setting.getKey(), setting.getDefinition(), component);
-  }
-
-  Predicate<PropertyDefinition> isDefinitionVisible(Optional<ComponentDto> component) {
-    return propertyDefinition -> isVisible(propertyDefinition.key(), propertyDefinition, component);
-  }
-
   boolean isVisible(String key, @Nullable PropertyDefinition definition, Optional<ComponentDto> component) {
-    return hasPermission(OrganizationPermission.SCAN, SCAN_EXECUTION, component) || (verifySecuredSetting(key, definition, component) && (verifyLicenseSetting(key, definition)));
+    return hasPermission(OrganizationPermission.SCAN, UserRole.SCAN, component) || (verifySecuredSetting(key, definition, component) && (verifyLicenseSetting(key, definition)));
+  }
+
+  static boolean isSecured(String key) {
+    return key.endsWith(DOT_SECURED);
   }
 
   private boolean verifySecuredSetting(String key, @Nullable PropertyDefinition definition, Optional<ComponentDto> component) {
-    return isLicense(key, definition) || (!key.endsWith(DOT_SECURED) || hasPermission(OrganizationPermission.ADMINISTER, ADMIN, component));
+    return isLicense(key, definition) || (!isSecured(key) || hasPermission(OrganizationPermission.ADMINISTER, ADMIN, component));
   }
 
   private boolean verifyLicenseSetting(String key, @Nullable PropertyDefinition definition) {
@@ -95,11 +90,14 @@ public class SettingsWsSupport {
   }
 
   private boolean hasPermission(OrganizationPermission orgPermission, String projectPermission, Optional<ComponentDto> component) {
+    if (userSession.isSystemAdministrator()) {
+      return true;
+    }
     if (userSession.hasPermission(orgPermission, defaultOrganizationProvider.get().getUuid())) {
       return true;
     }
     return component
-      .map(c -> userSession.hasComponentPermission(projectPermission, c))
+      .map(c -> userSession.hasPermission(orgPermission, c.getOrganizationUuid()) || userSession.hasComponentPermission(projectPermission, c))
       .orElse(false);
   }
 

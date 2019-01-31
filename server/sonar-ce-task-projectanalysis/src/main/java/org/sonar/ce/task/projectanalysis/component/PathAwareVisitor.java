@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -36,11 +36,6 @@ public interface PathAwareVisitor<T> extends ComponentVisitor {
   void visitProject(Component project, Path<T> path);
 
   /**
-   * Called when encountering a Component of type {@link Component.Type#MODULE}
-   */
-  void visitModule(Component module, Path<T> path);
-
-  /**
    * Called when encountering a Component of type {@link Component.Type#DIRECTORY}
    */
   void visitDirectory(Component directory, Path<T> path);
@@ -72,8 +67,6 @@ public interface PathAwareVisitor<T> extends ComponentVisitor {
 
   interface StackElementFactory<T> {
     T createForProject(Component project);
-
-    T createForModule(Component module);
 
     T createForDirectory(Component directory);
 

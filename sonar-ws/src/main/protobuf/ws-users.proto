@@ -109,6 +109,8 @@ message CurrentWsResponse {
   optional bool showOnboardingTutorial = 11;
   optional string avatar = 12;
   optional Homepage homepage = 13;
+  optional string personalOrganization = 14;
+  repeated Setting settings = 15;
 
   message Permissions {
     repeated string global = 1;
@@ -131,5 +133,10 @@ message CurrentWsResponse {
     optional string component = 2;
     optional string organization = 3;
     optional string branch = 4;
+  }
+
+  message Setting {
+    optional string key = 1;
+    optional string value = 2;
   }
 }

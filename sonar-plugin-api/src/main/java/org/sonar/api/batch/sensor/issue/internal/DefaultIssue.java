@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,26 +21,38 @@ package org.sonar.api.batch.sensor.issue.internal;
 
 import com.google.common.base.Preconditions;
 import javax.annotation.Nullable;
+import org.sonar.api.batch.fs.internal.DefaultInputProject;
 import org.sonar.api.batch.rule.Severity;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
 import org.sonar.api.batch.sensor.issue.Issue;
 import org.sonar.api.batch.sensor.issue.IssueLocation;
 import org.sonar.api.batch.sensor.issue.NewIssue;
+import org.sonar.api.rule.RuleKey;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 public class DefaultIssue extends AbstractDefaultIssue<DefaultIssue> implements Issue, NewIssue {
+  private RuleKey ruleKey;
   private Double gap;
   private Severity overriddenSeverity;
 
-  public DefaultIssue() {
-    super(null);
+  public DefaultIssue(DefaultInputProject project) {
+    this(project, null);
   }
 
-  public DefaultIssue(@Nullable SensorStorage storage) {
-    super(storage);
+  public DefaultIssue(DefaultInputProject project, @Nullable SensorStorage storage) {
+    super(project, storage);
+  }
+
+  public DefaultIssue forRule(RuleKey ruleKey) {
+    this.ruleKey = ruleKey;
+    return this;
+  }
+
+  public RuleKey ruleKey() {
+    return this.ruleKey;
   }
 
   @Override

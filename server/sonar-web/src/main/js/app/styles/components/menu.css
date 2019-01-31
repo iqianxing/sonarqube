@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -72,7 +72,7 @@
 }
 
 .menu > li > a.disabled {
-  color: #bbb !important;
+  color: var(--disableGrayText) !important;
   cursor: not-allowed !important;
   pointer-events: none !important;
 }

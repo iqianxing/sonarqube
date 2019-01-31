@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,12 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import AnalyzeTutorial from '../AnalyzeTutorial';
-import { LoggedInUser } from '../../../../app/types';
+
+jest.mock('../../../../helpers/system', () => ({
+  isSonarCloud: jest.fn().mockReturnValue(true)
+}));
+
+Date.now = jest.fn().mockReturnValue(1540457859031);
 
 const component = {
   key: 'foo',
@@ -32,10 +37,12 @@ const component = {
   version: '0.0.1'
 };
 
-const loggedInUser: LoggedInUser = {
+const loggedInUser: T.LoggedInUser = {
+  groups: [],
   isLoggedIn: true,
   login: 'luke',
-  name: 'Skywalker'
+  name: 'Skywalker',
+  scmAccounts: []
 };
 
 it('renders correctly', () => {

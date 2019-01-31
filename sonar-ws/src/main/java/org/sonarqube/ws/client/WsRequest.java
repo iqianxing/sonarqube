@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 package org.sonarqube.ws.client;
 
 import java.util.Map;
+import java.util.OptionalInt;
 
 /**
  * @since 5.3
@@ -31,6 +32,8 @@ public interface WsRequest {
   String getPath();
 
   String getMediaType();
+
+  OptionalInt getTimeOutInMs();
 
   /**
    *

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,11 +21,11 @@ package org.sonar.server.permission;
 
 import java.util.List;
 import java.util.Optional;
-import org.sonar.core.permission.ProjectPermissions;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.permission.UserPermissionDto;
 
+import static org.sonar.api.web.UserRole.PUBLIC_PERMISSIONS;
 import static org.sonar.core.permission.GlobalPermissions.SYSTEM_ADMIN;
 import static org.sonar.server.permission.PermissionChange.Operation.ADD;
 import static org.sonar.server.permission.PermissionChange.Operation.REMOVE;
@@ -70,7 +70,7 @@ public class UserPermissionChanger {
   private static boolean isAttemptToAddPublicPermissionToPublicComponent(UserPermissionChange change, ProjectId projectId) {
     return !projectId.isPrivate()
       && change.getOperation() == ADD
-      && ProjectPermissions.PUBLIC_PERMISSIONS.contains(change.getPermission());
+      && PUBLIC_PERMISSIONS.contains(change.getPermission());
   }
 
   private static void ensureConsistencyWithVisibility(UserPermissionChange change) {
@@ -83,7 +83,7 @@ public class UserPermissionChanger {
   private static boolean isAttemptToRemovePublicPermissionFromPublicComponent(UserPermissionChange change, ProjectId projectId) {
     return !projectId.isPrivate()
       && change.getOperation() == REMOVE
-      && ProjectPermissions.PUBLIC_PERMISSIONS.contains(change.getPermission());
+      && PUBLIC_PERMISSIONS.contains(change.getPermission());
   }
 
   private boolean addPermission(DbSession dbSession, UserPermissionChange change) {

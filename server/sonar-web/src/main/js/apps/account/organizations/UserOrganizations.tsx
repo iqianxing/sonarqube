@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,18 +20,21 @@
 import * as React from 'react';
 import Helmet from 'react-helmet';
 import { connect } from 'react-redux';
+import { Link } from 'react-router';
 import OrganizationsList from './OrganizationsList';
-import CreateOrganizationForm from './CreateOrganizationForm';
 import { fetchIfAnyoneCanCreateOrganizations } from './actions';
 import { translate } from '../../../helpers/l10n';
-import { getAppState, getMyOrganizations, getGlobalSettingValue } from '../../../store/rootReducer';
-import { Organization } from '../../../app/types';
-import { Button } from '../../../components/ui/buttons';
+import {
+  getAppState,
+  getMyOrganizations,
+  getGlobalSettingValue,
+  Store
+} from '../../../store/rootReducer';
 
 interface StateProps {
-  anyoneCanCreate?: { value: string };
-  canAdmin: boolean;
-  organizations: Array<Organization>;
+  anyoneCanCreate: boolean;
+  canAdmin?: boolean;
+  organizations: T.Organization[];
 }
 
 interface DispatchProps {
@@ -41,13 +44,12 @@ interface DispatchProps {
 interface Props extends StateProps, DispatchProps {}
 
 interface State {
-  createOrganization: boolean;
   loading: boolean;
 }
 
 class UserOrganizations extends React.PureComponent<Props, State> {
   mounted = false;
-  state: State = { createOrganization: false, loading: true };
+  state: State = { loading: true };
 
   componentDidMount() {
     this.mounted = true;
@@ -64,18 +66,8 @@ class UserOrganizations extends React.PureComponent<Props, State> {
     }
   };
 
-  openCreateOrganizationForm = () => {
-    this.setState({ createOrganization: true });
-  };
-
-  closeCreateOrganizationForm = () => {
-    this.setState({ createOrganization: false });
-  };
-
   render() {
-    const anyoneCanCreate =
-      this.props.anyoneCanCreate != null && this.props.anyoneCanCreate.value === 'true';
-
+    const { anyoneCanCreate } = this.props;
     const canCreateOrganizations = !this.state.loading && (anyoneCanCreate || this.props.canAdmin);
 
     return (
@@ -86,7 +78,9 @@ class UserOrganizations extends React.PureComponent<Props, State> {
           {canCreateOrganizations && (
             <div className="clearfix">
               <div className="boxed-group-actions">
-                <Button onClick={this.openCreateOrganizationForm}>{translate('create')}</Button>
+                <Link className="button" to="/create-organization">
+                  {translate('create')}
+                </Link>
               </div>
             </div>
           )}
@@ -98,23 +92,19 @@ class UserOrganizations extends React.PureComponent<Props, State> {
             )}
           </div>
         </div>
-
-        {this.state.createOrganization && (
-          <CreateOrganizationForm
-            onClose={this.closeCreateOrganizationForm}
-            onCreate={this.closeCreateOrganizationForm}
-          />
-        )}
       </div>
     );
   }
 }
 
-const mapStateToProps = (state: any): StateProps => ({
-  anyoneCanCreate: getGlobalSettingValue(state, 'sonar.organizations.anyoneCanCreate'),
-  canAdmin: getAppState(state).canAdmin,
-  organizations: getMyOrganizations(state)
-});
+const mapStateToProps = (state: Store): StateProps => {
+  const anyoneCanCreate = getGlobalSettingValue(state, 'sonar.organizations.anyoneCanCreate');
+  return {
+    anyoneCanCreate: Boolean(anyoneCanCreate && anyoneCanCreate.value === 'true'),
+    canAdmin: getAppState(state).canAdmin,
+    organizations: getMyOrganizations(state)
+  };
+};
 
 const mapDispatchToProps = {
   fetchIfAnyoneCanCreateOrganizations: fetchIfAnyoneCanCreateOrganizations as any

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -33,7 +33,6 @@ import static org.sonar.api.PropertyType.BOOLEAN;
 public class CorePropertyDefinitions {
 
   public static final String LEAK_PERIOD = "sonar.leak.period";
-  public static final String LEAK_PERIOD_MODE_PREVIOUS_ANALYSIS = "previous_analysis";
   public static final String LEAK_PERIOD_MODE_DATE = "date";
   public static final String LEAK_PERIOD_MODE_VERSION = "version";
   public static final String LEAK_PERIOD_MODE_DAYS = "days";
@@ -45,7 +44,6 @@ public class CorePropertyDefinitions {
   private static final String CATEGORY_ORGANIZATIONS = "organizations";
   public static final String ORGANIZATIONS_ANYONE_CAN_CREATE = "sonar.organizations.anyoneCanCreate";
   public static final String ORGANIZATIONS_CREATE_PERSONAL_ORG = "sonar.organizations.createPersonalOrg";
-  public static final String ONBOARDING_TUTORIAL_SHOW_TO_NEW_USERS = "sonar.onboardingTutorial.showToNewUsers";
   public static final String DISABLE_NOTIFICATION_ON_BUILT_IN_QPROFILES = "sonar.builtInQualityProfiles.disableNotificationOnUpdate";
 
   private CorePropertyDefinitions() {
@@ -63,6 +61,16 @@ public class CorePropertyDefinitions {
     defs.addAll(ScannerProperties.all());
 
     defs.addAll(asList(
+      PropertyDefinition.builder(CoreProperties.MODULE_LEVEL_ARCHIVED_SETTINGS)
+        .name("Archived Sub-Projects Settings")
+        .description("DEPRECATED - List of the properties that were previously configured at sub-project / module level. " +
+          "These properties are not used anymore and should now be configured at project level. When you've made the " +
+          "necessary changes, clear this setting to prevent analysis from showing a warning about it.")
+        .category(CoreProperties.CATEGORY_GENERAL)
+        .subCategory(CoreProperties.SUBCATEGORY_MODULES)
+        .onlyOnQualifiers(Qualifiers.PROJECT)
+        .type(PropertyType.TEXT)
+        .build(),
       PropertyDefinition.builder(CoreProperties.SERVER_BASE_URL)
         .name("Server base URL")
         .description("HTTP URL of this SonarQube server, such as <i>http://yourhost.yourdomain/sonar</i>. This value is used i.e. to create links in emails.")
@@ -82,13 +90,6 @@ public class CorePropertyDefinitions {
         .category(CoreProperties.CATEGORY_GENERAL)
         .multiValues(true)
         .defaultValue(CoreProperties.PREVIEW_EXCLUDE_PLUGINS_DEFAULT_VALUE)
-        .build(),
-      PropertyDefinition.builder(ONBOARDING_TUTORIAL_SHOW_TO_NEW_USERS)
-        .name("Show an onboarding tutorial to new users")
-        .type(BOOLEAN)
-        .description("Show an onboarding tutorial to new users, that explains how to analyze a first project, after logging in for the first time.")
-        .category(CoreProperties.CATEGORY_GENERAL)
-        .defaultValue(String.valueOf(false))
         .build(),
       PropertyDefinition.builder("sonar.authenticator.downcase")
         .name("Downcase login")

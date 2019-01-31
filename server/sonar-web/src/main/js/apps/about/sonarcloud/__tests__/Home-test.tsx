@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,9 +20,48 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import Home from '../Home';
+import { waitAndUpdate } from '../../../../helpers/testUtils';
 
-jest.mock('Docs/EmbedDocsSuggestions.json', () => ({}), { virtual: true });
+jest.mock('../utils', () => {
+  const utils = require.requireActual('../utils');
+  utils.requestHomepageData = jest.fn().mockResolvedValue({
+    publicProjects: 236,
+    publicLoc: 12345,
+    pullRequests: 123456,
+    rules: 1234,
+    featuredProjects: [
+      {
+        key: 'sonarsource-jfrog.simple-js-php-project',
+        avatarUrl: null,
+        organizationKey: 'sonarsource-jfrog',
+        organizationName: 'SonarSource & JFrog',
+        name: 'Simple JS & PHP project',
+        bugs: 0,
+        codeSmells: 7,
+        coverage: 9.7,
+        duplications: 56.2,
+        gateStatus: 'OK',
+        languages: ['js', 'php'],
+        maintainabilityRating: 1,
+        ncloc: 123456,
+        reliabilityRating: 1,
+        securityRating: 1,
+        vulnerabilities: 654321
+      }
+    ]
+  });
+  return utils;
+});
 
-it('should render', () => {
-  expect(shallow(<Home />)).toBeDefined();
+it('should render', async () => {
+  const wrapper = shallow(<Home />);
+  await waitAndUpdate(wrapper);
+  expect(wrapper).toMatchSnapshot();
+  expect(wrapper.find('PageBackgroundHeader').dive()).toMatchSnapshot();
+  expect(wrapper.find('PageTitle').dive()).toMatchSnapshot();
+  expect(wrapper.find('EnhanceWorkflow').dive()).toMatchSnapshot();
+  expect(wrapper.find('Functionality').dive()).toMatchSnapshot();
+  expect(wrapper.find('Languages').dive()).toMatchSnapshot();
+  expect(wrapper.find('Stats').dive()).toMatchSnapshot();
+  expect(wrapper.find('Projects').dive()).toMatchSnapshot();
 });

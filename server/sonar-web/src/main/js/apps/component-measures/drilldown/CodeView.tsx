@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,15 +20,12 @@
 import * as React from 'react';
 import * as key from 'keymaster';
 import SourceViewer from '../../../components/SourceViewer/SourceViewer';
-import { BranchLike, ComponentMeasure, ComponentMeasureEnhanced, Metric } from '../../../app/types';
-import { Period } from '../../../helpers/periods';
 
 interface Props {
-  branchLike?: BranchLike;
-  component: ComponentMeasure;
-  components: Array<ComponentMeasureEnhanced>;
-  leakPeriod?: Period;
-  metric: Metric;
+  branchLike?: T.BranchLike;
+  component: T.ComponentMeasure;
+  components: T.ComponentMeasureEnhanced[];
+  leakPeriod?: T.Period;
   selectedIdx?: number;
   updateSelected: (component: string) => void;
 }

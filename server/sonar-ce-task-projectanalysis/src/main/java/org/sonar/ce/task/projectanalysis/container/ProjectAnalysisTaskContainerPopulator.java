@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,6 +24,7 @@ import java.util.List;
 import javax.annotation.Nullable;
 import org.sonar.ce.task.CeTask;
 import org.sonar.ce.task.container.TaskContainer;
+import org.sonar.ce.task.log.CeTaskMessagesImpl;
 import org.sonar.ce.task.projectanalysis.analysis.AnalysisMetadataHolderImpl;
 import org.sonar.ce.task.projectanalysis.api.posttask.PostProjectAnalysisTasksExecutor;
 import org.sonar.ce.task.projectanalysis.batch.BatchReportDirectoryHolderImpl;
@@ -34,6 +35,7 @@ import org.sonar.ce.task.projectanalysis.component.ConfigurationRepositoryImpl;
 import org.sonar.ce.task.projectanalysis.component.DbIdsRepositoryImpl;
 import org.sonar.ce.task.projectanalysis.component.DisabledComponentsHolderImpl;
 import org.sonar.ce.task.projectanalysis.component.MergeBranchComponentUuids;
+import org.sonar.ce.task.projectanalysis.component.ReportModulesPath;
 import org.sonar.ce.task.projectanalysis.component.ShortBranchComponentsWithIssues;
 import org.sonar.ce.task.projectanalysis.component.TreeRootHolderImpl;
 import org.sonar.ce.task.projectanalysis.dbmigration.DbMigrationModule;
@@ -42,6 +44,7 @@ import org.sonar.ce.task.projectanalysis.duplication.DuplicationMeasures;
 import org.sonar.ce.task.projectanalysis.duplication.DuplicationRepositoryImpl;
 import org.sonar.ce.task.projectanalysis.duplication.IntegrateCrossProjectDuplications;
 import org.sonar.ce.task.projectanalysis.event.EventRepositoryImpl;
+import org.sonar.ce.task.projectanalysis.filemove.AddedFileRepositoryImpl;
 import org.sonar.ce.task.projectanalysis.filemove.FileSimilarityImpl;
 import org.sonar.ce.task.projectanalysis.filemove.MutableMovedFilesRepositoryImpl;
 import org.sonar.ce.task.projectanalysis.filemove.ScoreMatrixDumperImpl;
@@ -62,6 +65,7 @@ import org.sonar.ce.task.projectanalysis.issue.IssueCache;
 import org.sonar.ce.task.projectanalysis.issue.IssueCounter;
 import org.sonar.ce.task.projectanalysis.issue.IssueCreationDateCalculator;
 import org.sonar.ce.task.projectanalysis.issue.IssueLifecycle;
+import org.sonar.ce.task.projectanalysis.issue.IssueRelocationToRoot;
 import org.sonar.ce.task.projectanalysis.issue.IssueTrackingDelegator;
 import org.sonar.ce.task.projectanalysis.issue.IssueVisitors;
 import org.sonar.ce.task.projectanalysis.issue.IssuesRepositoryVisitor;
@@ -108,12 +112,17 @@ import org.sonar.ce.task.projectanalysis.qualitymodel.NewReliabilityAndSecurityR
 import org.sonar.ce.task.projectanalysis.qualitymodel.RatingSettings;
 import org.sonar.ce.task.projectanalysis.qualitymodel.ReliabilityAndSecurityRatingMeasuresVisitor;
 import org.sonar.ce.task.projectanalysis.qualityprofile.ActiveRulesHolderImpl;
+import org.sonar.ce.task.projectanalysis.qualityprofile.QProfileStatusRepositoryImpl;
 import org.sonar.ce.task.projectanalysis.scm.ScmInfoDbLoader;
 import org.sonar.ce.task.projectanalysis.scm.ScmInfoRepositoryImpl;
 import org.sonar.ce.task.projectanalysis.source.DbLineHashVersion;
+import org.sonar.ce.task.projectanalysis.source.FileSourceDataComputer;
+import org.sonar.ce.task.projectanalysis.source.FileSourceDataWarnings;
 import org.sonar.ce.task.projectanalysis.source.LastCommitVisitor;
+import org.sonar.ce.task.projectanalysis.source.NewLinesRepository;
 import org.sonar.ce.task.projectanalysis.source.SignificantCodeRepository;
 import org.sonar.ce.task.projectanalysis.source.SourceHashRepositoryImpl;
+import org.sonar.ce.task.projectanalysis.source.SourceLineReadersFactory;
 import org.sonar.ce.task.projectanalysis.source.SourceLinesDiffImpl;
 import org.sonar.ce.task.projectanalysis.source.SourceLinesHashCache;
 import org.sonar.ce.task.projectanalysis.source.SourceLinesHashRepositoryImpl;
@@ -163,11 +172,15 @@ public final class ProjectAnalysisTaskContainerPopulator implements ContainerPop
       PostProjectAnalysisTasksExecutor.class,
       ComputationStepExecutor.class,
 
+      // messages/warnings
+      CeTaskMessagesImpl.class,
+      FileSourceDataWarnings.class,
+
       // File System
       new ComputationTempFolderProvider(),
 
       DbMigrationModule.class,
-
+      ReportModulesPath.class,
       MetricModule.class,
 
       // holders
@@ -205,6 +218,10 @@ public final class ProjectAnalysisTaskContainerPopulator implements ContainerPop
       DbLineHashVersion.class,
       SignificantCodeRepository.class,
       SourceLinesHashCache.class,
+      NewLinesRepository.class,
+      FileSourceDataComputer.class,
+      SourceLineReadersFactory.class,
+      QProfileStatusRepositoryImpl.class,
 
       // issues
       RuleRepositoryImpl.class,
@@ -217,6 +234,7 @@ public final class ProjectAnalysisTaskContainerPopulator implements ContainerPop
       ComponentsWithUnprocessedIssues.class,
       ComponentIssuesRepositoryImpl.class,
       IssueFilter.class,
+      IssueRelocationToRoot.class,
 
       // common rules
       CommonRuleEngineImpl.class,
@@ -272,6 +290,7 @@ public final class ProjectAnalysisTaskContainerPopulator implements ContainerPop
       SourceSimilarityImpl.class,
       FileSimilarityImpl.class,
       MutableMovedFilesRepositoryImpl.class,
+      AddedFileRepositoryImpl.class,
 
       // duplication
       IntegrateCrossProjectDuplications.class,

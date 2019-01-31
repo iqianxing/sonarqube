@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,16 +17,15 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-import { FacetValue } from '../app/types';
 import { getJSON, post, postJSON, RequestData } from '../helpers/request';
 import { RawIssue } from '../helpers/issues';
 import throwGlobalError from '../app/utils/throwGlobalError';
 
 export interface IssueResponse {
-  components?: Array<{}>;
-  issue: {};
+  components?: Array<{ key: string; name: string }>;
+  issue: RawIssue;
   rules?: Array<{}>;
-  users?: Array<{}>;
+  users?: Array<{ login: string }>;
 }
 
 interface IssuesResponse {
@@ -75,7 +74,7 @@ export function getFacets(
   query: RequestData,
   facets: FacetName[]
 ): Promise<{
-  facets: Array<{ property: string; values: FacetValue[] }>;
+  facets: Array<{ property: string; values: T.FacetValue[] }>;
   response: IssuesResponse;
 }> {
   const data = {
@@ -110,7 +109,7 @@ export function searchIssueTags(data: {
 }
 
 export function getIssueChangelog(issue: string): Promise<any> {
-  return getJSON('/api/issues/changelog', { issue }).then(r => r.changelog);
+  return getJSON('/api/issues/changelog', { issue }).then(r => r.changelog, throwGlobalError);
 }
 
 export function getIssueFilters() {

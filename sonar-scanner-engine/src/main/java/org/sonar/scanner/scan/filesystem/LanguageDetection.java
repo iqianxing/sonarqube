@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -33,7 +33,6 @@ import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.sonar.api.CoreProperties;
-import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.batch.fs.internal.PathPattern;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.MessageException;
@@ -43,7 +42,6 @@ import org.sonar.scanner.repository.language.LanguagesRepository;
 /**
  * Detect language of a source file based on its suffix and configured patterns.
  */
-@ScannerSide
 @ThreadSafe
 public class LanguageDetection {
 

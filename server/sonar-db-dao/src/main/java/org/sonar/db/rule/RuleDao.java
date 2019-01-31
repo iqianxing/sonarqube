@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -139,6 +139,11 @@ public class RuleDao implements Dao {
 
   public List<RuleDefinitionDto> selectAllDefinitions(DbSession session) {
     return mapper(session).selectAllDefinitions();
+  }
+
+  public List<RuleDto> selectByTypeAndLanguages(DbSession session, String organizationUuid, List<Integer> types, List<String> languages) {
+    return ensureOrganizationIsSet(organizationUuid,
+      executeLargeInputs(languages, chunk -> mapper(session).selectByTypeAndLanguages(organizationUuid, types, chunk)));
   }
 
   public List<RuleDto> selectByQuery(DbSession session, String organizationUuid, RuleQuery ruleQuery) {

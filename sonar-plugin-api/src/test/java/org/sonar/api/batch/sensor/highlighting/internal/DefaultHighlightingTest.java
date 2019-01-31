@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -41,8 +41,9 @@ public class DefaultHighlightingTest {
 
   private static final InputFile INPUT_FILE = new TestInputFileBuilder("foo", "src/Foo.java")
     .setLines(2)
-    .setOriginalLineOffsets(new int[] {0, 50})
-    .setLastValidOffset(100)
+    .setOriginalLineStartOffsets(new int[] {0, 50})
+    .setOriginalLineEndOffsets(new int[] {49, 100})
+    .setLastValidOffset(101)
     .build();
 
   private Collection<SyntaxHighlightingRule> highlightingRules;

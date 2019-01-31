@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,8 +30,10 @@ import org.junit.rules.TemporaryFolder;
 import org.mockito.ArgumentCaptor;
 import org.sonar.api.batch.bootstrap.ProjectDefinition;
 import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.internal.DefaultInputDir;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.DefaultInputModule;
+import org.sonar.api.batch.fs.internal.DefaultInputProject;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.measure.MetricFinder;
 import org.sonar.api.batch.sensor.code.internal.DefaultSignificantCode;
@@ -49,7 +51,7 @@ import org.sonar.api.measures.CoreMetrics;
 import org.sonar.api.utils.KeyValueFormat;
 import org.sonar.core.metric.ScannerMetrics;
 import org.sonar.scanner.cpd.index.SonarCpdBlockIndex;
-import org.sonar.scanner.issue.ModuleIssues;
+import org.sonar.scanner.issue.IssuePublisher;
 import org.sonar.scanner.protocol.output.FileStructure;
 import org.sonar.scanner.protocol.output.ScannerReportWriter;
 import org.sonar.scanner.report.ReportPublisher;
@@ -62,6 +64,7 @@ import static org.assertj.core.data.MapEntry.entry;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 
@@ -75,20 +78,22 @@ public class DefaultSensorStorageTest {
 
   private DefaultSensorStorage underTest;
   private MapSettings settings;
-  private ModuleIssues moduleIssues;
+  private IssuePublisher moduleIssues;
   private MeasureCache measureCache;
   private ScannerReportWriter reportWriter;
   private ContextPropertiesCache contextPropertiesCache = new ContextPropertiesCache();
   private BranchConfiguration branchConfiguration;
+  private DefaultInputProject project;
 
   @Before
   public void prepare() throws Exception {
     MetricFinder metricFinder = mock(MetricFinder.class);
     when(metricFinder.<Integer>findByKey(CoreMetrics.NCLOC_KEY)).thenReturn(CoreMetrics.NCLOC);
     when(metricFinder.<String>findByKey(CoreMetrics.FUNCTION_COMPLEXITY_DISTRIBUTION_KEY)).thenReturn(CoreMetrics.FUNCTION_COMPLEXITY_DISTRIBUTION);
+    when(metricFinder.<Integer>findByKey(CoreMetrics.LINES_TO_COVER_KEY)).thenReturn(CoreMetrics.LINES_TO_COVER);
 
     settings = new MapSettings();
-    moduleIssues = mock(ModuleIssues.class);
+    moduleIssues = mock(IssuePublisher.class);
     measureCache = mock(MeasureCache.class);
 
     ReportPublisher reportPublisher = mock(ReportPublisher.class);
@@ -100,6 +105,11 @@ public class DefaultSensorStorageTest {
     underTest = new DefaultSensorStorage(metricFinder,
       moduleIssues, settings.asConfig(), reportPublisher, measureCache,
       mock(SonarCpdBlockIndex.class), contextPropertiesCache, new ScannerMetrics(), branchConfiguration);
+
+    project = new DefaultInputProject(ProjectDefinition.create()
+      .setKey("foo")
+      .setBaseDir(temp.newFolder())
+      .setWorkDir(temp.newFolder()));
   }
 
   @Test
@@ -116,10 +126,33 @@ public class DefaultSensorStorageTest {
   }
 
   @Test
+  public void shouldIgnoreMeasuresOnFolders() {
+    underTest.store(new DefaultMeasure()
+      .on(new DefaultInputDir("foo", "bar"))
+      .forMetric(CoreMetrics.LINES)
+      .withValue(10));
+
+    verifyNoMoreInteractions(measureCache);
+  }
+
+  @Test
+  public void shouldIgnoreMeasuresOnModules() throws IOException {
+    ProjectDefinition module = ProjectDefinition.create().setBaseDir(temp.newFolder()).setWorkDir(temp.newFolder());
+    ProjectDefinition root = ProjectDefinition.create().addSubProject(module);
+
+    underTest.store(new DefaultMeasure()
+      .on(new DefaultInputModule(module))
+      .forMetric(CoreMetrics.LINES)
+      .withValue(10));
+
+    verifyNoMoreInteractions(measureCache);
+  }
+
+  @Test
   public void should_save_issue() {
     InputFile file = new TestInputFileBuilder("foo", "src/Foo.php").build();
 
-    DefaultIssue issue = new DefaultIssue().at(new DefaultIssueLocation().on(file));
+    DefaultIssue issue = new DefaultIssue(project).at(new DefaultIssueLocation().on(file));
     underTest.store(issue);
 
     ArgumentCaptor<Issue> argumentCaptor = ArgumentCaptor.forClass(Issue.class);
@@ -131,7 +164,7 @@ public class DefaultSensorStorageTest {
   public void should_save_external_issue() {
     InputFile file = new TestInputFileBuilder("foo", "src/Foo.php").build();
 
-    DefaultExternalIssue externalIssue = new DefaultExternalIssue().at(new DefaultIssueLocation().on(file));
+    DefaultExternalIssue externalIssue = new DefaultExternalIssue(project).at(new DefaultIssueLocation().on(file));
     underTest.store(externalIssue);
 
     ArgumentCaptor<ExternalIssue> argumentCaptor = ArgumentCaptor.forClass(ExternalIssue.class);
@@ -144,7 +177,7 @@ public class DefaultSensorStorageTest {
     InputFile file = new TestInputFileBuilder("foo", "src/Foo.php").setStatus(InputFile.Status.SAME).build();
     when(branchConfiguration.isShortOrPullRequest()).thenReturn(true);
 
-    DefaultIssue issue = new DefaultIssue().at(new DefaultIssueLocation().on(file));
+    DefaultIssue issue = new DefaultIssue(project).at(new DefaultIssueLocation().on(file));
     underTest.store(issue);
 
     verifyZeroInteractions(moduleIssues);
@@ -158,7 +191,7 @@ public class DefaultSensorStorageTest {
     DefaultHighlighting highlighting = new DefaultHighlighting(underTest).onFile(file).highlight(0, 1, TypeOfText.KEYWORD);
     underTest.store(highlighting);
 
-    assertThat(reportWriter.hasComponentData(FileStructure.Domain.SYNTAX_HIGHLIGHTINGS, file.batchId())).isTrue();
+    assertThat(reportWriter.hasComponentData(FileStructure.Domain.SYNTAX_HIGHLIGHTINGS, file.scannerId())).isTrue();
   }
 
   @Test
@@ -171,7 +204,7 @@ public class DefaultSensorStorageTest {
     DefaultHighlighting highlighting = new DefaultHighlighting(underTest).onFile(file).highlight(0, 1, TypeOfText.KEYWORD);
     underTest.store(highlighting);
 
-    assertThat(reportWriter.hasComponentData(FileStructure.Domain.SYNTAX_HIGHLIGHTINGS, file.batchId())).isFalse();
+    assertThat(reportWriter.hasComponentData(FileStructure.Domain.SYNTAX_HIGHLIGHTINGS, file.scannerId())).isFalse();
   }
 
   @Test
@@ -191,29 +224,20 @@ public class DefaultSensorStorageTest {
   }
 
   @Test
-  public void should_skip_file_measure_on_short_branch_when_file_status_is_SAME() {
+  public void should_not_skip_file_measures_on_short_lived_branch_or_pull_request_when_file_status_is_SAME() {
     InputFile file = new TestInputFileBuilder("foo", "src/Foo.php").setStatus(InputFile.Status.SAME).build();
     when(branchConfiguration.isShortOrPullRequest()).thenReturn(true);
 
+    ArgumentCaptor<DefaultMeasure> argumentCaptor = ArgumentCaptor.forClass(DefaultMeasure.class);
+    when(measureCache.put(eq(file.key()), eq(CoreMetrics.LINES_TO_COVER_KEY), argumentCaptor.capture())).thenReturn(null);
     underTest.store(new DefaultMeasure()
       .on(file)
-      .forMetric(CoreMetrics.NCLOC)
+      .forMetric(CoreMetrics.LINES_TO_COVER)
       .withValue(10));
 
-    verifyZeroInteractions(measureCache);
-  }
-
-  @Test
-  public void should_skip_file_measure_on_pull_request_when_file_status_is_SAME() {
-    InputFile file = new TestInputFileBuilder("foo", "src/Foo.php").setStatus(InputFile.Status.SAME).build();
-    when(branchConfiguration.isShortOrPullRequest()).thenReturn(true);
-
-    underTest.store(new DefaultMeasure()
-      .on(file)
-      .forMetric(CoreMetrics.NCLOC)
-      .withValue(10));
-
-    verifyZeroInteractions(measureCache);
+    DefaultMeasure m = argumentCaptor.getValue();
+    assertThat(m.value()).isEqualTo(10);
+    assertThat(m.metric()).isEqualTo(CoreMetrics.LINES_TO_COVER);
   }
 
   @Test
@@ -228,7 +252,7 @@ public class DefaultSensorStorageTest {
       .onFile(file)
       .addRange(file.selectLine(1)));
 
-    assertThat(reportWriter.hasComponentData(FileStructure.Domain.SGNIFICANT_CODE, file.batchId())).isFalse();
+    assertThat(reportWriter.hasComponentData(FileStructure.Domain.SGNIFICANT_CODE, file.scannerId())).isFalse();
   }
 
   @Test
@@ -240,7 +264,7 @@ public class DefaultSensorStorageTest {
       .onFile(file)
       .addRange(file.selectLine(1)));
 
-    assertThat(reportWriter.hasComponentData(FileStructure.Domain.SGNIFICANT_CODE, file.batchId())).isTrue();
+    assertThat(reportWriter.hasComponentData(FileStructure.Domain.SGNIFICANT_CODE, file.scannerId())).isTrue();
   }
 
   @Test

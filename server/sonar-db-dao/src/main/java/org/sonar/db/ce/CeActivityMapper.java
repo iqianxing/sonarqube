@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,17 +30,23 @@ public interface CeActivityMapper {
   @CheckForNull
   CeActivityDto selectByUuid(@Param("uuid") String uuid);
 
-  List<CeActivityDto> selectByComponentUuid(@Param("componentUuid") String componentUuid);
-
   List<CeActivityDto> selectByQuery(@Param("query") CeTaskQuery query, @Param("pagination") Pagination pagination);
 
   List<CeActivityDto> selectOlderThan(@Param("beforeDate") long beforeDate);
 
-  int countLastByStatusAndComponentUuid(@Param("status") CeActivityDto.Status status, @Nullable @Param("componentUuid") String componentUuid);
+  int countLastByStatusAndMainComponentUuid(@Param("status") CeActivityDto.Status status, @Nullable @Param("mainComponentUuid") String mainComponentUuid);
 
   void insert(CeActivityDto dto);
 
-  void updateIsLastToFalseForLastKey(@Param("isLastKey") String isLastKey, @Param("updatedAt") long updatedAt);
+  void clearIsLast(@Param("isLastKey") String isLastKey, @Param("updatedAt") long updatedAt);
+
+  void clearMainIsLast(@Param("mainIsLastKey") String mainIsLastKey, @Param("updatedAt") long updatedAt);
 
   void deleteByUuids(@Param("uuids") List<String> uuids);
+
+  @CheckForNull
+  CeActivityDto selectLastByComponentUuid(@Param("componentUuid") String componentUuid);
+
+  @CheckForNull
+  CeActivityDto selectLastByMainComponentUuid(@Param("mainComponentUuid") String mainComponentUuid);
 }

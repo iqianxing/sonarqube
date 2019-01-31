@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 package org.sonar.api.batch.postjob;
 
 import org.sonar.api.ExtensionPoint;
-import org.sonar.api.batch.ScannerSide;
+import org.sonar.api.scanner.ScannerSide;
 
 /**
  * PostJobs are executed at the very end of scanner analysis. A PostJob can't do any modification
@@ -29,6 +29,7 @@ import org.sonar.api.batch.ScannerSide;
  * asynchronous process to compute data on server side in 5.x series.
  *
  * @since 5.2
+ * @since 7.6 postjobs are loaded in the project container
  */
 @ScannerSide
 @ExtensionPoint

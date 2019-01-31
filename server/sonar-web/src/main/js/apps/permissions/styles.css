@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,17 +17,23 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-.permissions-table {
-}
-
-.permissions-table > tbody > tr > td {
-  border-bottom: 10px solid #fff !important;
-}
-
-.permissions-table .permission-column {
-  width: 1px;
+.permissions-table .permission-column.selected {
+  background-color: #d9edf7;
 }
 
 .permissions-table .permission-column-inner {
+  display: inline-block;
   width: 100px;
+}
+
+.permissions-table .divider {
+  background: #fff;
+  padding: 16px 0;
+}
+.permissions-table .divider::after {
+  display: block;
+  content: '';
+  background: var(--barBorderColor);
+  height: 1px;
+  width: 100%;
 }

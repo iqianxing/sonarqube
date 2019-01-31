@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,8 +21,8 @@ package org.sonar.ce.task.projectanalysis.component;
 
 public class MutableTreeRootHolderRule extends TreeRootHolderRule implements MutableTreeRootHolder {
   @Override
-  public MutableTreeRootHolderRule setRoot(Component newRoot) {
-    delegate.setRoot(newRoot);
+  public MutableTreeRootHolderRule setRoots(Component root, Component reportRoot) {
+    delegate.setRoots(root, reportRoot);
     return this;
   }
 }

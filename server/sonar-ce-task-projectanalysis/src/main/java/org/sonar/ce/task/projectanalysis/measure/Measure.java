@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,14 +19,13 @@
  */
 package org.sonar.ce.task.projectanalysis.measure;
 
-import com.google.common.base.Optional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonar.ce.task.projectanalysis.component.Developer;
 import org.sonar.ce.task.projectanalysis.component.Developer;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -41,7 +40,6 @@ public final class Measure {
 
   public enum Level {
     OK("Green"),
-    WARN("Orange"),
     ERROR("Red");
 
     private final String colorName;
@@ -56,13 +54,13 @@ public final class Measure {
 
     public static Optional<Level> toLevel(@Nullable String level) {
       if (level == null) {
-        return Optional.absent();
+        return Optional.empty();
       }
 
       try {
         return Optional.of(Level.valueOf(level));
       } catch (IllegalArgumentException e) {
-        return Optional.absent();
+        return Optional.empty();
       }
     }
   }
@@ -126,7 +124,7 @@ public final class Measure {
     }
 
     public Measure create(boolean value, @Nullable String data) {
-      return new Measure(ValueType.BOOLEAN, developer, value ? 1.0d : 0.0d, data, null, qualityGateStatus, variation);
+      return new Measure(ValueType.BOOLEAN, developer, value ? 1.0D : 0.0D, data, null, qualityGateStatus, variation);
     }
 
     public Measure create(boolean value) {
@@ -240,7 +238,7 @@ public final class Measure {
    */
   public boolean getBooleanValue() {
     checkValueType(ValueType.BOOLEAN);
-    return value == 1.0d;
+    return value != null && value.intValue() == 1;
   }
 
   /**

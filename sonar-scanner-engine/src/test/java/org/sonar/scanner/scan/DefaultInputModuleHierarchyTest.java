@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,9 +19,11 @@
  */
 package org.sonar.scanner.scan;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
+import org.apache.commons.io.FileUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
@@ -52,7 +54,7 @@ public class DefaultInputModuleHierarchyTest {
     parents.put(mod3, root);
     parents.put(mod4, root);
 
-    moduleHierarchy = new DefaultInputModuleHierarchy(parents);
+    moduleHierarchy = new DefaultInputModuleHierarchy(root, parents);
 
     assertThat(moduleHierarchy.children(root)).containsOnly(mod1, mod3, mod4);
     assertThat(moduleHierarchy.children(mod4)).isEmpty();
@@ -77,16 +79,32 @@ public class DefaultInputModuleHierarchyTest {
   }
 
   @Test
-  public void testParentChild() throws IOException {
-    DefaultInputModule root = new DefaultInputModule(ProjectDefinition.create().setKey("root").setBaseDir(temp.newFolder()).setWorkDir(temp.newFolder()));
-    DefaultInputModule mod1 = new DefaultInputModule(ProjectDefinition.create().setKey("mod1").setBaseDir(temp.newFolder()).setWorkDir(temp.newFolder()));
-    moduleHierarchy = new DefaultInputModuleHierarchy(root, mod1);
+  public void testRelativePathToRoot() throws IOException {
+    File rootBaseDir = temp.newFolder();
+    File mod1BaseDir = new File(rootBaseDir, "mod1");
+    File mod2BaseDir = new File(rootBaseDir, "mod2");
+    FileUtils.forceMkdir(mod1BaseDir);
+    FileUtils.forceMkdir(mod2BaseDir);
+    DefaultInputModule root = new DefaultInputModule(ProjectDefinition.create().setKey("root")
+      .setBaseDir(rootBaseDir).setWorkDir(rootBaseDir));
+    DefaultInputModule mod1 = new DefaultInputModule(ProjectDefinition.create().setKey("mod1")
+      .setBaseDir(mod1BaseDir).setWorkDir(temp.newFolder()));
+    DefaultInputModule mod2 = new DefaultInputModule(ProjectDefinition.create().setKey("mod2")
+      .setBaseDir(mod2BaseDir).setWorkDir(temp.newFolder()));
+    DefaultInputModule mod3 = new DefaultInputModule(ProjectDefinition.create().setKey("mod2")
+      .setBaseDir(temp.newFolder()).setWorkDir(temp.newFolder()));
 
-    assertThat(moduleHierarchy.children(root)).containsOnly(mod1);
-    assertThat(moduleHierarchy.children(mod1)).isEmpty();
+    Map<DefaultInputModule, DefaultInputModule> parents = new HashMap<>();
 
-    assertThat(moduleHierarchy.parent(mod1)).isEqualTo(root);
-    assertThat(moduleHierarchy.parent(root)).isNull();
-    assertThat(moduleHierarchy.root()).isEqualTo(root);
+    parents.put(mod1, root);
+    parents.put(mod2, mod1);
+    parents.put(mod3, mod1);
+
+    moduleHierarchy = new DefaultInputModuleHierarchy(root, parents);
+
+    assertThat(moduleHierarchy.relativePathToRoot(root)).isEqualTo("");
+    assertThat(moduleHierarchy.relativePathToRoot(mod1)).isEqualTo("mod1");
+    assertThat(moduleHierarchy.relativePathToRoot(mod2)).isEqualTo("mod2");
+    assertThat(moduleHierarchy.relativePathToRoot(mod3)).isNull();
   }
 }

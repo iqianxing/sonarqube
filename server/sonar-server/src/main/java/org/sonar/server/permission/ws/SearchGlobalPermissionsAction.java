@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,12 +29,12 @@ import org.sonar.db.DbSession;
 import org.sonar.db.organization.OrganizationDto;
 import org.sonar.db.permission.OrganizationPermission;
 import org.sonar.db.permission.PermissionQuery;
+import org.sonar.server.permission.PermissionService;
 import org.sonar.server.user.UserSession;
 import org.sonarqube.ws.Permissions.Permission;
 import org.sonarqube.ws.Permissions.WsSearchGlobalPermissionsResponse;
 
 import static org.sonar.server.permission.PermissionPrivilegeChecker.checkGlobalAdmin;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createOrganizationParameter;
 import static org.sonar.server.ws.WsUtils.writeProtobuf;
 import static org.sonarqube.ws.Permissions.Permission.newBuilder;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_ORGANIZATION;
@@ -48,13 +48,15 @@ public class SearchGlobalPermissionsAction implements PermissionsWsAction {
   private final DbClient dbClient;
   private final UserSession userSession;
   private final I18n i18n;
-  private final PermissionWsSupport support;
+  private final PermissionWsSupport wsSupport;
+  private final PermissionService permissionService;
 
-  public SearchGlobalPermissionsAction(DbClient dbClient, UserSession userSession, I18n i18n, PermissionWsSupport support) {
+  public SearchGlobalPermissionsAction(DbClient dbClient, UserSession userSession, I18n i18n, PermissionWsSupport wsSupport, PermissionService permissionService) {
     this.dbClient = dbClient;
     this.userSession = userSession;
     this.i18n = i18n;
-    this.support = support;
+    this.wsSupport = wsSupport;
+    this.permissionService = permissionService;
   }
 
   @Override
@@ -67,13 +69,13 @@ public class SearchGlobalPermissionsAction implements PermissionsWsAction {
       .setDeprecatedSince("6.5")
       .setHandler(this);
 
-    createOrganizationParameter(action).setSince("6.2");
+    WsParameters.createOrganizationParameter(action).setSince("6.2");
   }
 
   @Override
   public void handle(Request wsRequest, Response wsResponse) throws Exception {
     try (DbSession dbSession = dbClient.openSession(false)) {
-      OrganizationDto org = support.findOrganization(dbSession, wsRequest.param(PARAM_ORGANIZATION));
+      OrganizationDto org = wsSupport.findOrganization(dbSession, wsRequest.param(PARAM_ORGANIZATION));
       checkGlobalAdmin(userSession, org.getUuid());
 
       WsSearchGlobalPermissionsResponse response = buildResponse(dbSession, org);
@@ -85,7 +87,7 @@ public class SearchGlobalPermissionsAction implements PermissionsWsAction {
     WsSearchGlobalPermissionsResponse.Builder response = WsSearchGlobalPermissionsResponse.newBuilder();
     Permission.Builder permission = newBuilder();
 
-    OrganizationPermission.all()
+    permissionService.getAllOrganizationPermissions().stream()
       .map(OrganizationPermission::getKey)
       .forEach(permissionKey -> {
         PermissionQuery query = permissionQuery(permissionKey, org);

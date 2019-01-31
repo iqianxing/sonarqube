@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,7 +34,7 @@ interface Props {
   onBlur: (event: React.FocusEvent<any>) => void;
   onChange: (event: React.ChangeEvent<any>) => void;
   placeholder?: string;
-  touched: boolean;
+  touched: boolean | undefined;
   type?: string;
   value: string;
 }

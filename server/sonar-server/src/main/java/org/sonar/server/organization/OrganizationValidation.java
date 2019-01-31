@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,16 +24,16 @@ import javax.annotation.Nullable;
 
 public interface OrganizationValidation {
   int KEY_MIN_LENGTH = 1;
-  int KEY_MAX_LENGTH = 32;
+  int KEY_MAX_LENGTH = 255;
   int NAME_MIN_LENGTH = 1;
-  int NAME_MAX_LENGTH = 64;
+  int NAME_MAX_LENGTH = 255;
   int DESCRIPTION_MAX_LENGTH = 256;
   int URL_MAX_LENGTH = 256;
 
   /**
    * Ensures the specified argument is a valid key by failing with an exception if it is not so.
    * <p>
-   * A valid key is non null and its length is between {@link #KEY_MIN_LENGTH 2} and {@link #KEY_MAX_LENGTH 32}.
+   * A valid key is non null and its length is between {@link #KEY_MIN_LENGTH} and {@link #KEY_MAX_LENGTH}.
    * </p>
    *
    * @return the argument
@@ -46,7 +46,7 @@ public interface OrganizationValidation {
   /**
    * Ensures the specified argument is a valid name by failing with an exception if it is not so.
    * <p>
-   * A valid name is non null and its length is between {@link #NAME_MIN_LENGTH 2} and {@link #NAME_MAX_LENGTH 64}.
+   * A valid name is non null and its length is between {@link #NAME_MIN_LENGTH} and {@link #NAME_MAX_LENGTH}.
    * </p>
    *
    * @return the argument

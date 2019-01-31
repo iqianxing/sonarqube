@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,7 +28,9 @@ import java.lang.annotation.Target;
  * Define instantiation strategy of batch IoC components. If a component is not annotated, then default value
  * is {@link org.sonar.api.batch.InstantiationStrategy#PER_PROJECT}.
  * @since 4.4
+ * @deprecated since 7.6 removal of modules and tasks is planned. All extensions should progressively move to the project scope, using {@link org.sonar.api.scanner.ScannerSide}
  */
+@Deprecated
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface InstantiationStrategy {

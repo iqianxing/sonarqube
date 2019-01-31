@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -70,6 +70,10 @@ public class ActiveRuleDao implements Dao {
    */
   public List<OrgActiveRuleDto> selectByProfileUuid(DbSession dbSession, String uuid) {
     return mapper(dbSession).selectByProfileUuid(uuid);
+  }
+
+  public List<OrgActiveRuleDto> selectByTypeAndProfileUuids(DbSession dbSession, List<Integer> types, List<String> uuids) {
+    return executeLargeInputs(uuids, chunk -> mapper(dbSession).selectByTypeAndProfileUuids(types, chunk));
   }
 
   public List<OrgActiveRuleDto> selectByProfile(DbSession dbSession, QProfileDto profile) {

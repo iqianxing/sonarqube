@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,7 +22,6 @@ import { FormattedMessage } from 'react-intl';
 import { Link } from 'react-router';
 import BranchRow from './BranchRow';
 import LongBranchesPattern from './LongBranchesPattern';
-import { BranchLike } from '../../../app/types';
 import {
   sortBranchesAsTree,
   getBranchLikeKey,
@@ -35,7 +34,7 @@ import { formatMeasure } from '../../../helpers/measures';
 import HelpTooltip from '../../../components/controls/HelpTooltip';
 
 interface Props {
-  branchLikes: BranchLike[];
+  branchLikes: T.BranchLike[];
   canAdmin?: boolean;
   component: { key: string };
   onBranchesChange: () => void;
@@ -78,7 +77,7 @@ export default class App extends React.PureComponent<Props, State> {
     );
   }
 
-  isOrphan = (branchLike: BranchLike) => {
+  isOrphan = (branchLike: T.BranchLike) => {
     return (isShortLivingBranch(branchLike) || isPullRequest(branchLike)) && branchLike.isOrphan;
   };
 
@@ -137,7 +136,7 @@ export default class App extends React.PureComponent<Props, State> {
             <thead>
               <tr>
                 <th>{translate('branch')}</th>
-                <th className="thin nowrap text-right">{translate('status')}</th>
+                <th className="thin nowrap">{translate('status')}</th>
                 <th className="thin nowrap text-right big-spacer-left">
                   {translate('branches.last_analysis_date')}
                 </th>

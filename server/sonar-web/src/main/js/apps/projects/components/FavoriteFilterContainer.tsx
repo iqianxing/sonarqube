@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,9 +19,9 @@
  */
 import { connect } from 'react-redux';
 import FavoriteFilter from './FavoriteFilter';
-import { getCurrentUser } from '../../../store/rootReducer';
+import { getCurrentUser, Store } from '../../../store/rootReducer';
 
-function mapStateToProps(state: any) {
+function mapStateToProps(state: Store) {
   return { currentUser: getCurrentUser(state) };
 }
 

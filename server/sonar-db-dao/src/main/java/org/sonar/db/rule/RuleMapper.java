@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -62,6 +62,8 @@ public interface RuleMapper {
   List<RuleExtensionForIndexingDto> selectIndexingRuleExtensionsByIds(@Param("ruleExtensionIds") List<RuleExtensionId> ruleExtensionIds);
 
   List<RuleDto> selectByQuery(@Param("organizationUuid") String organizationUuid, @Param("query") RuleQuery ruleQuery);
+
+  List<RuleDto> selectByTypeAndLanguages(@Param("organizationUuid") String organizationUuid, @Param("types") List<Integer> types, @Param("languages") List<String> languages);
 
   void insertDefinition(RuleDefinitionDto ruleDefinitionDto);
 

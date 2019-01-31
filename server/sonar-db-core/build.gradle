@@ -10,7 +10,7 @@ dependencies {
   compile 'ch.qos.logback:logback-classic'
   compile 'ch.qos.logback:logback-core'
   compile 'commons-codec:commons-codec'
-  compile 'commons-dbcp:commons-dbcp'
+  compile 'org.apache.commons:commons-dbcp2'
   compile 'commons-dbutils:commons-dbutils'
   compile 'net.jpountz.lz4:lz4'
   compile 'org.apache.commons:commons-csv'
@@ -26,6 +26,7 @@ dependencies {
   testCompile 'com.google.code.findbugs:jsr305'
   testCompile 'com.microsoft.sqlserver:mssql-jdbc'
   testCompile 'com.oracle.jdbc:ojdbc8'
+  testCompile 'com.tngtech.java:junit-dataprovider'
   testCompile 'junit:junit'
   testCompile 'mysql:mysql-connector-java'
   testCompile 'org.assertj:assertj-core'
@@ -46,7 +47,9 @@ task createDB(type:JavaExec) {
   main = 'org.sonar.db.CreateDb'
   classpath = sourceSets.test.runtimeClasspath
   systemProperty 'orchestrator.configUrl', System.getProperty('orchestrator.configUrl')
-  systemProperty 'sonar.runtimeVersion', System.getProperty('sonar.runtimeVersion')
+  if (!project.version.endsWith("-SNAPSHOT")) {
+    systemProperty 'sonar.runtimeVersion', project.version
+  }
 }
 
 test {

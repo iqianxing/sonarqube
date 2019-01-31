@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,7 +27,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.scanner.mediumtest.ScannerMediumTester;
-import org.sonar.scanner.mediumtest.TaskResult;
+import org.sonar.scanner.mediumtest.AnalysisResult;
 import org.sonar.scanner.protocol.output.ScannerReport.Flow;
 import org.sonar.scanner.protocol.output.ScannerReport.Issue;
 import org.sonar.scanner.protocol.output.ScannerReport.IssueLocation;
@@ -48,16 +48,16 @@ public class MultilineIssuesMediumTest {
     .addDefaultQProfile("xoo", "Sonar Way")
     .addActiveRule("xoo", "MultilineIssue", null, "Multinile Issue", "MAJOR", null, "xoo");
 
-  private TaskResult result;
+  private AnalysisResult result;
 
   @Before
   public void prepare() throws Exception {
-    File projectDir = new File(MultilineIssuesMediumTest.class.getResource("/mediumtest/xoo/sample-multiline").toURI());
+    File projectDir = new File("test-resources/mediumtest/xoo/sample-multiline");
     File tmpDir = temp.getRoot();
     FileUtils.copyDirectory(projectDir, tmpDir);
 
     result = tester
-      .newScanTask(new File(tmpDir, "sonar-project.properties"))
+      .newAnalysis(new File(tmpDir, "sonar-project.properties"))
       .execute();
   }
 

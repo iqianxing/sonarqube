@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -140,7 +140,7 @@ it('should show warning that there might be more results', () => {
   const wrapper = shallowRender({ maxInitialItems: 2, maxItems: 3 });
   wrapper.find('ListStyleFacetFooter').prop<Function>('showMore')();
   wrapper.update();
-  expect(wrapper.find('.alert-warning').exists()).toBe(true);
+  expect(wrapper.find('Alert').exists()).toBe(true);
 });
 
 it('should reset state when closes', () => {
@@ -177,6 +177,11 @@ it('should display all selected items', () => {
     stats: { a: 10, b: 5, c: 3 },
     values: ['a', 'b', 'c']
   });
+  expect(wrapper).toMatchSnapshot();
+});
+
+it('should be disabled', () => {
+  const wrapper = shallowRender({ disabled: true, disabledHelper: 'Disabled helper description' });
   expect(wrapper).toMatchSnapshot();
 });
 

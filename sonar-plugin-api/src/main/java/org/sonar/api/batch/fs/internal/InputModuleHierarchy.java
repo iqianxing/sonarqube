@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,23 +20,23 @@
 package org.sonar.api.batch.fs.internal;
 
 import java.util.Collection;
-
 import javax.annotation.CheckForNull;
 import javax.annotation.concurrent.Immutable;
-
-import org.sonar.api.batch.fs.InputModule;
 
 @Immutable
 public interface InputModuleHierarchy {
   DefaultInputModule root();
   
-  boolean isRoot(InputModule module);
+  boolean isRoot(DefaultInputModule module);
 
-  Collection<DefaultInputModule> children(InputModule module);
+  Collection<DefaultInputModule> children(DefaultInputModule module);
 
   @CheckForNull
-  DefaultInputModule parent(InputModule module);
+  DefaultInputModule parent(DefaultInputModule module);
   
   @CheckForNull
-  String relativePath(InputModule module);
+  String relativePath(DefaultInputModule module);
+
+  @CheckForNull
+  String relativePathToRoot(DefaultInputModule module);
 }

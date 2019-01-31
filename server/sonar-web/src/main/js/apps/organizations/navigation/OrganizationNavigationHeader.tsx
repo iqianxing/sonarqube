@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,15 +19,16 @@
  */
 import * as React from 'react';
 import { sortBy } from 'lodash';
-import { Organization } from '../../../app/types';
 import OrganizationAvatar from '../../../components/common/OrganizationAvatar';
 import Dropdown from '../../../components/controls/Dropdown';
 import DropdownIcon from '../../../components/icons-components/DropdownIcon';
 import OrganizationListItem from '../../../components/ui/OrganizationListItem';
+import { sanitizeAlmId } from '../../../helpers/almIntegrations';
+import { getBaseUrl } from '../../../helpers/urls';
 
 interface Props {
-  organization: Organization;
-  organizations: Organization[];
+  organization: T.Organization;
+  organizations: T.Organization[];
 }
 
 export default function OrganizationNavigationHeader({ organization, organizations }: Props) {
@@ -55,6 +56,21 @@ export default function OrganizationNavigationHeader({ organization, organizatio
         </Dropdown>
       ) : (
         <span className="spacer-left">{organization.name}</span>
+      )}
+      {organization.alm && (
+        <a
+          className="link-no-underline"
+          href={organization.alm.url}
+          rel="noopener noreferrer"
+          target="_blank">
+          <img
+            alt={sanitizeAlmId(organization.alm.key)}
+            className="text-text-top spacer-left"
+            height={16}
+            src={`${getBaseUrl()}/images/sonarcloud/${sanitizeAlmId(organization.alm.key)}.svg`}
+            width={16}
+          />
+        </a>
       )}
       {organization.description != null && (
         <div className="navbar-context-description">

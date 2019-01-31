@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -35,6 +35,8 @@ public class DefaultActiveRule implements ActiveRule {
   private final String templateRuleKey;
   private final Map<String, String> params;
   private final long createdAt;
+  private final long updatedAt;
+  private final String qProfileKey;
 
   DefaultActiveRule(NewActiveRule newActiveRule) {
     this.severity = newActiveRule.severity;
@@ -44,6 +46,8 @@ public class DefaultActiveRule implements ActiveRule {
     this.params = Collections.unmodifiableMap(new HashMap<>(newActiveRule.params));
     this.language = newActiveRule.language;
     this.createdAt = newActiveRule.createdAt;
+    this.updatedAt = newActiveRule.updatedAt;
+    this.qProfileKey = newActiveRule.qProfileKey;
   }
 
   @Override
@@ -84,5 +88,14 @@ public class DefaultActiveRule implements ActiveRule {
 
   public long createdAt() {
     return createdAt;
+  }
+
+  public long updatedAt() {
+    return updatedAt;
+  }
+
+  @Override
+  public String qpKey() {
+    return qProfileKey;
   }
 }

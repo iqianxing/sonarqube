@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -101,8 +101,10 @@ public class ScannerWsClient {
         "Please provide the values of the properties %s and %s.", CoreProperties.LOGIN, CoreProperties.PASSWORD));
 
     }
-    if (code == HTTP_FORBIDDEN || code == HTTP_BAD_REQUEST) {
-      // SONAR-4397 Details are in response content
+    if (code == HTTP_FORBIDDEN) {
+      throw MessageException.of("You're not authorized to run analysis. Please contact the project administrator.");
+    }
+    if (code == HTTP_BAD_REQUEST) {
       String jsonMsg = tryParseAsJsonError(response.content());
       if (jsonMsg != null) {
         throw MessageException.of(jsonMsg);

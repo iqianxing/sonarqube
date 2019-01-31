@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,8 @@
 import * as React from 'react';
 import Helmet from 'react-helmet';
 import { Link } from 'react-router';
+import * as navigationTreeSonarQube from 'Docs/../static/SonarQubeNavigationTree.json';
+import * as navigationTreeSonarCloud from 'Docs/../static/SonarCloudNavigationTree.json';
 import Sidebar from './Sidebar';
 import getPages from '../pages';
 import NotFound from '../../../app/components/NotFound';
@@ -27,6 +29,8 @@ import ScreenPositionHelper from '../../../components/common/ScreenPositionHelpe
 import DocMarkdownBlock from '../../../components/docs/DocMarkdownBlock';
 import { translate } from '../../../helpers/l10n';
 import { isSonarCloud } from '../../../helpers/system';
+import { addSideBarClass, removeSideBarClass } from '../../../helpers/pages';
+import { DocsNavigationItem } from '../utils';
 import '../styles.css';
 
 interface Props {
@@ -38,23 +42,20 @@ export default class App extends React.PureComponent<Props> {
   pages = getPages();
 
   componentDidMount() {
-    const footer = document.getElementById('footer');
-    if (footer) {
-      footer.classList.add('page-footer-with-sidebar', 'documentation-footer');
-    }
+    addSideBarClass();
   }
 
   componentWillUnmount() {
-    const footer = document.getElementById('footer');
-    if (footer) {
-      footer.classList.remove('page-footer-with-sidebar', 'documentation-footer');
-    }
+    removeSideBarClass();
   }
 
   render() {
-    const { splat = 'index' } = this.props.params;
-    const page = this.pages.find(p => p.relativeName === splat);
-    const mainTitle = translate('documentation.page');
+    const tree = isSonarCloud()
+      ? ((navigationTreeSonarCloud as any).default as DocsNavigationItem[])
+      : ((navigationTreeSonarQube as any).default as DocsNavigationItem[]);
+    const { splat = '' } = this.props.params;
+    const page = this.pages.find(p => p.url === '/' + splat);
+    const mainTitle = translate('documentation.page_title');
 
     if (!page) {
       return (
@@ -71,7 +72,7 @@ export default class App extends React.PureComponent<Props> {
 
     return (
       <div className="layout-page">
-        <Helmet title={isIndex ? mainTitle : `${page.title} - ${mainTitle}`}>
+        <Helmet title={isIndex || !page.title ? mainTitle : `${page.title} | ${mainTitle}`}>
           {!isSonarCloud() && <meta content="noindex nofollow" name="robots" />}
         </Helmet>
 
@@ -85,7 +86,7 @@ export default class App extends React.PureComponent<Props> {
                       <h1>{translate('documentation.page')}</h1>
                     </Link>
                   </div>
-                  <Sidebar pages={this.pages} splat={splat} />
+                  <Sidebar navigation={tree} pages={this.pages} splat={splat} />
                 </div>
               </div>
             </div>
@@ -99,6 +100,7 @@ export default class App extends React.PureComponent<Props> {
                 className="documentation-content cut-margins boxed-group-inner"
                 content={page.content}
                 displayH1={true}
+                stickyToc={true}
               />
             </div>
           </div>

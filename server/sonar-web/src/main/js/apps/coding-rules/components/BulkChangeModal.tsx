@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,7 +18,6 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as classNames from 'classnames';
 import { Query, serializeQuery } from '../query';
 import { Profile, bulkActivateRules, bulkDeactivateRules } from '../../../api/quality-profiles';
 import Modal from '../../../components/controls/Modal';
@@ -26,14 +25,16 @@ import Select from '../../../components/controls/Select';
 import { translate, translateWithParameters } from '../../../helpers/l10n';
 import { formatMeasure } from '../../../helpers/measures';
 import { SubmitButton, ResetButtonLink } from '../../../components/ui/buttons';
+import { Alert } from '../../../components/ui/Alert';
 
 interface Props {
   action: string;
+  languages: T.Languages;
   onClose: () => void;
   organization: string | undefined;
-  referencedProfiles: { [profile: string]: Profile };
   profile?: Profile;
   query: Query;
+  referencedProfiles: { [profile: string]: Profile };
   total: number;
 }
 
@@ -148,28 +149,27 @@ export default class BulkChangeModal extends React.PureComponent<Props, State> {
     if (!profile) {
       return null;
     }
+    const { languages } = this.props;
+    const language = languages[profile.language]
+      ? languages[profile.language].name
+      : profile.language;
     return (
-      <div
-        className={classNames('alert', {
-          'alert-warning': result.failed > 0,
-          'alert-success': result.failed === 0
-        })}
-        key={result.profile}>
+      <Alert key={result.profile} variant={result.failed === 0 ? 'success' : 'warning'}>
         {result.failed
           ? translateWithParameters(
               'coding_rules.bulk_change.warning',
               profile.name,
-              profile.language,
+              language,
               result.succeeded,
               result.failed
             )
           : translateWithParameters(
               'coding_rules.bulk_change.success',
               profile.name,
-              profile.language,
+              language,
               result.succeeded
             )}
-      </div>
+      </Alert>
     );
   };
 

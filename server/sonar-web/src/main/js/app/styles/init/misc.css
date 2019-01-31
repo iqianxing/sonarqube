@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -57,10 +57,6 @@ th.nowrap {
   font-size: var(--smallFontSize);
 }
 
-.note a {
-  color: var(--secondFontColor);
-}
-
 .spacer-left {
   margin-left: 8px !important;
 }
@@ -103,6 +99,10 @@ th.nowrap {
 
 .huge-spacer-left {
   margin-left: 40px !important;
+}
+
+.huge-spacer-right {
+  margin-right: 40px !important;
 }
 
 .little-spacer-left {
@@ -303,6 +303,26 @@ td.big-spacer-top {
   align-items: center;
 }
 
+.display-flex-space-around {
+  display: flex !important;
+  justify-content: space-around;
+}
+
+.display-flex-space-between {
+  display: flex !important;
+  justify-content: space-between;
+}
+
+.display-flex-stretch {
+  display: flex !important;
+  align-items: stretch;
+}
+
+.display-inline-flex-baseline {
+  display: inline-flex !important;
+  align-items: baseline;
+}
+
 .display-inline-flex-center {
   display: inline-flex !important;
   align-items: center;
@@ -310,6 +330,10 @@ td.big-spacer-top {
 
 .position-absolute {
   position: absolute !important;
+}
+
+.position-relative {
+  position: relative !important;
 }
 
 .rounded {
@@ -346,6 +370,42 @@ td.big-spacer-top {
 .slash-separator:after {
   content: '/';
   color: rgba(68, 68, 68, 0.3);
+}
+
+.horizontal-pipe-separator {
+  display: flex;
+  align-items: center;
+  margin-top: calc(4 * var(--gridSize));
+  margin-bottom: calc(4 * var(--gridSize));
+}
+
+.horizontal-pipe-separator > .horizontal-separator {
+  margin: 0 4px;
+}
+
+.horizontal-separator {
+  min-width: 16px;
+  height: 1px;
+  flex-grow: 1;
+  background-color: var(--barBorderColor);
+}
+
+.vertical-separator {
+  width: 1px;
+  min-height: 16px;
+  flex-grow: 1;
+  background-color: var(--barBorderColor);
+}
+
+.vertical-pipe-separator {
+  display: flex;
+  flex-direction: column;
+  margin-left: 60px;
+  margin-right: 60px;
+}
+
+.vertical-pipe-separator > .vertical-separator {
+  margin: 4px auto;
 }
 
 .capitalize {
@@ -388,4 +448,10 @@ td.big-spacer-top {
 .bg-muted {
   background-color: var(--barBackgroundColor);
   color: inherit;
+}
+
+.leak-box {
+  background-color: var(--leakColor);
+  border: 1px solid var(--leakBorderColor);
+  padding: 4px 6px;
 }

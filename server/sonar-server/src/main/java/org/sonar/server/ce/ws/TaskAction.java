@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -32,19 +32,20 @@ import org.sonar.api.server.ws.Change;
 import org.sonar.api.server.ws.Request;
 import org.sonar.api.server.ws.Response;
 import org.sonar.api.server.ws.WebService;
+import org.sonar.api.web.UserRole;
 import org.sonar.core.util.Uuids;
 import org.sonar.core.util.stream.MoreCollectors;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.ce.CeActivityDto;
 import org.sonar.db.ce.CeQueueDto;
+import org.sonar.db.ce.CeTaskMessageDto;
 import org.sonar.db.component.ComponentDto;
 import org.sonar.db.permission.OrganizationPermission;
 import org.sonar.server.user.UserSession;
 import org.sonar.server.ws.WsUtils;
 import org.sonarqube.ws.Ce;
 
-import static org.sonar.core.permission.GlobalPermissions.SCAN_EXECUTION;
 import static org.sonar.server.user.AbstractUserSession.insufficientPrivilegesException;
 import static org.sonar.server.ws.WsUtils.writeProtobuf;
 
@@ -95,35 +96,37 @@ public class TaskAction implements CeWsAction {
       Ce.TaskResponse.Builder wsTaskResponse = Ce.TaskResponse.newBuilder();
       Optional<CeQueueDto> queueDto = dbClient.ceQueueDao().selectByUuid(dbSession, taskUuid);
       if (queueDto.isPresent()) {
-        com.google.common.base.Optional<ComponentDto> component = loadComponent(dbSession, queueDto.get().getComponentUuid());
+        Optional<ComponentDto> component = loadComponent(dbSession, queueDto.get().getComponentUuid());
         checkPermission(component);
         wsTaskResponse.setTask(wsTaskFormatter.formatQueue(dbSession, queueDto.get()));
       } else {
         CeActivityDto ceActivityDto = WsUtils.checkFoundWithOptional(dbClient.ceActivityDao().selectByUuid(dbSession, taskUuid), "No activity found for task '%s'", taskUuid);
-        com.google.common.base.Optional<ComponentDto> component = loadComponent(dbSession, ceActivityDto.getComponentUuid());
+        Optional<ComponentDto> component = loadComponent(dbSession, ceActivityDto.getComponentUuid());
         checkPermission(component);
         Set<AdditionalField> additionalFields = AdditionalField.getFromRequest(wsRequest);
         maskErrorStacktrace(ceActivityDto, additionalFields);
         wsTaskResponse.setTask(
-          wsTaskFormatter.formatActivity(dbSession, ceActivityDto, extractScannerContext(dbSession, ceActivityDto, additionalFields)));
+          wsTaskFormatter.formatActivity(dbSession, ceActivityDto,
+            extractScannerContext(dbSession, ceActivityDto, additionalFields),
+            extractWarnings(dbSession, ceActivityDto, additionalFields)));
       }
       writeProtobuf(wsTaskResponse.build(), wsRequest, wsResponse);
     }
   }
 
-  private com.google.common.base.Optional<ComponentDto> loadComponent(DbSession dbSession, @Nullable String projectUuid) {
+  private Optional<ComponentDto> loadComponent(DbSession dbSession, @Nullable String projectUuid) {
     if (projectUuid == null) {
-      return com.google.common.base.Optional.absent();
+      return Optional.empty();
     }
     return dbClient.componentDao().selectByUuid(dbSession, projectUuid);
   }
 
-  private void checkPermission(com.google.common.base.Optional<ComponentDto> component) {
+  private void checkPermission(Optional<ComponentDto> component) {
     if (component.isPresent()) {
       String orgUuid = component.get().getOrganizationUuid();
       if (!userSession.hasPermission(OrganizationPermission.ADMINISTER, orgUuid) &&
         !userSession.hasPermission(OrganizationPermission.SCAN, orgUuid) &&
-        !userSession.hasComponentPermission(SCAN_EXECUTION, component.get())) {
+        !userSession.hasComponentPermission(UserRole.SCAN, component.get())) {
         throw insufficientPrivilegesException();
       }
 
@@ -147,9 +150,20 @@ public class TaskAction implements CeWsAction {
     return null;
   }
 
+  private List<String> extractWarnings(DbSession dbSession, CeActivityDto activityDto, Set<AdditionalField> additionalFields) {
+    if (additionalFields.contains(AdditionalField.WARNINGS)) {
+      List<CeTaskMessageDto> dtos = dbClient.ceTaskMessageDao().selectByTask(dbSession, activityDto.getUuid());
+      return dtos.stream()
+        .map(CeTaskMessageDto::getMessage)
+        .collect(MoreCollectors.toList(dtos.size()));
+    }
+    return Collections.emptyList();
+  }
+
   private enum AdditionalField {
     STACKTRACE("stacktrace"),
-    SCANNER_CONTEXT("scannerContext");
+    SCANNER_CONTEXT("scannerContext"),
+    WARNINGS("warnings");
 
     private final String label;
 

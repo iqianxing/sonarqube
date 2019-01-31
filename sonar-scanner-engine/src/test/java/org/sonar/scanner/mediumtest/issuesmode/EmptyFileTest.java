@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,7 +31,7 @@ import org.sonar.api.CoreProperties;
 import org.sonar.api.utils.log.LogTester;
 import org.sonar.scanner.issue.tracking.TrackedIssue;
 import org.sonar.scanner.mediumtest.ScannerMediumTester;
-import org.sonar.scanner.mediumtest.TaskResult;
+import org.sonar.scanner.mediumtest.AnalysisResult;
 import org.sonar.xoo.XooPlugin;
 import org.sonar.xoo.rule.XooRulesDefinition;
 
@@ -56,10 +56,10 @@ public class EmptyFileTest {
 
   @Test
   public void testIssueTrackingWithIssueOnEmptyFile() throws Exception {
-    File projectDir = copyProject("/mediumtest/xoo/sample-with-empty-file");
+    File projectDir = copyProject("test-resources/mediumtest/xoo/sample-with-empty-file");
 
-    TaskResult result = tester
-      .newScanTask(new File(projectDir, "sonar-project.properties"))
+    AnalysisResult result = tester
+      .newAnalysis(new File(projectDir, "sonar-project.properties"))
       .property("sonar.xoo.internalKey", "my/internal/key")
       .execute();
 
@@ -72,7 +72,7 @@ public class EmptyFileTest {
 
   private File copyProject(String path) throws Exception {
     File projectDir = temp.newFolder();
-    File originalProjectDir = new File(EmptyFileTest.class.getResource(path).toURI());
+    File originalProjectDir = new File(path);
     FileUtils.copyDirectory(originalProjectDir, projectDir, FileFilterUtils.notFileFilter(FileFilterUtils.nameFileFilter(".sonar")));
     return projectDir;
   }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,46 +18,40 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import Helmet from 'react-helmet';
 import { Link } from 'react-router';
-import { FormattedMessage } from 'react-intl';
 import VulnerabilityList from './VulnerabilityList';
 import Suggestions from '../../../app/components/embed-docs-modal/Suggestions';
 import { translate } from '../../../helpers/l10n';
-import { Component, BranchLike, SecurityHotspot, RuleType } from '../../../app/types';
 import DeferredSpinner from '../../../components/common/DeferredSpinner';
 import Checkbox from '../../../components/controls/Checkbox';
-import { RawQuery } from '../../../helpers/query';
 import NotFound from '../../../app/components/NotFound';
 import { getSecurityHotspots } from '../../../api/security-reports';
 import { isLongLivingBranch } from '../../../helpers/branches';
 import DocTooltip from '../../../components/docs/DocTooltip';
-import { getRulesUrl } from '../../../helpers/urls';
-import { isSonarCloud } from '../../../helpers/system';
+import { StandardType } from '../utils';
+import { Alert } from '../../../components/ui/Alert';
+import { withRouter, Location, Router } from '../../../components/hoc/withRouter';
 import '../style.css';
 
 interface Props {
-  branchLike?: BranchLike;
-  component: Component;
-  location: { pathname: string; query: RawQuery };
+  branchLike?: T.BranchLike;
+  component: T.Component;
+  location: Pick<Location, 'pathname' | 'query'>;
   params: { type: string };
+  router: Pick<Router, 'push'>;
 }
 
 interface State {
   loading: boolean;
-  findings: Array<SecurityHotspot>;
+  findings: T.SecurityHotspot[];
   hasVulnerabilities: boolean;
-  type: 'owaspTop10' | 'sansTop25' | 'cwe';
+  type: StandardType;
   showCWE: boolean;
 }
 
-export default class App extends React.PureComponent<Props, State> {
+export class App extends React.PureComponent<Props, State> {
   mounted = false;
-
-  static contextTypes = {
-    router: PropTypes.object.isRequired
-  };
 
   constructor(props: Props) {
     super(props);
@@ -117,12 +111,30 @@ export default class App extends React.PureComponent<Props, State> {
   };
 
   handleCheck = (checked: boolean) => {
-    const { router } = this.context;
-    router.push({
+    this.props.router.push({
       pathname: this.props.location.pathname,
       query: { id: this.props.component.key, showCWE: checked }
     });
     this.setState({ showCWE: checked }, this.fetchSecurityHotspots);
+  };
+
+  renderAdditionalRulesMessage = () => {
+    const { findings } = this.state;
+    if (findings.length === 0) {
+      return null;
+    }
+
+    const total = findings.map(f => f.totalRules).reduce((sum, count) => sum + count);
+    const active = findings.map(f => f.activeRules).reduce((sum, count) => sum + count);
+    if (active >= total) {
+      return null;
+    }
+
+    return (
+      <Alert className="spacer-top" display="inline" variant="info">
+        {translate('security_reports.more_rules')}
+      </Alert>
+    );
   };
 
   render() {
@@ -142,27 +154,10 @@ export default class App extends React.PureComponent<Props, State> {
             <Link
               className="spacer-left"
               target="_blank"
-              to={{ pathname: '/documentation/security-reports' }}>
+              to={{ pathname: '/documentation/user-guide/security-reports/' }}>
               {translate('learn_more')}
             </Link>
-            <p className="alert alert-info spacer-top display-inline-block">
-              <FormattedMessage
-                defaultMessage={translate('security_reports.info')}
-                id="security_reports.info"
-                tagName="p"
-                values={{
-                  link: (
-                    <Link
-                      to={getRulesUrl(
-                        { types: [RuleType.Vulnerability, RuleType.Hotspot].join() },
-                        isSonarCloud() ? component.organization : undefined
-                      )}>
-                      {translate('security_reports.info.link')}
-                    </Link>
-                  )
-                }}
-              />
-            </p>
+            {this.renderAdditionalRulesMessage()}
           </div>
         </header>
         <div className="display-inline-flex-center">
@@ -194,3 +189,5 @@ export default class App extends React.PureComponent<Props, State> {
     );
   }
 }
+
+export default withRouter(App);

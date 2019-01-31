@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,7 @@ import * as React from 'react';
 import { connect } from 'react-redux';
 import { uniqBy } from 'lodash';
 import { BasicProps } from './Facet';
-import { getLanguages } from '../../../store/rootReducer';
+import { getLanguages, Store } from '../../../store/rootReducer';
 import ListStyleFacet from '../../../components/facet/ListStyleFacet';
 import { translate } from '../../../helpers/l10n';
 import { highlightTerm } from '../../../helpers/search';
@@ -31,11 +31,10 @@ interface InstalledLanguage {
   name: string;
 }
 
-interface StateProps {
+interface Props extends BasicProps {
+  disabled?: boolean;
   installedLanguages: InstalledLanguage[];
 }
-
-interface Props extends BasicProps, StateProps {}
 
 class LanguageFacet extends React.PureComponent<Props> {
   getLanguageName = (languageKey: string) => {
@@ -71,6 +70,8 @@ class LanguageFacet extends React.PureComponent<Props> {
   render() {
     return (
       <ListStyleFacet<InstalledLanguage>
+        disabled={this.props.disabled}
+        disabledHelper={translate('coding_rules.filters.language.inactive')}
         facetHeader={translate('coding_rules.facet.languages')}
         fetching={false}
         getFacetItemText={this.getLanguageName}
@@ -92,7 +93,7 @@ class LanguageFacet extends React.PureComponent<Props> {
   }
 }
 
-const mapStateToProps = (state: any) => ({
+const mapStateToProps = (state: Store) => ({
   installedLanguages: Object.values(getLanguages(state))
 });
 

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -37,8 +37,9 @@ import org.sonar.db.DbSession;
 import org.sonar.db.DbTester;
 import org.sonar.db.user.GroupDto;
 import org.sonar.db.user.UserDto;
-import org.sonar.server.authentication.LocalAuthentication;
-import org.sonar.server.authentication.LocalAuthentication.HashMethod;
+import org.sonar.db.user.UserPropertyDto;
+import org.sonar.server.authentication.CredentialsLocalAuthentication;
+import org.sonar.server.authentication.CredentialsLocalAuthentication.HashMethod;
 import org.sonar.server.es.EsTester;
 import org.sonar.server.exceptions.BadRequestException;
 import org.sonar.server.organization.DefaultOrganizationProvider;
@@ -58,8 +59,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.sonar.core.config.CorePropertyDefinitions.ONBOARDING_TUTORIAL_SHOW_TO_NEW_USERS;
 import static org.sonar.db.user.UserTesting.newLocalUser;
+import static org.sonar.process.ProcessProperties.Property.ONBOARDING_TUTORIAL_SHOW_TO_NEW_USERS;
 import static org.sonar.server.user.ExternalIdentity.SQ_AUTHORITY;
 
 public class UserUpdaterCreateTest {
@@ -86,8 +87,9 @@ public class UserUpdaterCreateTest {
   private DefaultOrganizationProvider defaultOrganizationProvider = TestDefaultOrganizationProvider.from(db);
   private TestOrganizationFlags organizationFlags = TestOrganizationFlags.standalone();
   private MapSettings settings = new MapSettings();
-  private LocalAuthentication localAuthentication = new LocalAuthentication(db.getDbClient());
-  private UserUpdater underTest = new UserUpdater(newUserNotifier, dbClient, userIndexer, organizationFlags, defaultOrganizationProvider, organizationUpdater,
+  private CredentialsLocalAuthentication localAuthentication = new CredentialsLocalAuthentication(db.getDbClient());
+
+  private UserUpdater underTest = new UserUpdater(system2, newUserNotifier, dbClient, userIndexer, organizationFlags, defaultOrganizationProvider, organizationUpdater,
     new DefaultGroupFinder(dbClient), settings.asConfig(), localAuthentication);
 
   @Test
@@ -148,6 +150,35 @@ public class UserUpdaterCreateTest {
   }
 
   @Test
+  public void create_user_generates_unique_login_no_login_provided() {
+    createDefaultGroup();
+
+    UserDto user = underTest.createAndCommit(db.getSession(), NewUser.builder()
+      .setName("John Doe")
+      .build(), u -> {
+      });
+
+    UserDto dto = dbClient.userDao().selectByLogin(session, user.getLogin());
+    assertThat(dto.getLogin()).startsWith("john-doe");
+    assertThat(dto.getName()).isEqualTo("John Doe");
+  }
+
+  @Test
+  public void create_user_generates_unique_login_when_login_is_empty() {
+    createDefaultGroup();
+
+    UserDto user = underTest.createAndCommit(db.getSession(), NewUser.builder()
+      .setLogin("")
+      .setName("John Doe")
+      .build(), u -> {
+      });
+
+    UserDto dto = dbClient.userDao().selectByLogin(session, user.getLogin());
+    assertThat(dto.getLogin()).startsWith("john-doe");
+    assertThat(dto.getName()).isEqualTo("John Doe");
+  }
+
+  @Test
   public void create_user_with_sq_authority_when_no_authority_set() {
     createDefaultGroup();
 
@@ -191,7 +222,7 @@ public class UserUpdaterCreateTest {
     underTest.createAndCommit(db.getSession(), NewUser.builder()
       .setLogin("user")
       .setName("User")
-      .setExternalIdentity(new ExternalIdentity(SQ_AUTHORITY, "user", null))
+      .setExternalIdentity(new ExternalIdentity(SQ_AUTHORITY, "user", "user"))
       .build(), u -> {
       });
 
@@ -251,8 +282,8 @@ public class UserUpdaterCreateTest {
 
   @Test
   public void create_not_onboarded_user_if_onboarding_setting_is_set_to_false() {
+    settings.setProperty(ONBOARDING_TUTORIAL_SHOW_TO_NEW_USERS.getKey(), false);
     createDefaultGroup();
-    settings.setProperty(ONBOARDING_TUTORIAL_SHOW_TO_NEW_USERS, false);
 
     underTest.createAndCommit(db.getSession(), NewUser.builder()
       .setLogin("user")
@@ -265,8 +296,8 @@ public class UserUpdaterCreateTest {
 
   @Test
   public void create_onboarded_user_if_onboarding_setting_is_set_to_true() {
+    settings.setProperty(ONBOARDING_TUTORIAL_SHOW_TO_NEW_USERS.getKey(), true);
     createDefaultGroup();
-    settings.setProperty(ONBOARDING_TUTORIAL_SHOW_TO_NEW_USERS, true);
 
     underTest.createAndCommit(db.getSession(), NewUser.builder()
       .setLogin("user")
@@ -275,6 +306,36 @@ public class UserUpdaterCreateTest {
       });
 
     assertThat(dbClient.userDao().selectByLogin(session, "user").isOnboarded()).isFalse();
+  }
+
+  @Test
+  public void set_notifications_readDate_setting_when_creating_user_and_organization_enabled() {
+    long now = system2.now();
+    organizationFlags.setEnabled(true);
+    createDefaultGroup();
+
+    UserDto user = underTest.createAndCommit(db.getSession(), NewUser.builder()
+      .setLogin("userLogin")
+      .setName("UserName")
+      .build(), u -> {
+      });
+
+    UserPropertyDto notificationReadDateSetting = dbClient.userPropertiesDao().selectByUser(session, user).get(0);
+    assertThat(notificationReadDateSetting.getKey()).isEqualTo("notifications.readDate");
+    assertThat(Long.parseLong(notificationReadDateSetting.getValue())).isGreaterThanOrEqualTo(now);
+  }
+
+  @Test
+  public void does_not_set_notifications_readDate_setting_when_creating_user_when_not_on_and_organization_disabled() {
+    createDefaultGroup();
+
+    UserDto user = underTest.createAndCommit(db.getSession(), NewUser.builder()
+      .setLogin("userLogin")
+      .setName("UserName")
+      .build(), u -> {
+      });
+
+    assertThat(dbClient.userPropertiesDao().selectByUser(session, user)).isEmpty();
   }
 
   @Test
@@ -291,20 +352,6 @@ public class UserUpdaterCreateTest {
       }, otherUser);
 
     assertThat(es.getIds(UserIndexDefinition.INDEX_TYPE_USER)).containsExactlyInAnyOrder(created.getUuid(), otherUser.getUuid());
-  }
-
-  @Test
-  public void fail_to_create_user_with_missing_login() {
-    expectedException.expect(BadRequestException.class);
-    expectedException.expectMessage("Login can't be empty");
-
-    underTest.createAndCommit(db.getSession(), NewUser.builder()
-      .setLogin(null)
-      .setName("Marius")
-      .setEmail("marius@mail.com")
-      .setPassword("password")
-      .build(), u -> {
-      });
   }
 
   @Test
@@ -417,7 +464,7 @@ public class UserUpdaterCreateTest {
         });
       fail();
     } catch (BadRequestException e) {
-      assertThat(e.errors()).hasSize(3);
+      assertThat(e.errors()).containsExactlyInAnyOrder("Name can't be empty", "Password can't be empty");
     }
   }
 
@@ -515,7 +562,7 @@ public class UserUpdaterCreateTest {
       .setName("User")
       .setExternalIdentity(new ExternalIdentity(existingUser.getExternalIdentityProvider(), existingUser.getExternalLogin(), existingUser.getExternalId()))
       .build(), u -> {
-    });
+      });
   }
 
   @Test
@@ -539,7 +586,6 @@ public class UserUpdaterCreateTest {
 
   @Test
   public void associate_default_group_when_creating_user_and_organizations_are_disabled() {
-    organizationFlags.setEnabled(false);
     GroupDto defaultGroup = createDefaultGroup();
 
     underTest.createAndCommit(db.getSession(), NewUser.builder()
@@ -603,7 +649,6 @@ public class UserUpdaterCreateTest {
 
   @Test
   public void add_user_as_member_of_default_organization_when_creating_user_and_organizations_are_disabled() {
-    organizationFlags.setEnabled(false);
     createDefaultGroup();
 
     UserDto dto = underTest.createAndCommit(db.getSession(), NewUser.builder()
@@ -636,5 +681,4 @@ public class UserUpdaterCreateTest {
   private GroupDto createDefaultGroup() {
     return db.users().insertDefaultGroup(db.getDefaultOrganization());
   }
-
 }

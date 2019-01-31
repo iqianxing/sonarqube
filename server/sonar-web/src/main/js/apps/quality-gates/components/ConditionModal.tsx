@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,35 +18,31 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import AddConditionSelect from './AddConditionSelect';
+import MetricSelect from './MetricSelect';
 import ConditionOperator from './ConditionOperator';
 import ThresholdInput from './ThresholdInput';
-import Period from './Period';
 import { translate, getLocalizedMetricName } from '../../../helpers/l10n';
-import { Metric, QualityGate, Condition, Omit } from '../../../app/types';
 import { createCondition, updateCondition } from '../../../api/quality-gates';
-import { isDiffMetric } from '../../../helpers/measures';
-import { parseError } from '../../../helpers/request';
 import ConfirmModal from '../../../components/controls/ConfirmModal';
+import { Alert } from '../../../components/ui/Alert';
+import { getPossibleOperators } from '../utils';
 
 interface Props {
-  condition?: Condition;
-  metric?: Metric;
-  metrics?: Metric[];
+  condition?: T.Condition;
+  metric?: T.Metric;
+  metrics?: T.Metric[];
   header: string;
-  onAddCondition: (condition: Condition) => void;
+  onAddCondition: (condition: T.Condition) => void;
   onClose: () => void;
   organization?: string;
-  qualityGate: QualityGate;
+  qualityGate: T.QualityGate;
 }
 
 interface State {
   error: string;
   errorMessage?: string;
-  metric?: Metric;
+  metric?: T.Metric;
   op?: string;
-  period: boolean;
-  warning: string;
 }
 
 export default class ConditionModal extends React.PureComponent<Props, State> {
@@ -56,8 +52,6 @@ export default class ConditionModal extends React.PureComponent<Props, State> {
     super(props);
     this.state = {
       error: props.condition ? props.condition.error : '',
-      period: props.condition ? props.condition.period === 1 : false,
-      warning: props.condition ? props.condition.warning : '',
       metric: props.metric ? props.metric : undefined,
       op: props.condition ? props.condition.op : undefined
     };
@@ -71,61 +65,33 @@ export default class ConditionModal extends React.PureComponent<Props, State> {
     this.mounted = false;
   }
 
-  getUpdatedCondition = (metric: Metric) => {
-    const data: Omit<Condition, 'id'> = {
-      metric: metric.key,
-      op: metric.type === 'RATING' ? 'GT' : this.state.op,
-      warning: this.state.warning,
-      error: this.state.error
-    };
-
-    const { period } = this.state;
-    if (period && metric.type !== 'RATING') {
-      data.period = period ? 1 : 0;
-    }
-
-    if (isDiffMetric(metric.key)) {
-      data.period = 1;
-    }
-    return data;
-  };
+  getSinglePossibleOperator(metric: T.Metric) {
+    const operators = getPossibleOperators(metric);
+    return Array.isArray(operators) ? undefined : operators;
+  }
 
   handleFormSubmit = () => {
     if (this.state.metric) {
       const { condition, qualityGate, organization } = this.props;
-      const newCondition = this.getUpdatedCondition(this.state.metric);
-      let submitPromise: Promise<Condition>;
-      if (condition) {
-        submitPromise = updateCondition({ organization, id: condition.id, ...newCondition });
-      } else {
-        submitPromise = createCondition({ gateId: qualityGate.id, organization, ...newCondition });
-      }
-      return submitPromise.then(this.props.onAddCondition, (error: any) =>
-        parseError(error).then(message => {
-          if (this.mounted) {
-            this.setState({ errorMessage: message });
-          }
-          return Promise.reject(message);
-        })
-      );
+      const newCondition: T.Omit<T.Condition, 'id'> = {
+        metric: this.state.metric.key,
+        op: this.getSinglePossibleOperator(this.state.metric) || this.state.op,
+        error: this.state.error
+      };
+      const submitPromise = condition
+        ? updateCondition({ organization, id: condition.id, ...newCondition })
+        : createCondition({ gateId: qualityGate.id, organization, ...newCondition });
+      return submitPromise.then(this.props.onAddCondition);
     }
-    return Promise.reject('No metric selected');
+    return Promise.reject();
   };
 
-  handleChooseType = (metric: Metric) => {
-    this.setState({ metric });
-  };
-
-  handlePeriodChange = (period: boolean) => {
-    this.setState({ period });
+  handleMetricChange = (metric: T.Metric) => {
+    this.setState({ metric, op: undefined, error: '' });
   };
 
   handleOperatorChange = (op: string) => {
     this.setState({ op });
-  };
-
-  handleWarningChange = (warning: string) => {
-    this.setState({ warning });
   };
 
   handleErrorChange = (error: string) => {
@@ -134,7 +100,7 @@ export default class ConditionModal extends React.PureComponent<Props, State> {
 
   render() {
     const { header, metrics, onClose } = this.props;
-    const { period, op, warning, error, metric } = this.state;
+    const { op, error, metric } = this.state;
     return (
       <ConfirmModal
         confirmButtonText={header}
@@ -142,14 +108,10 @@ export default class ConditionModal extends React.PureComponent<Props, State> {
         header={header}
         onClose={onClose}
         onConfirm={this.handleFormSubmit}>
-        {this.state.errorMessage && (
-          <div className="alert alert-danger modal-alert">{this.state.errorMessage}</div>
-        )}
+        {this.state.errorMessage && <Alert variant="error">{this.state.errorMessage}</Alert>}
         <div className="modal-field">
-          <label htmlFor="create-user-login">{translate('quality_gates.conditions.metric')}</label>
-          {metrics && (
-            <AddConditionSelect metrics={metrics} onAddCondition={this.handleChooseType} />
-          )}
+          <label htmlFor="condition-metric">{translate('quality_gates.conditions.metric')}</label>
+          {metrics && <MetricSelect metrics={metrics} onMetricChange={this.handleMetricChange} />}
           {this.props.metric && (
             <span className="note">{getLocalizedMetricName(this.props.metric)}</span>
           )}
@@ -157,34 +119,19 @@ export default class ConditionModal extends React.PureComponent<Props, State> {
         {metric && (
           <>
             <div className="modal-field">
-              <label>{translate('quality_gates.conditions.new_code')}</label>
-              <Period
-                canEdit={true}
-                metric={metric}
-                onPeriodChange={this.handlePeriodChange}
-                period={period}
-              />
-            </div>
-            <div className="modal-field">
-              <label>{translate('quality_gates.conditions.operator')}</label>
+              <label htmlFor="condition-operator">
+                {translate('quality_gates.conditions.operator')}
+              </label>
               <ConditionOperator
-                canEdit={true}
                 metric={metric}
                 onOperatorChange={this.handleOperatorChange}
                 op={op}
               />
             </div>
             <div className="modal-field">
-              <label>{translate('quality_gates.conditions.warning')}</label>
-              <ThresholdInput
-                metric={metric}
-                name="warning"
-                onChange={this.handleWarningChange}
-                value={warning}
-              />
-            </div>
-            <div className="modal-field">
-              <label>{translate('quality_gates.conditions.error')}</label>
+              <label htmlFor="condition-threshold">
+                {translate('quality_gates.conditions.error')}
+              </label>
               <ThresholdInput
                 metric={metric}
                 name="error"

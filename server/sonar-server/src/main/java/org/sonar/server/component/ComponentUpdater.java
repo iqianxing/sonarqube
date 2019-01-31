@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -43,7 +43,7 @@ import org.sonar.server.permission.PermissionTemplateService;
 
 import static java.util.Collections.singletonList;
 import static org.sonar.api.resources.Qualifiers.PROJECT;
-import static org.sonar.core.component.ComponentKeys.isValidModuleKey;
+import static org.sonar.core.component.ComponentKeys.isValidProjectKey;
 import static org.sonar.server.ws.WsUtils.checkRequest;
 
 public class ComponentUpdater {
@@ -115,7 +115,6 @@ public class ComponentUpdater {
       .setModuleUuidPath(ComponentDto.UUID_PATH_SEPARATOR + uuid + ComponentDto.UUID_PATH_SEPARATOR)
       .setProjectUuid(uuid)
       .setDbKey(keyWithBranch)
-      .setDeprecatedKey(keyWithBranch)
       .setName(newComponent.name())
       .setLongName(newComponent.name())
       .setScope(Scopes.PROJECT)
@@ -166,7 +165,7 @@ public class ComponentUpdater {
   }
 
   private void checkKeyFormat(String qualifier, String key) {
-    checkRequest(isValidModuleKey(key),
+    checkRequest(isValidProjectKey(key),
       "Malformed key for %s: %s. Allowed characters are alphanumeric, '-', '_', '.' and ':', with at least one non-digit.", getQualifierToDisplay(qualifier), key);
   }
 

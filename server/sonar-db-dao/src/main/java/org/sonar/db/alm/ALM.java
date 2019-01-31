@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,6 +24,10 @@ import java.util.Locale;
 public enum ALM {
   BITBUCKETCLOUD,
   GITHUB;
+
+  public static ALM fromId(String almId) {
+    return ALM.valueOf(almId.toUpperCase(Locale.ENGLISH));
+  }
 
   public String getId() {
     return this.name().toLowerCase(Locale.ENGLISH);

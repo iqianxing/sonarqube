@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,11 +23,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonar.api.i18n.I18n;
 import org.sonar.api.resources.Languages;
+import org.sonar.api.resources.Qualifiers;
 import org.sonar.api.resources.ResourceTypes;
+import org.sonar.api.server.ws.Change;
 import org.sonar.api.server.ws.Response;
 import org.sonar.api.server.ws.WebService;
 import org.sonar.api.server.ws.WebService.Param;
@@ -47,12 +50,12 @@ import org.sonarqube.ws.Components.SearchWsResponse;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
+import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toMap;
-import static org.sonar.core.util.Protobuf.setNullable;
 import static org.sonar.core.util.stream.MoreCollectors.toHashSet;
 import static org.sonar.server.es.SearchOptions.MAX_LIMIT;
 import static org.sonar.server.util.LanguageParamUtils.getExampleValue;
-import static org.sonar.server.util.LanguageParamUtils.getLanguageKeys;
+import static org.sonar.server.util.LanguageParamUtils.getOrderedLanguageKeys;
 import static org.sonar.server.ws.WsParameterBuilder.createQualifiersParameter;
 import static org.sonar.server.ws.WsParameterBuilder.QualifierParameterContext.newQualifierParameterContext;
 import static org.sonar.server.ws.WsUtils.writeProtobuf;
@@ -70,7 +73,7 @@ public class SearchAction implements ComponentsWsAction {
   private final DefaultOrganizationProvider defaultOrganizationProvider;
 
   public SearchAction(ComponentIndex componentIndex, DbClient dbClient, ResourceTypes resourceTypes, I18n i18n, Languages languages,
-                      DefaultOrganizationProvider defaultOrganizationProvider) {
+    DefaultOrganizationProvider defaultOrganizationProvider) {
     this.componentIndex = componentIndex;
     this.dbClient = dbClient;
     this.resourceTypes = resourceTypes;
@@ -85,6 +88,7 @@ public class SearchAction implements ComponentsWsAction {
       .setSince("6.3")
       .setDescription("Search for components")
       .addPagingParams(100, MAX_LIMIT)
+      .setChangelog(new Change("7.6", String.format("The use of 'BRC' as value for parameter '%s' is deprecated", PARAM_QUALIFIERS)))
       .setResponseExample(getClass().getResource("search-components-example.json"))
       .setHandler(this);
 
@@ -107,7 +111,7 @@ public class SearchAction implements ComponentsWsAction {
       .createParam(PARAM_LANGUAGE)
       .setDescription("Language key. If provided, only components for the given language are returned.")
       .setExampleValue(getExampleValue(languages))
-      .setPossibleValues(getLanguageKeys(languages));
+      .setPossibleValues(getOrderedLanguageKeys(languages));
     createQualifiersParameter(action, newQualifierParameterContext(i18n, resourceTypes))
       .setRequired(true);
   }
@@ -146,7 +150,11 @@ public class SearchAction implements ComponentsWsAction {
     Set<String> projectUuidsToSearch = components.stream()
       .map(ComponentDto::projectUuid)
       .collect(toHashSet());
-    List<ComponentDto> projects = dbClient.componentDao().selectByUuids(dbSession, projectUuidsToSearch);
+    List<ComponentDto> projects = dbClient.componentDao()
+      .selectByUuids(dbSession, projectUuidsToSearch)
+      .stream()
+      .filter(c -> !c.qualifier().equals(Qualifiers.MODULE))
+      .collect(Collectors.toList());
     return projects.stream().collect(toMap(ComponentDto::uuid, ComponentDto::getDbKey));
   }
 
@@ -195,7 +203,7 @@ public class SearchAction implements ComponentsWsAction {
       .setProject(projectKey)
       .setName(dto.name())
       .setQualifier(dto.qualifier());
-    setNullable(dto.language(), builder::setLanguage);
+    ofNullable(dto.language()).ifPresent(builder::setLanguage);
     return builder.build();
   }
 
@@ -266,6 +274,5 @@ public class SearchAction implements ComponentsWsAction {
       return this;
     }
   }
-
 
 }

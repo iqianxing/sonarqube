@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -37,6 +37,10 @@ public interface LiveMeasureMapper {
     @Param("componentUuids") List<String> componentUuids,
     @Param("metricKeys") Collection<String> metricKeys);
 
+  LiveMeasureDto selectByComponentUuidAndMetricKey(
+    @Param("componentUuid") String componentUuid,
+    @Param("metricKey") String metricKey);
+
   void selectTreeByQuery(
     @Param("query") MeasureTreeQuery measureQuery,
     @Param("baseUuid") String baseUuid,
@@ -54,15 +58,18 @@ public interface LiveMeasureMapper {
   void insert(
     @Param("dto") LiveMeasureDto dto,
     @Param("uuid") String uuid,
-    @Nullable @Param("marker") String marker,
     @Param("now") long now);
 
   int update(
     @Param("dto") LiveMeasureDto dto,
-    @Nullable @Param("marker") String marker,
     @Param("now") long now);
 
-  int deleteByProjectUuidExcludingMarker(
-    @Param("projectUuid") String projectUuid,
-    @Param("marker") String marker);
+  int upsert(
+    @Param("dto") LiveMeasureDto dto,
+    @Param("uuid") String uuid,
+    @Param("now") long now);
+
+  int deleteByComponentUuidExcludingMetricIds(
+    @Param("componentUuid") String componentUuid,
+    @Param("excludedMetricIds") List<Integer> excludedMetricIds);
 }

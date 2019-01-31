@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -117,7 +117,7 @@ public class CreateAction implements ProjectsWsAction {
       OrganizationDto organization = support.getOrganization(dbSession, request.getOrganization());
       userSession.checkPermission(PROVISION_PROJECTS, organization);
       String visibility = request.getVisibility();
-      Boolean changeToPrivate = visibility == null ? dbClient.organizationDao().getNewProjectPrivate(dbSession, organization) : "private".equals(visibility);
+      boolean changeToPrivate = visibility == null ? dbClient.organizationDao().getNewProjectPrivate(dbSession, organization) : "private".equals(visibility);
       support.checkCanUpdateProjectsVisibility(organization, changeToPrivate);
 
       ComponentDto componentDto = componentUpdater.create(dbSession, newComponentBuilder()

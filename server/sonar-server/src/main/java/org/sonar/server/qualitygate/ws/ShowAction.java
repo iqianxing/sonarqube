@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -40,7 +40,7 @@ import org.sonarqube.ws.Qualitygates.ShowWsResponse;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
-import static org.sonar.core.util.Protobuf.setNullable;
+import static java.util.Optional.ofNullable;
 import static org.sonar.core.util.stream.MoreCollectors.toList;
 import static org.sonar.core.util.stream.MoreCollectors.toSet;
 import static org.sonar.core.util.stream.MoreCollectors.uniqueIndex;
@@ -68,6 +68,7 @@ public class ShowAction implements QualityGatesWsAction {
       .setSince("4.3")
       .setResponseExample(Resources.getResource(this.getClass(), "show-example.json"))
       .setChangelog(
+        new Change("7.6", "'period' and 'warning' fields of conditions are removed from the response"),
         new Change("7.0", "'isBuiltIn' field is added to the response"),
         new Change("7.0", "'actions' field is added in the response"))
       .setHandler(this);
@@ -142,9 +143,7 @@ public class ShowAction implements QualityGatesWsAction {
         .setId(condition.getId())
         .setMetric(metric.getKey())
         .setOp(condition.getOperator());
-      setNullable(condition.getPeriod(), builder::setPeriod);
-      setNullable(condition.getErrorThreshold(), builder::setError);
-      setNullable(condition.getWarningThreshold(), builder::setWarning);
+      ofNullable(condition.getErrorThreshold()).ifPresent(builder::setError);
       return builder.build();
     };
   }

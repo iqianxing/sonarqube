@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,11 +24,10 @@ import { getLocalizedMetricName, translate } from '../../../helpers/l10n';
 import { formatMeasure, isDiffMetric } from '../../../helpers/measures';
 import { getProjectUrl } from '../../../helpers/urls';
 import './ApplicationQualityGateProject.css';
-import { Metric } from '../../../app/types';
 import { ApplicationProject, ConditionAnalysis } from '../../../api/quality-gates';
 
 interface Props {
-  metrics: { [key: string]: Metric };
+  metrics: { [key: string]: T.Metric };
   project: ApplicationProject;
 }
 

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,10 +31,7 @@ const getTask = require('../../../../api/ce').getTask as jest.Mock<any>;
 
 const task = {
   componentName: 'foo',
-  status: 'PENDING',
   id: '123',
-  submittedAt: '2017-01-01',
-  submitterLogin: 'yoda',
   type: 'REPORT'
 };
 

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,13 +18,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import { Metric } from '../../../app/types';
 import Measure from '../../measure/Measure';
 import IssueTypeIcon from '../../ui/IssueTypeIcon';
 import { getLocalizedMetricName } from '../../../helpers/l10n';
 
 export interface MeasureWithMetric {
-  metric: Metric;
+  metric: T.Metric;
   value?: string;
 }
 

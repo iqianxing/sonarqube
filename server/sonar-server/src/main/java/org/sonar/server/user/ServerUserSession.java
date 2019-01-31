@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -32,7 +32,6 @@ import java.util.Optional;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonar.core.permission.ProjectPermissions;
 import org.sonar.core.util.stream.MoreCollectors;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
@@ -49,6 +48,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.Optional.of;
 import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang.StringUtils.defaultIfEmpty;
+import static org.sonar.api.web.UserRole.PUBLIC_PERMISSIONS;
 
 /**
  * Implementation of {@link UserSession} used in web server
@@ -167,7 +167,7 @@ public class ServerUserSession extends AbstractUserSession {
       return of(projectUuid);
     }
     try (DbSession dbSession = dbClient.openSession(false)) {
-      com.google.common.base.Optional<ComponentDto> component = dbClient.componentDao().selectByUuid(dbSession, componentUuid);
+      Optional<ComponentDto> component = dbClient.componentDao().selectByUuid(dbSession, componentUuid);
       if (!component.isPresent()) {
         return Optional.empty();
       }
@@ -190,7 +190,7 @@ public class ServerUserSession extends AbstractUserSession {
 
   private Set<String> loadProjectPermissions(String projectUuid) {
     try (DbSession dbSession = dbClient.openSession(false)) {
-      com.google.common.base.Optional<ComponentDto> component = dbClient.componentDao().selectByUuid(dbSession, projectUuid);
+      Optional<ComponentDto> component = dbClient.componentDao().selectByUuid(dbSession, projectUuid);
       if (!component.isPresent()) {
         return Collections.emptySet();
       }
@@ -198,7 +198,7 @@ public class ServerUserSession extends AbstractUserSession {
         return loadDbPermissions(dbSession, projectUuid);
       }
       ImmutableSet.Builder<String> builder = ImmutableSet.builder();
-      builder.addAll(ProjectPermissions.PUBLIC_PERMISSIONS);
+      builder.addAll(PUBLIC_PERMISSIONS);
       builder.addAll(loadDbPermissions(dbSession, projectUuid));
       return builder.build();
     }

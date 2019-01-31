@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,9 +27,8 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.builder.ReflectionToStringBuilder;
 import org.apache.commons.lang.builder.ToStringStyle;
-import org.sonar.api.batch.InstantiationStrategy;
-import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.ce.ComputeEngineSide;
+import org.sonar.api.scanner.ScannerSide;
 import org.sonar.api.server.ServerSide;
 
 import static com.google.common.base.MoreObjects.firstNonNull;
@@ -38,10 +37,8 @@ import static org.apache.commons.lang.StringUtils.isNotBlank;
 
 /**
  * Used to define a metric in a plugin. Should be used with {@link Metrics} extension point.
- * Should no more be used on scanner side. Use {@link org.sonar.api.batch.measure.Metric} instead.
  */
 @ScannerSide
-@InstantiationStrategy(InstantiationStrategy.PER_BATCH)
 @ServerSide
 @ComputeEngineSide
 public class Metric<G extends Serializable> implements Serializable, org.sonar.api.batch.measure.Metric<G> {
@@ -106,7 +103,13 @@ public class Metric<G extends Serializable> implements Serializable, org.sonar.a
   }
 
   public enum Level {
-    OK("Green"), WARN("Orange"), ERROR("Red");
+    OK("Green"),
+    /**
+     * @deprecated in 7.6.
+     */
+    @Deprecated
+    WARN("Orange"),
+    ERROR("Red");
 
     private static final List<String> NAMES = Arrays.stream(values())
       .map(Level::name)

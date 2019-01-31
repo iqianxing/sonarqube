@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,10 +21,10 @@ import * as React from 'react';
 import { FormattedMessage } from 'react-intl';
 import { getIdentityProviders } from '../../../api/users';
 import * as theme from '../../../app/theme';
-import { IdentityProvider } from '../../../app/types';
 import { getTextColor } from '../../../helpers/colors';
 import { translate } from '../../../helpers/l10n';
 import { getBaseUrl } from '../../../helpers/urls';
+import { Alert } from '../../../components/ui/Alert';
 
 interface Props {
   location: {
@@ -39,7 +39,7 @@ interface Props {
 }
 
 interface State {
-  identityProviders: IdentityProvider[];
+  identityProviders: T.IdentityProvider[];
   loading: boolean;
 }
 
@@ -119,7 +119,7 @@ export default class UpdateLogin extends React.PureComponent<Props, State> {
             {this.renderIdentityProvier(query.providerKey, query.login)}
           </div>
 
-          <div className="alert alert-warning">
+          <Alert variant="warning">
             {translate('sessions.update_login.3')}
             <ul className="list-styled">
               <li className="spacer-top js-old-organization-key">
@@ -137,7 +137,7 @@ export default class UpdateLogin extends React.PureComponent<Props, State> {
                 />
               </li>
             </ul>
-          </div>
+          </Alert>
 
           <div className="big-spacer-top text-right">
             <a

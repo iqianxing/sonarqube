@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,7 +28,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.sonar.api.batch.fs.internal.DefaultInputModule;
+import org.sonar.api.batch.fs.internal.DefaultInputProject;
 import org.sonar.api.batch.fs.internal.InputModuleHierarchy;
 import org.sonar.api.batch.scm.ScmProvider;
 import org.sonar.scanner.scan.branch.BranchConfiguration;
@@ -54,22 +54,21 @@ public class ScmChangedFilesProviderTest {
 
   private Path rootBaseDir = Paths.get("root");
   private ScmChangedFilesProvider provider;
+  private DefaultInputProject project = mock(DefaultInputProject.class);
 
   @Before
   public void setUp() {
     MockitoAnnotations.initMocks(this);
-    DefaultInputModule root = mock(DefaultInputModule.class);
-    when(root.getBaseDir()).thenReturn(rootBaseDir);
-    when(inputModuleHierarchy.root()).thenReturn(root);
+    when(project.getBaseDir()).thenReturn(rootBaseDir);
     provider = new ScmChangedFilesProvider();
   }
 
   @Test
   public void testNoScmProvider() {
     when(branchConfiguration.isShortOrPullRequest()).thenReturn(true);
-    when(branchConfiguration.branchTarget()).thenReturn("target");
+    when(branchConfiguration.targetScmBranch()).thenReturn("target");
 
-    ScmChangedFiles scmChangedFiles = provider.provide(scmConfiguration, branchConfiguration, inputModuleHierarchy);
+    ScmChangedFiles scmChangedFiles = provider.provide(scmConfiguration, branchConfiguration, project);
 
     assertThat(scmChangedFiles.get()).isNull();
     verify(scmConfiguration).provider();
@@ -77,23 +76,23 @@ public class ScmChangedFilesProviderTest {
 
   @Test
   public void testFailIfRelativePath() {
-    when(branchConfiguration.branchTarget()).thenReturn("target");
+    when(branchConfiguration.targetScmBranch()).thenReturn("target");
     when(branchConfiguration.isShortOrPullRequest()).thenReturn(true);
     when(scmConfiguration.provider()).thenReturn(scmProvider);
     when(scmProvider.branchChangedFiles("target", rootBaseDir)).thenReturn(Collections.singleton(Paths.get("changedFile")));
 
     exception.expect(IllegalStateException.class);
     exception.expectMessage("changed file with a relative path");
-    provider.provide(scmConfiguration, branchConfiguration, inputModuleHierarchy);
+    provider.provide(scmConfiguration, branchConfiguration, project);
   }
 
   @Test
   public void testProviderDoesntSupport() {
-    when(branchConfiguration.branchTarget()).thenReturn("target");
+    when(branchConfiguration.targetScmBranch()).thenReturn("target");
     when(branchConfiguration.isShortOrPullRequest()).thenReturn(true);
     when(scmConfiguration.provider()).thenReturn(scmProvider);
     when(scmProvider.branchChangedFiles("target", rootBaseDir)).thenReturn(null);
-    ScmChangedFiles scmChangedFiles = provider.provide(scmConfiguration, branchConfiguration, inputModuleHierarchy);
+    ScmChangedFiles scmChangedFiles = provider.provide(scmConfiguration, branchConfiguration, project);
 
     assertThat(scmChangedFiles.get()).isNull();
     verify(scmProvider).branchChangedFiles("target", rootBaseDir);
@@ -102,7 +101,7 @@ public class ScmChangedFilesProviderTest {
   @Test
   public void testNoOpInNonShortLivedBranch() {
     when(branchConfiguration.isShortOrPullRequest()).thenReturn(false);
-    ScmChangedFiles scmChangedFiles = provider.provide(scmConfiguration, branchConfiguration, inputModuleHierarchy);
+    ScmChangedFiles scmChangedFiles = provider.provide(scmConfiguration, branchConfiguration, project);
 
     assertThat(scmChangedFiles.get()).isNull();
     verifyZeroInteractions(scmConfiguration);
@@ -119,9 +118,9 @@ public class ScmChangedFilesProviderTest {
 
     when(scmConfiguration.provider()).thenReturn(legacy);
     when(branchConfiguration.isShortOrPullRequest()).thenReturn(true);
-    when(branchConfiguration.branchTarget()).thenReturn("target");
+    when(branchConfiguration.targetScmBranch()).thenReturn("target");
 
-    ScmChangedFiles scmChangedFiles = provider.provide(scmConfiguration, branchConfiguration, inputModuleHierarchy);
+    ScmChangedFiles scmChangedFiles = provider.provide(scmConfiguration, branchConfiguration, project);
 
     assertThat(scmChangedFiles.get()).isNull();
     verify(scmConfiguration).provider();
@@ -129,11 +128,11 @@ public class ScmChangedFilesProviderTest {
 
   @Test
   public void testReturnChangedFiles() {
-    when(branchConfiguration.branchTarget()).thenReturn("target");
+    when(branchConfiguration.targetScmBranch()).thenReturn("target");
     when(branchConfiguration.isShortOrPullRequest()).thenReturn(true);
     when(scmConfiguration.provider()).thenReturn(scmProvider);
     when(scmProvider.branchChangedFiles("target", rootBaseDir)).thenReturn(Collections.singleton(Paths.get("changedFile").toAbsolutePath()));
-    ScmChangedFiles scmChangedFiles = provider.provide(scmConfiguration, branchConfiguration, inputModuleHierarchy);
+    ScmChangedFiles scmChangedFiles = provider.provide(scmConfiguration, branchConfiguration, project);
 
     assertThat(scmChangedFiles.get()).containsOnly(Paths.get("changedFile").toAbsolutePath());
     verify(scmProvider).branchChangedFiles("target", rootBaseDir);
@@ -141,8 +140,8 @@ public class ScmChangedFilesProviderTest {
 
   @Test
   public void testCacheObject() {
-    provider.provide(scmConfiguration, branchConfiguration, inputModuleHierarchy);
-    provider.provide(scmConfiguration, branchConfiguration, inputModuleHierarchy);
+    provider.provide(scmConfiguration, branchConfiguration, project);
+    provider.provide(scmConfiguration, branchConfiguration, project);
     verify(branchConfiguration).isShortOrPullRequest();
   }
 

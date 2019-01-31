@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,8 +22,8 @@ import DefaultPageSelectorContainer from './components/DefaultPageSelectorContai
 import FavoriteProjectsContainer from './components/FavoriteProjectsContainer';
 import { PROJECTS_DEFAULT_FILTER, PROJECTS_ALL } from './utils';
 import { save } from '../../helpers/storage';
-import { isSonarCloud } from '../../helpers/system';
 import { lazyLoad } from '../../components/lazyLoad';
+import { isDefined } from '../../helpers/types';
 
 const routes = [
   { indexRoute: { component: DefaultPageSelectorContainer } },
@@ -35,10 +35,10 @@ const routes = [
     }
   },
   { path: 'favorite', component: FavoriteProjectsContainer },
-  isSonarCloud() && {
+  {
     path: 'create',
-    component: lazyLoad(() => import('./create/CreateProjectPage'))
+    component: lazyLoad(() => import('../create/project/CreateProjectPage'))
   }
-].filter(Boolean);
+].filter(isDefined);
 
 export default routes;

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,10 +18,10 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import RenameProfileForm from './RenameProfileForm';
 import CopyProfileForm from './CopyProfileForm';
 import DeleteProfileForm from './DeleteProfileForm';
+import ExtendProfileForm from './ExtendProfileForm';
 import { translate } from '../../../helpers/l10n';
 import { getRulesUrl } from '../../../helpers/urls';
 import { setDefaultProfile } from '../../../api/quality-profiles';
@@ -31,52 +31,42 @@ import ActionsDropdown, {
   ActionsDropdownItem,
   ActionsDropdownDivider
 } from '../../../components/controls/ActionsDropdown';
+import { withRouter, Router } from '../../../components/hoc/withRouter';
 
 interface Props {
   className?: string;
   fromList?: boolean;
-  onRequestFail: (reasong: any) => void;
   organization: string | null;
   profile: Profile;
+  router: Pick<Router, 'push' | 'replace'>;
   updateProfiles: () => Promise<void>;
 }
 
 interface State {
   copyFormOpen: boolean;
+  extendFormOpen: boolean;
   deleteFormOpen: boolean;
   renameFormOpen: boolean;
 }
 
-export default class ProfileActions extends React.PureComponent<Props, State> {
-  static contextTypes = {
-    router: PropTypes.object
+export class ProfileActions extends React.PureComponent<Props, State> {
+  state: State = {
+    copyFormOpen: false,
+    extendFormOpen: false,
+    deleteFormOpen: false,
+    renameFormOpen: false
   };
 
-  constructor(props: Props) {
-    super(props);
-    this.state = {
-      copyFormOpen: false,
-      deleteFormOpen: false,
-      renameFormOpen: false
-    };
-  }
-
-  handleRenameClick = () => {
-    this.setState({ renameFormOpen: true });
+  closeCopyForm = () => {
+    this.setState({ copyFormOpen: false });
   };
 
-  handleProfileRename = (name: string) => {
-    this.closeRenameForm();
-    this.props.updateProfiles().then(
-      () => {
-        if (!this.props.fromList) {
-          this.context.router.replace(
-            getProfilePath(name, this.props.profile.language, this.props.organization)
-          );
-        }
-      },
-      () => {}
-    );
+  closeDeleteForm = () => {
+    this.setState({ deleteFormOpen: false });
+  };
+
+  closeExtendForm = () => {
+    this.setState({ extendFormOpen: false });
   };
 
   closeRenameForm = () => {
@@ -87,37 +77,60 @@ export default class ProfileActions extends React.PureComponent<Props, State> {
     this.setState({ copyFormOpen: true });
   };
 
+  handleDeleteClick = () => {
+    this.setState({ deleteFormOpen: true });
+  };
+
+  handleExtendClick = () => {
+    this.setState({ extendFormOpen: true });
+  };
+
+  handleRenameClick = () => {
+    this.setState({ renameFormOpen: true });
+  };
+
   handleProfileCopy = (name: string) => {
     this.closeCopyForm();
+    this.navigateToNewProfile(name);
+  };
+
+  handleProfileDelete = () => {
+    this.props.router.replace(getProfilesPath(this.props.organization));
+    this.props.updateProfiles();
+  };
+
+  handleProfileExtend = (name: string) => {
+    this.closeExtendForm();
+    this.navigateToNewProfile(name);
+  };
+
+  handleProfileRename = (name: string) => {
+    this.closeRenameForm();
     this.props.updateProfiles().then(
       () => {
-        this.context.router.push(
-          getProfilePath(name, this.props.profile.language, this.props.organization)
-        );
+        if (!this.props.fromList) {
+          this.props.router.replace(
+            getProfilePath(name, this.props.profile.language, this.props.organization)
+          );
+        }
       },
       () => {}
     );
-  };
-
-  closeCopyForm = () => {
-    this.setState({ copyFormOpen: false });
   };
 
   handleSetDefaultClick = () => {
     setDefaultProfile(this.props.profile.key).then(this.props.updateProfiles, () => {});
   };
 
-  handleDeleteClick = () => {
-    this.setState({ deleteFormOpen: true });
-  };
-
-  handleProfileDelete = () => {
-    this.context.router.replace(getProfilesPath(this.props.organization));
-    this.props.updateProfiles();
-  };
-
-  closeDeleteForm = () => {
-    this.setState({ deleteFormOpen: false });
+  navigateToNewProfile = (name: string) => {
+    this.props.updateProfiles().then(
+      () => {
+        this.props.router.push(
+          getProfilePath(name, this.props.profile.language, this.props.organization)
+        );
+      },
+      () => {}
+    );
   };
 
   render() {
@@ -163,9 +176,15 @@ export default class ProfileActions extends React.PureComponent<Props, State> {
           </ActionsDropdownItem>
 
           {actions.copy && (
-            <ActionsDropdownItem id="quality-profile-copy" onClick={this.handleCopyClick}>
-              {translate('copy')}
-            </ActionsDropdownItem>
+            <>
+              <ActionsDropdownItem id="quality-profile-copy" onClick={this.handleCopyClick}>
+                {translate('copy')}
+              </ActionsDropdownItem>
+
+              <ActionsDropdownItem id="quality-profile-extend" onClick={this.handleExtendClick}>
+                {translate('extend')}
+              </ActionsDropdownItem>
+            </>
           )}
 
           {actions.edit && (
@@ -198,7 +217,15 @@ export default class ProfileActions extends React.PureComponent<Props, State> {
           <CopyProfileForm
             onClose={this.closeCopyForm}
             onCopy={this.handleProfileCopy}
-            onRequestFail={this.props.onRequestFail}
+            profile={profile}
+          />
+        )}
+
+        {this.state.extendFormOpen && (
+          <ExtendProfileForm
+            onClose={this.closeExtendForm}
+            onExtend={this.handleProfileExtend}
+            organization={this.props.organization}
             profile={profile}
           />
         )}
@@ -207,7 +234,6 @@ export default class ProfileActions extends React.PureComponent<Props, State> {
           <DeleteProfileForm
             onClose={this.closeDeleteForm}
             onDelete={this.handleProfileDelete}
-            onRequestFail={this.props.onRequestFail}
             profile={profile}
           />
         )}
@@ -216,7 +242,6 @@ export default class ProfileActions extends React.PureComponent<Props, State> {
           <RenameProfileForm
             onClose={this.closeRenameForm}
             onRename={this.handleProfileRename}
-            onRequestFail={this.props.onRequestFail}
             profile={profile}
           />
         )}
@@ -224,3 +249,5 @@ export default class ProfileActions extends React.PureComponent<Props, State> {
     );
   }
 }
+
+export default withRouter(ProfileActions);

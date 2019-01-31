@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,92 +19,84 @@
  */
 import * as React from 'react';
 import { shallow } from 'enzyme';
-import ComponentNavBranch from '../ComponentNavBranch';
-import {
-  BranchType,
-  ShortLivingBranch,
-  MainBranch,
-  Component,
-  LongLivingBranch,
-  PullRequest
-} from '../../../../types';
+import { ComponentNavBranch } from '../ComponentNavBranch';
 import { click } from '../../../../../helpers/testUtils';
 import { isSonarCloud } from '../../../../../helpers/system';
 
 jest.mock('../../../../../helpers/system', () => ({ isSonarCloud: jest.fn() }));
 
-const mainBranch: MainBranch = { isMain: true, name: 'master' };
-const fooBranch: LongLivingBranch = { isMain: false, name: 'foo', type: BranchType.LONG };
+const mainBranch: T.MainBranch = { isMain: true, name: 'master' };
+const fooBranch: T.LongLivingBranch = { isMain: false, name: 'foo', type: 'LONG' };
 
 beforeEach(() => {
   (isSonarCloud as jest.Mock).mockImplementation(() => false);
 });
 
 it('renders main branch', () => {
-  const component = {} as Component;
+  const component = {} as T.Component;
   expect(
     shallow(
       <ComponentNavBranch
+        appState={{ branchesEnabled: true }}
         branchLikes={[mainBranch, fooBranch]}
         component={component}
         currentBranchLike={mainBranch}
-      />,
-      { context: { branchesEnabled: true, canAdmin: true } }
+      />
     )
   ).toMatchSnapshot();
 });
 
 it('renders short-living branch', () => {
-  const branch: ShortLivingBranch = {
+  const branch: T.ShortLivingBranch = {
     isMain: false,
     mergeBranch: 'master',
     name: 'foo',
     status: { bugs: 0, codeSmells: 0, qualityGateStatus: 'OK', vulnerabilities: 0 },
-    type: BranchType.SHORT
+    type: 'SHORT'
   };
-  const component = {} as Component;
+  const component = {} as T.Component;
   expect(
     shallow(
       <ComponentNavBranch
+        appState={{ branchesEnabled: true }}
         branchLikes={[branch, fooBranch]}
         component={component}
         currentBranchLike={branch}
-      />,
-      { context: { branchesEnabled: true, canAdmin: true } }
+      />
     )
   ).toMatchSnapshot();
 });
 
 it('renders pull request', () => {
-  const pullRequest: PullRequest = {
+  const pullRequest: T.PullRequest = {
     base: 'master',
     branch: 'feature',
     key: '1234',
     title: 'Feature PR',
     url: 'https://example.com/pull/1234'
   };
-  const component = {} as Component;
+  const component = {} as T.Component;
   expect(
     shallow(
       <ComponentNavBranch
+        appState={{ branchesEnabled: true }}
         branchLikes={[pullRequest, fooBranch]}
         component={component}
         currentBranchLike={pullRequest}
-      />,
-      { context: { branchesEnabled: true, canAdmin: true } }
+      />
     )
   ).toMatchSnapshot();
 });
 
 it('opens menu', () => {
-  const component = {} as Component;
+  const component = {} as T.Component;
   const wrapper = shallow(
     <ComponentNavBranch
+      appState={{ branchesEnabled: true }}
       branchLikes={[mainBranch, fooBranch]}
       component={component}
       currentBranchLike={mainBranch}
-    />,
-    { context: { branchesEnabled: true, canAdmin: true } }
+    />
   );
   expect(wrapper.find('Toggler').prop('open')).toBe(false);
   click(wrapper.find('a'));
@@ -112,41 +104,41 @@ it('opens menu', () => {
 });
 
 it('renders single branch popup', () => {
-  const component = {} as Component;
+  const component = {} as T.Component;
   const wrapper = shallow(
     <ComponentNavBranch
+      appState={{ branchesEnabled: true }}
       branchLikes={[mainBranch]}
       component={component}
       currentBranchLike={mainBranch}
-    />,
-    { context: { branchesEnabled: true, canAdmin: true } }
+    />
   );
   expect(wrapper.find('DocTooltip')).toMatchSnapshot();
 });
 
 it('renders no branch support popup', () => {
-  const component = {} as Component;
+  const component = {} as T.Component;
   const wrapper = shallow(
     <ComponentNavBranch
+      appState={{ branchesEnabled: false }}
       branchLikes={[mainBranch, fooBranch]}
       component={component}
       currentBranchLike={mainBranch}
-    />,
-    { context: { branchesEnabled: false, canAdmin: true } }
+    />
   );
   expect(wrapper.find('DocTooltip')).toMatchSnapshot();
 });
 
 it('renders nothing on SonarCloud without branch support', () => {
   (isSonarCloud as jest.Mock).mockImplementation(() => true);
-  const component = {} as Component;
+  const component = {} as T.Component;
   const wrapper = shallow(
     <ComponentNavBranch
+      appState={{ branchesEnabled: false }}
       branchLikes={[mainBranch]}
       component={component}
       currentBranchLike={mainBranch}
-    />,
-    { context: { branchesEnabled: false, onSonarCloud: true, canAdmin: true } }
+    />
   );
   expect(wrapper.type()).toBeNull();
 });

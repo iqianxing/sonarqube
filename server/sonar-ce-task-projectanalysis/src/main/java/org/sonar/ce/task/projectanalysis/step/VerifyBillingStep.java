@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -43,7 +43,7 @@ public class VerifyBillingStep implements ComputationStep {
   public void execute(ComputationStep.Context context) {
     try {
       Organization organization = analysisMetadata.getOrganization();
-      BillingValidations.Organization billingOrganization = new BillingValidations.Organization(organization.getKey(), organization.getUuid());
+      BillingValidations.Organization billingOrganization = new BillingValidations.Organization(organization.getKey(), organization.getUuid(), organization.getName());
       billingValidations.checkBeforeProjectAnalysis(billingOrganization);
     } catch (BillingValidations.BillingValidationsException e) {
       throw MessageException.of(e.getMessage());

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,12 +22,11 @@ import Helmet from 'react-helmet';
 import Projects from './Projects';
 import { getMyProjects } from '../../../api/components';
 import { translate } from '../../../helpers/l10n';
-import { MyProject } from '../../../app/types';
 
 interface State {
   loading: boolean;
   page: number;
-  projects?: MyProject[];
+  projects?: T.MyProject[];
   total?: number;
 }
 

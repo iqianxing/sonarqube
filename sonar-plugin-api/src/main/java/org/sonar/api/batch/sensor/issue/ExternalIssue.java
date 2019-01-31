@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,6 +29,16 @@ import org.sonar.api.rules.RuleType;
  * @since 7.2
  */
 public interface ExternalIssue extends IIssue {
+
+  /**
+   * @since 7.4
+   */
+  String engineId();
+
+  /**
+   * @since 7.4
+   */
+  String ruleId();
 
   Severity severity();
 

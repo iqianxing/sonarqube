@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,39 +18,38 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import Helmet from 'react-helmet';
 import { connect } from 'react-redux';
 import ConfirmButton from '../../../components/controls/ConfirmButton';
 import InstanceMessage from '../../../components/common/InstanceMessage';
-import { translate } from '../../../helpers/l10n';
+import { translate, translateWithParameters } from '../../../helpers/l10n';
 import { deleteOrganization } from '../actions';
-import { Organization } from '../../../app/types';
 import { Button } from '../../../components/ui/buttons';
 import { getOrganizationBilling } from '../../../api/organizations';
 import { isSonarCloud } from '../../../helpers/system';
+import { Alert } from '../../../components/ui/Alert';
+import { withRouter, Router } from '../../../components/hoc/withRouter';
+import addGlobalSuccessMessage from '../../../app/utils/addGlobalSuccessMessage';
 
 interface DispatchToProps {
   deleteOrganization: (key: string) => Promise<void>;
 }
 
 interface OwnProps {
-  organization: Pick<Organization, 'key' | 'name'>;
+  organization: Pick<T.Organization, 'key' | 'name'>;
+  router: Pick<Router, 'replace'>;
 }
 
 type Props = OwnProps & DispatchToProps;
 
 interface State {
   hasPaidPlan?: boolean;
+  verify: string;
 }
 
 export class OrganizationDelete extends React.PureComponent<Props, State> {
   mounted = false;
-  static contextTypes = {
-    router: PropTypes.object
-  };
-
-  state: State = {};
+  state: State = { verify: '' };
 
   componentDidMount() {
     this.mounted = true;
@@ -80,9 +79,33 @@ export class OrganizationDelete extends React.PureComponent<Props, State> {
     }
   };
 
+  handleInput = (event: React.ChangeEvent<HTMLInputElement>) => {
+    this.setState({ verify: event.currentTarget.value });
+  };
+
+  isVerified = () => {
+    return this.state.verify.toLowerCase() === this.props.organization.name.toLowerCase();
+  };
+
   onDelete = () => {
-    return this.props.deleteOrganization(this.props.organization.key).then(() => {
-      this.context.router.replace('/');
+    const { organization } = this.props;
+    return this.props.deleteOrganization(organization.key).then(() => {
+      if (this.state.hasPaidPlan) {
+        this.props.router.replace({
+          pathname: '/feedback/downgrade',
+          state: {
+            confirmationMessage: translateWithParameters(
+              'organization.deleted_x',
+              organization.name
+            ),
+            organization,
+            title: translate('billing.downgrade.reason.title_deleted')
+          }
+        });
+      } else {
+        addGlobalSuccessMessage(translate('organization.deleted'));
+        this.props.router.replace('/');
+      }
     });
   };
 
@@ -101,18 +124,37 @@ export class OrganizationDelete extends React.PureComponent<Props, State> {
           </header>
           <ConfirmButton
             confirmButtonText={translate('delete')}
+            confirmDisable={!this.isVerified()}
             isDestructive={true}
             modalBody={
               <div>
                 {hasPaidPlan && (
-                  <div className="alert alert-warning modal-alert">
+                  <Alert variant="warning">
                     {translate('organization.delete.sonarcloud.paid_plan_info')}
-                  </div>
+                  </Alert>
                 )}
                 <p>{translate('organization.delete.question')}</p>
+                <div className="spacer-top">
+                  <label htmlFor="downgrade-organization-name">
+                    {translate('billing.downgrade.modal.type_to_proceed')}
+                  </label>
+                  <div className="little-spacer-top">
+                    <input
+                      autoFocus={true}
+                      className="input-super-large"
+                      id="downgrade-organization-name"
+                      onChange={this.handleInput}
+                      type="text"
+                      value={this.state.verify}
+                    />
+                  </div>
+                </div>
               </div>
             }
-            modalHeader={translate('organization.delete')}
+            modalHeader={translateWithParameters(
+              'organization.delete_x',
+              this.props.organization.name
+            )}
             onConfirm={this.onDelete}>
             {({ onClick }) => (
               <Button className="js-custom-measure-delete button-red" onClick={onClick}>
@@ -128,7 +170,9 @@ export class OrganizationDelete extends React.PureComponent<Props, State> {
 
 const mapDispatchToProps: DispatchToProps = { deleteOrganization: deleteOrganization as any };
 
-export default connect<null, DispatchToProps, OwnProps>(
-  null,
-  mapDispatchToProps
-)(OrganizationDelete);
+export default withRouter(
+  connect(
+    null,
+    mapDispatchToProps
+  )(OrganizationDelete)
+);

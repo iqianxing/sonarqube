@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@ import org.sonar.db.Pagination;
 
 public interface CeQueueMapper {
 
-  List<CeQueueDto> selectByComponentUuid(@Param("componentUuid") String componentUuid);
+  List<CeQueueDto> selectByMainComponentUuid(@Param("mainComponentUuid") String mainComponentUuid);
 
   List<CeQueueDto> selectAllInAscOrder();
 
@@ -53,6 +53,11 @@ public interface CeQueueMapper {
   List<CeQueueDto> selectWornout();
 
   /**
+   * The tasks that are in the in-progress status for too long
+   */
+  List<CeQueueDto> selectInProgressStartedBefore(@Param("date") long date);
+
+  /**
    * Select all tasks whose worker UUID is not present in {@code knownWorkerUUIDs}
    */
   void resetTasksWithUnknownWorkerUUIDs(@Param("knownWorkerUUIDs") List<String> knownWorkerUUIDs, @Param("updatedAt") long updatedAt);
@@ -62,9 +67,9 @@ public interface CeQueueMapper {
    */
   void resetAllInProgressTasks(@Param("updatedAt") long updatedAt);
 
-  int countByStatusAndComponentUuid(@Param("status") CeQueueDto.Status status, @Nullable @Param("componentUuid") String componentUuid);
+  int countByStatusAndMainComponentUuid(@Param("status") CeQueueDto.Status status, @Nullable @Param("mainComponentUuid") String mainComponentUuid);
 
-  List<QueueCount> countByStatusAndComponentUuids(@Param("status") CeQueueDto.Status status, @Param("componentUuids") Set<String> componentUuids);
+  List<QueueCount> countByStatusAndMainComponentUuids(@Param("status") CeQueueDto.Status status, @Param("mainComponentUuids") Set<String> mainComponentUuids);
 
   void insert(CeQueueDto dto);
 

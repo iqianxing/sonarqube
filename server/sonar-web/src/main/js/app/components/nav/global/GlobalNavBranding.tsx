@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 import * as React from 'react';
 import { Link } from 'react-router';
 import { connect } from 'react-redux';
-import { getGlobalSettingValue } from '../../../../store/rootReducer';
+import { getGlobalSettingValue, Store } from '../../../../store/rootReducer';
 import { translate } from '../../../../helpers/l10n';
 import { getBaseUrl } from '../../../../helpers/urls';
 
@@ -50,9 +50,13 @@ export function SonarCloudNavBranding() {
   );
 }
 
-const mapStateToProps = (state: any): StateProps => ({
-  customLogoUrl: (getGlobalSettingValue(state, 'sonar.lf.logoUrl') || {}).value,
-  customLogoWidth: (getGlobalSettingValue(state, 'sonar.lf.logoWidthPx') || {}).value
-});
+const mapStateToProps = (state: Store): StateProps => {
+  const customLogoUrl = getGlobalSettingValue(state, 'sonar.lf.logoUrl');
+  const customLogoWidth = getGlobalSettingValue(state, 'sonar.lf.logoWidthPx');
+  return {
+    customLogoUrl: customLogoUrl && customLogoUrl.value,
+    customLogoWidth: customLogoWidth && customLogoWidth.value
+  };
+};
 
-export default connect<StateProps>(mapStateToProps)(GlobalNavBranding);
+export default connect(mapStateToProps)(GlobalNavBranding);

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -111,7 +111,7 @@ public class UpdateAction implements RulesWsAction {
       .setExampleValue("java8,security");
 
     action.createParam(PARAM_MARKDOWN_NOTE)
-      .setDescription("Optional note in markdown format. Use empty value to remove current note. Note is not changed" +
+      .setDescription("Optional note in markdown format. Use empty value to remove current note. Note is not changed " +
         "if the parameter is not set.")
       .setExampleValue("my *note*");
 

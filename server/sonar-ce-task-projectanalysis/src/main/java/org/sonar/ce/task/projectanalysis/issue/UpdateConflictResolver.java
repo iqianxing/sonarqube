@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,14 +34,10 @@ public class UpdateConflictResolver {
 
   private static final Logger LOG = Loggers.get(UpdateConflictResolver.class);
 
-  public void resolve(DefaultIssue issue, IssueMapper mapper) {
+  public void resolve(DefaultIssue issue, IssueDto dbIssue, IssueMapper mapper) {
     LOG.debug("Resolve conflict on issue {}", issue.key());
-
-    IssueDto dbIssue = mapper.selectByKey(issue.key());
-    if (dbIssue != null) {
-      mergeFields(dbIssue, issue);
-      mapper.update(IssueDto.toDtoForUpdate(issue, System.currentTimeMillis()));
-    }
+    mergeFields(dbIssue, issue);
+    mapper.update(IssueDto.toDtoForUpdate(issue, System.currentTimeMillis()));
   }
 
   @VisibleForTesting

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -119,7 +119,7 @@ public class MovedIssueVisitorTest {
     underTest.onIssue(FILE, issue);
 
     verify(issue).setComponentUuid(FILE.getUuid());
-    verify(issue).setComponentKey(FILE.getPublicKey());
+    verify(issue).setComponentKey(FILE.getKey());
     verify(issue).setModuleUuid(null);
     verify(issue).setModuleUuidPath(null);
     verify(issue).setChanged(true);

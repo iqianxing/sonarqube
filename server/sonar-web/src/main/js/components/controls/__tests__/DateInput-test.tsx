@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,13 +18,13 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
+import { shallow } from 'enzyme';
 import * as addDays from 'date-fns/add_days';
 import * as setMonth from 'date-fns/set_month';
 import * as setYear from 'date-fns/set_year';
 import * as subDays from 'date-fns/sub_days';
 import * as subMonths from 'date-fns/sub_months';
-import DateInput, { Props } from '../DateInput';
-import { shallowWithIntl } from '../../../helpers/testUtils';
+import DateInput from '../DateInput';
 import { parseDate } from '../../../helpers/dates';
 
 jest.mock('../../lazyLoad', () => ({
@@ -34,6 +34,10 @@ jest.mock('../../lazyLoad', () => ({
     };
   }
 }));
+
+beforeAll(() => {
+  Date.prototype.getFullYear = jest.fn().mockReturnValue(2018); // eslint-disable-line no-extend-native
+});
 
 const dateA = parseDate('2018-01-17T00:00:00.000Z');
 const dateB = parseDate('2018-02-05T00:00:00.000Z');
@@ -111,8 +115,8 @@ it('should hightlightTo range', () => {
   expect(dayPicker.prop('selectedDays')).toEqual([dateB]);
 });
 
-function shallowRender(props?: Partial<Props>) {
-  const wrapper = shallowWithIntl(
+function shallowRender(props?: Partial<DateInput['props']>) {
+  const wrapper = shallow<DateInput>(
     <DateInput
       currentMonth={dateA}
       maxDate={dateB}
@@ -122,6 +126,6 @@ function shallowRender(props?: Partial<Props>) {
       {...props}
     />
   );
-  const instance = wrapper.instance() as DateInput;
+  const instance = wrapper.instance();
   return { wrapper, instance };
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,10 @@ import java.util.List;
 import javax.annotation.Nullable;
 import org.junit.Before;
 import org.junit.Test;
+import org.sonar.api.resources.Qualifiers;
+import org.sonar.api.resources.ResourceTypes;
 import org.sonar.core.permission.GlobalPermissions;
+import org.sonar.db.component.ResourceTypesRule;
 import org.sonar.db.permission.PermissionQuery;
 import org.sonar.db.permission.template.PermissionTemplateDto;
 import org.sonar.db.user.UserDto;
@@ -31,7 +34,11 @@ import org.sonar.server.exceptions.BadRequestException;
 import org.sonar.server.exceptions.ForbiddenException;
 import org.sonar.server.exceptions.NotFoundException;
 import org.sonar.server.exceptions.UnauthorizedException;
+import org.sonar.server.permission.PermissionService;
+import org.sonar.server.permission.PermissionServiceImpl;
 import org.sonar.server.permission.ws.BasePermissionWsTest;
+import org.sonar.server.permission.ws.RequestValidator;
+import org.sonar.server.permission.ws.WsParameters;
 import org.sonar.server.ws.TestRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,10 +54,15 @@ public class RemoveUserFromTemplateActionTest extends BasePermissionWsTest<Remov
 
   private UserDto user;
   private PermissionTemplateDto template;
+  private ResourceTypes resourceTypes = new ResourceTypesRule().setRootQualifiers(Qualifiers.PROJECT);
+  private PermissionService permissionService = new PermissionServiceImpl(resourceTypes);
+  private WsParameters wsParameters = new WsParameters(permissionService);
+  private RequestValidator requestValidator = new RequestValidator(permissionService);
+
 
   @Override
   protected RemoveUserFromTemplateAction buildWsAction() {
-    return new RemoveUserFromTemplateAction(db.getDbClient(), newPermissionWsSupport(), userSession);
+    return new RemoveUserFromTemplateAction(db.getDbClient(), newPermissionWsSupport(), userSession, wsParameters, requestValidator);
   }
 
   @Before
@@ -62,7 +74,7 @@ public class RemoveUserFromTemplateActionTest extends BasePermissionWsTest<Remov
   }
 
   @Test
-  public void remove_user_from_template() throws Exception {
+  public void remove_user_from_template() {
     loginAsAdmin(db.getDefaultOrganization());
     newRequest(user.getLogin(), template.getUuid(), DEFAULT_PERMISSION);
 
@@ -82,7 +94,7 @@ public class RemoveUserFromTemplateActionTest extends BasePermissionWsTest<Remov
   }
 
   @Test
-  public void remove_user_from_template_twice_without_failing() throws Exception {
+  public void remove_user_from_template_twice_without_failing() {
     loginAsAdmin(db.getDefaultOrganization());
     newRequest(user.getLogin(), template.getUuid(), DEFAULT_PERMISSION);
     newRequest(user.getLogin(), template.getUuid(), DEFAULT_PERMISSION);
@@ -91,7 +103,7 @@ public class RemoveUserFromTemplateActionTest extends BasePermissionWsTest<Remov
   }
 
   @Test
-  public void keep_user_permission_not_removed() throws Exception {
+  public void keep_user_permission_not_removed() {
     addUserToTemplate(user, template, ISSUE_ADMIN);
 
     loginAsAdmin(db.getDefaultOrganization());
@@ -102,7 +114,7 @@ public class RemoveUserFromTemplateActionTest extends BasePermissionWsTest<Remov
   }
 
   @Test
-  public void keep_other_users_when_one_user_removed() throws Exception {
+  public void keep_other_users_when_one_user_removed() {
     UserDto newUser = db.users().insertUser("new-login");
     db.organizations().addMember(db.getDefaultOrganization(), newUser);
     addUserToTemplate(newUser, template, DEFAULT_PERMISSION);
@@ -114,7 +126,7 @@ public class RemoveUserFromTemplateActionTest extends BasePermissionWsTest<Remov
   }
 
   @Test
-  public void fail_if_not_a_project_permission() throws Exception {
+  public void fail_if_not_a_project_permission() {
     loginAsAdmin(db.getDefaultOrganization());
 
     expectedException.expect(IllegalArgumentException.class);
@@ -123,7 +135,7 @@ public class RemoveUserFromTemplateActionTest extends BasePermissionWsTest<Remov
   }
 
   @Test
-  public void fail_if_insufficient_privileges() throws Exception {
+  public void fail_if_insufficient_privileges() {
     userSession.logIn();
 
     expectedException.expect(ForbiddenException.class);
@@ -132,7 +144,7 @@ public class RemoveUserFromTemplateActionTest extends BasePermissionWsTest<Remov
   }
 
   @Test
-  public void fail_if_not_logged_in() throws Exception {
+  public void fail_if_not_logged_in() {
     userSession.anonymous();
 
     expectedException.expect(UnauthorizedException.class);
@@ -141,7 +153,7 @@ public class RemoveUserFromTemplateActionTest extends BasePermissionWsTest<Remov
   }
 
   @Test
-  public void fail_if_user_missing() throws Exception {
+  public void fail_if_user_missing() {
     loginAsAdmin(db.getDefaultOrganization());
 
     expectedException.expect(IllegalArgumentException.class);
@@ -150,7 +162,7 @@ public class RemoveUserFromTemplateActionTest extends BasePermissionWsTest<Remov
   }
 
   @Test
-  public void fail_if_permission_missing() throws Exception {
+  public void fail_if_permission_missing() {
     loginAsAdmin(db.getDefaultOrganization());
 
     expectedException.expect(IllegalArgumentException.class);
@@ -159,7 +171,7 @@ public class RemoveUserFromTemplateActionTest extends BasePermissionWsTest<Remov
   }
 
   @Test
-  public void fail_if_template_missing() throws Exception {
+  public void fail_if_template_missing() {
     loginAsAdmin(db.getDefaultOrganization());
 
     expectedException.expect(BadRequestException.class);
@@ -168,7 +180,7 @@ public class RemoveUserFromTemplateActionTest extends BasePermissionWsTest<Remov
   }
 
   @Test
-  public void fail_if_user_does_not_exist() throws Exception {
+  public void fail_if_user_does_not_exist() {
     loginAsAdmin(db.getDefaultOrganization());
 
     expectedException.expect(NotFoundException.class);
@@ -178,7 +190,7 @@ public class RemoveUserFromTemplateActionTest extends BasePermissionWsTest<Remov
   }
 
   @Test
-  public void fail_if_template_key_does_not_exist() throws Exception {
+  public void fail_if_template_key_does_not_exist() {
     loginAsAdmin(db.getDefaultOrganization());
 
     expectedException.expect(NotFoundException.class);

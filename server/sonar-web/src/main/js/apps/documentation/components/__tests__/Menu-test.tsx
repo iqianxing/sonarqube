@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,7 +22,7 @@ import { shallow } from 'enzyme';
 import Menu from '../Menu';
 
 function createPage(title: string, relativeName: string, text = '') {
-  return { relativeName, title, order: -1, text, content: text };
+  return { relativeName, url: '/' + relativeName, title, navTitle: undefined, text, content: text };
 }
 
 const pages = [
@@ -44,5 +44,13 @@ const pages = [
 ];
 
 it('should render hierarchical menu', () => {
-  expect(shallow(<Menu pages={pages} splat="lorem/origin" />)).toMatchSnapshot();
+  expect(
+    shallow(
+      <Menu
+        navigation={[{ title: 'Block', children: ['/lorem/index', '/lorem/origin'] }, 'foobar']}
+        pages={pages}
+        splat="lorem/origin"
+      />
+    )
+  ).toMatchSnapshot();
 });

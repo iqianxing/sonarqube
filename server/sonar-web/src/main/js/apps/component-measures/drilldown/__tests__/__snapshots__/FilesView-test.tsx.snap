@@ -42,18 +42,24 @@ exports[`should render with best values hidden 1`] = `
         "qualifier": "TRK",
       }
     }
+    view="tree"
   />
-  <div
-    className="alert alert-info spacer-top"
+  <Alert
+    className="spacer-top"
+    variant="info"
   >
-    component_measures.hidden_best_score_metrics.1.
-    <Button
-      className="button-link spacer-left"
-      onClick={[Function]}
+    <div
+      className="display-flex-center"
     >
-      show_all
-    </Button>
-  </div>
+      component_measures.hidden_best_score_metrics.9.
+      <Button
+        className="button-small spacer-left"
+        onClick={[Function]}
+      >
+        show_them
+      </Button>
+    </div>
+  </Alert>
 </div>
 `;
 
@@ -99,6 +105,7 @@ exports[`should renders correctly 1`] = `
         "qualifier": "TRK",
       }
     }
+    view="tree"
   />
   <ListFooter
     count={1}

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,6 +23,10 @@ import AnalysisCommand from '../AnalysisCommand';
 
 jest.mock('../../../../../helpers/system', () => ({
   isSonarCloud: jest.fn().mockReturnValue(true)
+}));
+
+jest.mock('../../../../../helpers/urls', () => ({
+  getHostUrl: () => 'HOST'
 }));
 
 it('display java command', () => {

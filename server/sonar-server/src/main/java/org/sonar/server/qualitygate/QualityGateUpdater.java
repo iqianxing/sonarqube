@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -58,9 +58,11 @@ public class QualityGateUpdater {
     QualityGateDto destinationGate = create(dbSession, organizationDto, destinationName);
 
     for (QualityGateConditionDto sourceCondition : dbClient.gateConditionDao().selectForQualityGate(dbSession, qualityGateDto.getId())) {
-      dbClient.gateConditionDao().insert(new QualityGateConditionDto().setQualityGateId(destinationGate.getId())
-        .setMetricId(sourceCondition.getMetricId()).setOperator(sourceCondition.getOperator())
-        .setWarningThreshold(sourceCondition.getWarningThreshold()).setErrorThreshold(sourceCondition.getErrorThreshold()).setPeriod(sourceCondition.getPeriod()),
+      dbClient.gateConditionDao().insert(new QualityGateConditionDto()
+          .setQualityGateId(destinationGate.getId())
+          .setMetricId(sourceCondition.getMetricId())
+          .setOperator(sourceCondition.getOperator())
+          .setErrorThreshold(sourceCondition.getErrorThreshold()),
         dbSession);
     }
 

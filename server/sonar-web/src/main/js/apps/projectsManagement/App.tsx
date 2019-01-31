@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,15 +27,15 @@ import CreateProjectForm from './CreateProjectForm';
 import ListFooter from '../../components/controls/ListFooter';
 import Suggestions from '../../app/components/embed-docs-modal/Suggestions';
 import { getComponents, Project } from '../../api/components';
-import { Organization, Visibility } from '../../app/types';
 import { toNotSoISOString } from '../../helpers/dates';
 import { translate } from '../../helpers/l10n';
 
 export interface Props {
   currentUser: { login: string };
   hasProvisionPermission?: boolean;
-  onVisibilityChange: (visibility: Visibility) => void;
-  organization: Organization;
+  onOrganizationUpgrade: () => void;
+  onVisibilityChange: (visibility: T.Visibility) => void;
+  organization: T.Organization;
   topLevelQualifiers: string[];
 }
 
@@ -50,7 +50,7 @@ interface State {
   ready: boolean;
   selection: string[];
   total: number;
-  visibility?: Visibility;
+  visibility?: T.Visibility;
 }
 
 const PAGE_SIZE = 50;
@@ -138,7 +138,7 @@ export default class App extends React.PureComponent<Props, State> {
     );
   };
 
-  onVisibilityChanged = (newVisibility: Visibility | 'all') => {
+  onVisibilityChanged = (newVisibility: T.Visibility | 'all') => {
     this.setState(
       {
         ready: false,
@@ -234,6 +234,7 @@ export default class App extends React.PureComponent<Props, State> {
         {this.state.createProjectForm && (
           <CreateProjectForm
             onClose={this.closeCreateProjectForm}
+            onOrganizationUpgrade={this.props.onOrganizationUpgrade}
             onProjectCreated={this.requestProjects}
             organization={this.props.organization}
           />

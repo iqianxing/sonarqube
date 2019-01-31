@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,11 +24,10 @@ import AlertErrorIcon from '../../../components/icons-components/AlertErrorIcon'
 import AlertSuccessIcon from '../../../components/icons-components/AlertSuccessIcon';
 import DateTimeFormatter from '../../../components/intl/DateTimeFormatter';
 import { ButtonIcon } from '../../../components/ui/buttons';
-import { Webhook } from '../../../app/types';
 import { translate } from '../../../helpers/l10n';
 
 interface Props {
-  webhook: Webhook;
+  webhook: T.Webhook;
 }
 
 interface State {

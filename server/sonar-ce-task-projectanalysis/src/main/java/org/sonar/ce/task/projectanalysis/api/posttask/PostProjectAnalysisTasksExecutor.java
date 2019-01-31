@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -125,7 +125,9 @@ public class PostProjectAnalysisTasksExecutor implements ComputationStepExecutor
       getAnalysis().map(a -> a.getDate().getTime()).orElse(system2.now()),
       ScannerContextImpl.from(reportReader.readContextProperties()),
       status == SUCCESS ? createQualityGate() : null,
-      createBranch());
+      createBranch(),
+      reportReader.readMetadata().getScmRevisionId()
+    );
   }
 
   @CheckForNull
@@ -148,10 +150,12 @@ public class PostProjectAnalysisTasksExecutor implements ComputationStepExecutor
   }
 
   private static Project createProject(org.sonar.ce.task.CeTask ceTask) {
-    return new ProjectImpl(
-      ceTask.getComponentUuid(),
-      ceTask.getComponentKey(),
-      ceTask.getComponentName());
+    return ceTask.getMainComponent()
+      .map(c -> new ProjectImpl(
+        c.getUuid(),
+        c.getKey().orElseThrow(() -> new IllegalStateException("Missing project key")),
+        c.getName().orElseThrow(() -> new IllegalStateException("Missing project name"))))
+      .orElseThrow(() -> new IllegalStateException("Report processed for a task of a deleted component"));
   }
 
   @CheckForNull
@@ -191,8 +195,6 @@ public class PostProjectAnalysisTasksExecutor implements ComputationStepExecutor
     switch (status) {
       case OK:
         return QualityGate.Status.OK;
-      case WARN:
-        return QualityGate.Status.WARN;
       case ERROR:
         return QualityGate.Status.ERROR;
       default:
@@ -221,10 +223,11 @@ public class PostProjectAnalysisTasksExecutor implements ComputationStepExecutor
     private final Branch branch;
     @Nullable
     private final Analysis analysis;
+    private final String scmRevisionId;
 
     private ProjectAnalysisImpl(@Nullable Organization organization, CeTask ceTask, Project project,
       @Nullable Analysis analysis, long date,
-      ScannerContext scannerContext, @Nullable QualityGate qualityGate, @Nullable Branch branch) {
+      ScannerContext scannerContext, @Nullable QualityGate qualityGate, @Nullable Branch branch, String scmRevisionId) {
       this.organization = organization;
       this.ceTask = requireNonNull(ceTask, "ceTask can not be null");
       this.project = requireNonNull(project, "project can not be null");
@@ -233,6 +236,7 @@ public class PostProjectAnalysisTasksExecutor implements ComputationStepExecutor
       this.scannerContext = requireNonNull(scannerContext, "scannerContext can not be null");
       this.qualityGate = qualityGate;
       this.branch = branch;
+      this.scmRevisionId = scmRevisionId;
     }
 
     @Override
@@ -279,6 +283,11 @@ public class PostProjectAnalysisTasksExecutor implements ComputationStepExecutor
     @Override
     public ScannerContext getScannerContext() {
       return scannerContext;
+    }
+
+    @Override
+    public String getScmRevisionId() {
+      return scmRevisionId;
     }
 
     @Override

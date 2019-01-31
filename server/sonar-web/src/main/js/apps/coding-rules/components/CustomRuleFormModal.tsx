@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,25 +18,25 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import { RuleDetails, RuleParameter, RuleType } from '../../../app/types';
 import Modal from '../../../components/controls/Modal';
 import { translate } from '../../../helpers/l10n';
 import MarkdownTips from '../../../components/common/MarkdownTips';
 import { SEVERITIES, RULE_TYPES, RULE_STATUSES } from '../../../helpers/constants';
-import latinize from '../../../helpers/latinize';
 import Select from '../../../components/controls/Select';
 import TypeHelper from '../../../components/shared/TypeHelper';
 import SeverityHelper from '../../../components/shared/SeverityHelper';
 import { createRule, updateRule } from '../../../api/rules';
 import { csvEscape } from '../../../helpers/csv';
+import { latinize } from '../../../helpers/strings';
 import { SubmitButton, ResetButtonLink } from '../../../components/ui/buttons';
+import { Alert } from '../../../components/ui/Alert';
 
 interface Props {
-  customRule?: RuleDetails;
+  customRule?: T.RuleDetails;
   onClose: () => void;
-  onDone: (newRuleDetails: RuleDetails) => void;
+  onDone: (newRuleDetails: T.RuleDetails) => void;
   organization: string | undefined;
-  templateRule: RuleDetails;
+  templateRule: T.RuleDetails;
 }
 
 interface State {
@@ -86,7 +86,6 @@ export default class CustomRuleFormModal extends React.PureComponent<Props, Stat
   }
 
   prepareRequest = () => {
-    /* eslint-disable camelcase */
     const { customRule, organization, templateRule } = this.props;
     const params = Object.keys(this.state.params)
       .map(key => `${key}=${csvEscape(this.state.params[key])}`)
@@ -108,7 +107,6 @@ export default class CustomRuleFormModal extends React.PureComponent<Props, Stat
           template_key: templateRule.key,
           type: this.state.type
         });
-    /* eslint-enable camelcase */
   };
 
   handleFormSubmit = (event: React.SyntheticEvent<HTMLFormElement>) => {
@@ -227,7 +225,7 @@ export default class CustomRuleFormModal extends React.PureComponent<Props, Stat
     </tr>
   );
 
-  renderTypeOption = ({ value }: { value: RuleType }) => {
+  renderTypeOption = ({ value }: { value: T.RuleType }) => {
     return <TypeHelper type={value} />;
   };
 
@@ -303,7 +301,7 @@ export default class CustomRuleFormModal extends React.PureComponent<Props, Stat
     </tr>
   );
 
-  renderParameterField = (param: RuleParameter) => (
+  renderParameterField = (param: T.RuleParameter) => (
     <tr className="property" key={param.key}>
       <th className="nowrap">
         <h3>{param.key}</h3>
@@ -331,7 +329,6 @@ export default class CustomRuleFormModal extends React.PureComponent<Props, Stat
           />
         )}
         <div className="note" dangerouslySetInnerHTML={{ __html: param.htmlDesc || '' }} />
-        {param.extra && <div className="note">{param.extra}</div>}
       </td>
     </tr>
   );
@@ -372,7 +369,7 @@ export default class CustomRuleFormModal extends React.PureComponent<Props, Stat
 
           <div className="modal-body modal-container">
             {reactivating && (
-              <div className="alert alert-warning">{translate('coding_rules.reactivate.help')}</div>
+              <Alert variant="warning">{translate('coding_rules.reactivate.help')}</Alert>
             )}
             <table>
               <tbody>

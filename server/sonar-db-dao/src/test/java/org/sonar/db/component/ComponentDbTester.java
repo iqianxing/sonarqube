@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -255,8 +255,12 @@ public class ComponentDbTester {
   @SafeVarargs
   public final ComponentDto insertMainBranch(OrganizationDto organization, Consumer<ComponentDto>... dtoPopulators) {
     ComponentDto project = newPrivateProjectDto(organization);
-    BranchDto branchDto = newBranchDto(project, LONG);
     Arrays.stream(dtoPopulators).forEach(dtoPopulator -> dtoPopulator.accept(project));
+    return insertMainBranch(project);
+  }
+
+  public final ComponentDto insertMainBranch(ComponentDto project) {
+    BranchDto branchDto = newBranchDto(project, LONG);
     insertComponent(project);
     dbClient.branchDao().insert(dbSession, branchDto);
     db.commit();
@@ -284,6 +288,12 @@ public class ComponentDbTester {
     dbClient.branchDao().insert(dbSession, branchDto);
     db.commit();
     return branch;
+  }
+
+  @SafeVarargs
+  public final ComponentDto insertProjectBranch(OrganizationDto organization, Consumer<BranchDto>... dtoPopulators) {
+    ComponentDto project = newPrivateProjectDto(organization);
+    return insertProjectBranch(project, dtoPopulators);
   }
 
   public final ComponentDto insertProjectBranch(ComponentDto project, BranchDto branchDto) {

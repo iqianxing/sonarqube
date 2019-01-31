@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,17 +18,15 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import { ShallowWrapper } from 'enzyme';
-import App from '../App';
-import { shallowWithIntl, waitAndUpdate } from '../../../../helpers/testUtils';
-import { Issue } from '../../../../app/types';
+import { shallow } from 'enzyme';
+import { App } from '../App';
+import { waitAndUpdate } from '../../../../helpers/testUtils';
 
-const replace = jest.fn();
 const issues = [
-  { key: 'foo' } as Issue,
-  { key: 'bar' } as Issue,
-  { key: 'third' } as Issue,
-  { key: 'fourth' } as Issue
+  { key: 'foo' } as T.Issue,
+  { key: 'bar' } as T.Issue,
+  { key: 'third' } as T.Issue,
+  { key: 'fourth' } as T.Issue
 ];
 const facets = [{ property: 'severities', values: [{ val: 'MINOR', count: 4 }] }];
 const paging = { pageIndex: 1, pageSize: 100, total: 4 };
@@ -62,14 +60,12 @@ const PROPS = {
   onBranchesChange: () => {},
   onSonarCloud: false,
   organization: { key: 'foo' },
+  router: { push: jest.fn(), replace: jest.fn() },
   userOrganizations: []
 };
 
 it('should render a list of issue', async () => {
-  const wrapper: ShallowWrapper<App['props'], App['state']> = shallowWithIntl(<App {...PROPS} />, {
-    context: { router: { replace } }
-  });
-
+  const wrapper = shallow<App>(<App {...PROPS} />);
   await waitAndUpdate(wrapper);
   expect(wrapper.state().issues.length).toBe(4);
   expect(wrapper.state().referencedComponentsById).toEqual({ 'foo-uuid': referencedComponent });
@@ -77,14 +73,11 @@ it('should render a list of issue', async () => {
 });
 
 it('should be able to check/uncheck a group of issues with the Shift key', async () => {
-  const wrapper = shallowWithIntl(<App {...PROPS} />, {
-    context: { router: { replace } }
-  });
-
+  const wrapper = shallow<App>(<App {...PROPS} />);
   await waitAndUpdate(wrapper);
   expect(wrapper.state().issues.length).toBe(4);
 
-  const instance = wrapper.instance() as App;
+  const instance = wrapper.instance();
   instance.handleIssueCheck('foo', eventNoShiftKey);
   expect(wrapper.state().checked.length).toBe(1);
 
@@ -99,14 +92,11 @@ it('should be able to check/uncheck a group of issues with the Shift key', async
 });
 
 it('should avoid non-existing keys', async () => {
-  const wrapper = shallowWithIntl(<App {...PROPS} />, {
-    context: { router: { replace } }
-  });
-
+  const wrapper = shallow<App>(<App {...PROPS} />);
   await waitAndUpdate(wrapper);
   expect(wrapper.state().issues.length).toBe(4);
 
-  const instance = wrapper.instance() as App;
+  const instance = wrapper.instance();
   instance.handleIssueCheck('foo', eventNoShiftKey);
   expect(wrapper.state().checked.length).toBe(1);
 
@@ -115,14 +105,11 @@ it('should avoid non-existing keys', async () => {
 });
 
 it('should be able to uncheck all issue with global checkbox', async () => {
-  const wrapper = shallowWithIntl(<App {...PROPS} />, {
-    context: { router: { replace } }
-  });
-
+  const wrapper = shallow<App>(<App {...PROPS} />);
   await waitAndUpdate(wrapper);
   expect(wrapper.state().issues.length).toBe(4);
 
-  const instance = wrapper.instance() as App;
+  const instance = wrapper.instance();
   instance.handleIssueCheck('foo', eventNoShiftKey);
   instance.handleIssueCheck('bar', eventNoShiftKey);
   expect(wrapper.state().checked.length).toBe(2);
@@ -132,13 +119,10 @@ it('should be able to uncheck all issue with global checkbox', async () => {
 });
 
 it('should be able to check all issue with global checkbox', async () => {
-  const wrapper = shallowWithIntl(<App {...PROPS} />, {
-    context: { router: { replace } }
-  });
-
+  const wrapper = shallow<App>(<App {...PROPS} />);
   await waitAndUpdate(wrapper);
 
-  const instance = wrapper.instance() as App;
+  const instance = wrapper.instance();
   expect(wrapper.state().checked.length).toBe(0);
   instance.onCheckAll(true);
   expect(wrapper.state().checked.length).toBe(wrapper.state().issues.length);

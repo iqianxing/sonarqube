@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,6 +25,7 @@ import org.sonar.api.batch.AnalysisMode;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
 import org.sonar.scanner.bootstrap.GlobalAnalysisMode;
+import org.sonar.scanner.bootstrap.ScannerProperties;
 
 @Immutable
 public class DefaultAnalysisMode implements AnalysisMode {
@@ -36,7 +37,7 @@ public class DefaultAnalysisMode implements AnalysisMode {
 
   private boolean scanAllFiles;
 
-  public DefaultAnalysisMode(AnalysisProperties props, GlobalAnalysisMode analysisMode) {
+  public DefaultAnalysisMode(ScannerProperties props, GlobalAnalysisMode analysisMode) {
     this.analysisMode = analysisMode;
     this.analysisProps = props.properties();
     load();

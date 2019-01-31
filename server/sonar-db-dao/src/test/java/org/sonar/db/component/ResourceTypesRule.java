@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -83,6 +83,12 @@ public class ResourceTypesRule extends ResourceTypes {
     return allResourceTypes.stream()
       .filter(resourceType -> qualifier.equals(resourceType.getQualifier()))
       .findAny().orElse(null);
+  }
+
+  @Override
+  public boolean isQualifierPresent(String qualifier) {
+    return rootResourceTypes.stream()
+      .anyMatch(resourceType -> qualifier.equals(resourceType.getQualifier()));
   }
 
   @Override

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -51,8 +51,8 @@ it('should display correctly', () => {
 it('should allow to show and hide intermediates', () => {
   const wrapper = shallow(<SystemUpgradeIntermediate upgrades={UPGRADES} />);
   expect(wrapper.find('.system-upgrade-intermediate').exists()).toBeFalsy();
-  click(wrapper.find('a'));
+  click(wrapper.find('ButtonLink'));
   expect(wrapper.find('.system-upgrade-intermediate').exists()).toBeTruthy();
-  click(wrapper.find('a'));
+  click(wrapper.find('ButtonLink'));
   expect(wrapper.find('.system-upgrade-intermediate').exists()).toBeFalsy();
 });

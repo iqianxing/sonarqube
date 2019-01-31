@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -55,7 +55,7 @@ public class CustomMeasuresCopyStep implements ComputationStep {
   @Override
   public void execute(ComputationStep.Context context) {
     try (DbSession session = dbClient.openSession(false)) {
-      CrawlerDepthLimit depthLimit = new CrawlerDepthLimit.Builder(Component.Type.MODULE)
+      CrawlerDepthLimit depthLimit = new CrawlerDepthLimit.Builder(Component.Type.PROJECT)
         .withViewsMaxDepth(Component.Type.PROJECT_VIEW);
       new DepthTraversalTypeAwareCrawler(
         new TypeAwareVisitorAdapter(depthLimit, ComponentVisitor.Order.PRE_ORDER) {

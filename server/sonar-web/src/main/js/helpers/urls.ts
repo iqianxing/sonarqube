@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,7 +26,6 @@ import {
   getBranchLikeQuery
 } from './branches';
 import { getProfilePath } from '../apps/quality-profiles/utils';
-import { BranchLike, HomePage, HomePageType } from '../app/types';
 
 interface Query {
   [x: string]: string | undefined;
@@ -45,8 +44,10 @@ export function getHostUrl(): string {
   return window.location.origin + getBaseUrl();
 }
 
-export function getPathUrlAsString(path: Location): string {
-  return `${getBaseUrl()}${path.pathname}?${stringify(omitBy(path.query, isNil))}`;
+export function getPathUrlAsString(path: Location, internal = true): string {
+  return `${internal ? getBaseUrl() : getHostUrl()}${path.pathname}?${stringify(
+    omitBy(path.query, isNil)
+  )}`;
 }
 
 export function getProjectUrl(project: string, branch?: string): Location {
@@ -57,11 +58,15 @@ export function getPortfolioUrl(key: string): Location {
   return { pathname: '/portfolio', query: { id: key } };
 }
 
+export function getPortfolioAdminUrl(key: string, qualifier: string) {
+  return { pathname: '/project/admin/extension/governance/console', query: { id: key, qualifier } };
+}
+
 export function getComponentBackgroundTaskUrl(componentKey: string, status?: string): Location {
   return { pathname: '/project/background_tasks', query: { id: componentKey, status } };
 }
 
-export function getBranchLikeUrl(project: string, branchLike?: BranchLike): Location {
+export function getBranchLikeUrl(project: string, branchLike?: T.BranchLike): Location {
   if (isPullRequest(branchLike)) {
     return getPullRequestUrl(project, branchLike.key);
   } else if (isShortLivingBranch(branchLike)) {
@@ -106,7 +111,7 @@ export function getComponentIssuesUrl(componentKey: string, query?: Query): Loca
 export function getComponentDrilldownUrl(options: {
   componentKey: string;
   metric: string;
-  branchLike?: BranchLike;
+  branchLike?: T.BranchLike;
   selectionKey?: string;
   treemapView?: boolean;
 }): Location {
@@ -125,7 +130,7 @@ export function getComponentDrilldownUrlWithSelection(
   componentKey: string,
   selectionKey: string,
   metric: string,
-  branchLike?: BranchLike
+  branchLike?: T.BranchLike
 ): Location {
   return getComponentDrilldownUrl({ componentKey, selectionKey, metric, branchLike });
 }
@@ -134,7 +139,7 @@ export function getMeasureTreemapUrl(componentKey: string, metric: string) {
   return getComponentDrilldownUrl({ componentKey, metric, treemapView: true });
 }
 
-export function getActivityUrl(component: string, branchLike?: BranchLike) {
+export function getActivityUrl(component: string, branchLike?: T.BranchLike) {
   return {
     pathname: '/project/activity',
     query: { id: component, ...getBranchLikeQuery(branchLike) }
@@ -144,7 +149,7 @@ export function getActivityUrl(component: string, branchLike?: BranchLike) {
 /**
  * Generate URL for a component's measure history
  */
-export function getMeasureHistoryUrl(component: string, metric: string, branchLike?: BranchLike) {
+export function getMeasureHistoryUrl(component: string, metric: string, branchLike?: T.BranchLike) {
   return {
     pathname: '/project/activity',
     query: {
@@ -207,43 +212,49 @@ export function getDeprecatedActiveRulesUrl(
 }
 
 export function getRuleUrl(rule: string, organization: string | undefined) {
-  /* eslint-disable camelcase */
   return getRulesUrl({ open: rule, rule_key: rule }, organization);
-  /* eslint-enable camelcase */
 }
 
 export function getMarkdownHelpUrl(): string {
   return getBaseUrl() + '/markdown/help';
 }
 
-export function getCodeUrl(project: string, branchLike?: BranchLike, selected?: string) {
-  return { pathname: '/code', query: { id: project, ...getBranchLikeQuery(branchLike), selected } };
+export function getCodeUrl(
+  project: string,
+  branchLike?: T.BranchLike,
+  selected?: string,
+  line?: number
+) {
+  return {
+    pathname: '/code',
+    query: { id: project, ...getBranchLikeQuery(branchLike), selected, line }
+  };
 }
 
 export function getOrganizationUrl(organization: string) {
   return `/organizations/${organization}`;
 }
 
-export function getHomePageUrl(homepage: HomePage) {
+export function getHomePageUrl(homepage: T.HomePage) {
   switch (homepage.type) {
-    case HomePageType.Application:
+    case 'APPLICATION':
       return homepage.branch
         ? getProjectUrl(homepage.component, homepage.branch)
         : getProjectUrl(homepage.component);
-    case HomePageType.Project:
+    case 'PROJECT':
       return homepage.branch
         ? getLongLivingBranchUrl(homepage.component, homepage.branch)
         : getProjectUrl(homepage.component);
-    case HomePageType.Organization:
+    case 'ORGANIZATION':
       return getOrganizationUrl(homepage.organization);
-    case HomePageType.Portfolio:
+    case 'PORTFOLIO':
       return getPortfolioUrl(homepage.component);
-    case HomePageType.Portfolios:
+    case 'PORTFOLIOS':
       return '/portfolios';
-    case HomePageType.MyProjects:
+    case 'MY_PROJECTS':
       return '/projects';
-    case HomePageType.Issues:
-    case HomePageType.MyIssues:
+    case 'ISSUES':
+    case 'MY_ISSUES':
       return { pathname: '/issues', query: { resolved: 'false' } };
   }
 
@@ -251,16 +262,15 @@ export function getHomePageUrl(homepage: HomePage) {
   return '/projects';
 }
 
-export function isUrl(url: string) {
-  if (!URL) {
-    const elem = document.createElement('a');
-    elem.href = url;
-    return !!(elem.host && elem.hostname && elem.protocol);
+export function getReturnUrl(location: { hash?: string; query?: { return_to?: string } }) {
+  const returnTo = location.query && location.query['return_to'];
+  if (isRelativeUrl(returnTo)) {
+    return returnTo + (location.hash ? location.hash : '');
   }
-  try {
-    const parsedUrl = new URL(url);
-    return url.includes(parsedUrl.host);
-  } catch (error) {
-    return false;
-  }
+  return getBaseUrl() + '/';
+}
+
+export function isRelativeUrl(url?: string): boolean {
+  const regex = new RegExp(/^\/[^/\\]/);
+  return Boolean(url && regex.test(url));
 }

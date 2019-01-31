@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,11 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
 import { fetchPrismicRefs, fetchPrismicNews, PrismicNews } from '../../../api/news';
-import { getGlobalSettingValue } from '../../../store/rootReducer';
+import { getGlobalSettingValue, Store } from '../../../store/rootReducer';
 import DateFormatter from '../../../components/intl/DateFormatter';
 import ChevronRightIcon from '../../../components/icons-components/ChevronRightcon';
 import PlaceholderBar from '../../../components/ui/PlaceholderBar';
+import { translate } from '../../../helpers/l10n';
 
 interface OwnProps {
   tag?: string;
@@ -79,7 +80,7 @@ export class ProductNewsMenuItem extends React.PureComponent<Props, State> {
       <a className="rich-item new-loading">
         <div className="flex-1">
           <div className="display-inline-flex-center">
-            <h4>Latest news</h4>
+            <h4>{translate('embed_docs.latest_blog')}</h4>
             <span className="note spacer-left">
               <PlaceholderBar color="#aaa" width={60} />
             </span>
@@ -111,7 +112,7 @@ export class ProductNewsMenuItem extends React.PureComponent<Props, State> {
       <a className="rich-item" href={link + news.uid} rel="noopener noreferrer" target="_blank">
         <div className="flex-1">
           <div className="display-inline-flex-center">
-            <h4>Latest news</h4>
+            <h4>{translate('embed_docs.latest_blog')}</h4>
             <DateFormatter date={news.last_publication_date}>
               {formattedDate => <span className="note spacer-left">{formattedDate}</span>}
             </DateFormatter>
@@ -124,8 +125,11 @@ export class ProductNewsMenuItem extends React.PureComponent<Props, State> {
   }
 }
 
-const mapStateToProps = (state: any): StateProps => ({
-  accessToken: (getGlobalSettingValue(state, 'sonar.prismic.accessToken') || {}).value
-});
+const mapStateToProps = (state: Store): StateProps => {
+  const accessToken = getGlobalSettingValue(state, 'sonar.prismic.accessToken');
+  return {
+    accessToken: accessToken && accessToken.value
+  };
+};
 
-export default connect<StateProps, {}, OwnProps>(mapStateToProps)(ProductNewsMenuItem);
+export default connect(mapStateToProps)(ProductNewsMenuItem);

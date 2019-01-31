@@ -8,25 +8,28 @@ sonarqube {
 
 group = 'com.sonarsource.sonarqube'
 
-apply plugin: 'com.moowork.node'
-
-node {
-  version = '8.10.0'
-  yarnVersion = '1.5.1'
-  download = true
-}
-
 yarn_run {
+  environment = [ GATSBY_DOCS_VERSION: version ]
+  inputs.property('version', version)
   inputs.dir('src').withPathSensitivity(PathSensitivity.RELATIVE)
-  inputs.files('gatsby-config.js', 'gatsby-node.js', 'package.json', 'yarn.lock')
+  ['gatsby-config.js', 'gatsby-node.js', 'package.json'].each {
+    inputs.file(it).withPathSensitivity(PathSensitivity.RELATIVE)
+  }
   outputs.dir('public')
   outputs.cacheIf { true }
-
   args = ['build']
 }
 
+task "yarn_validate-ci"() {
+
+}
+
+task "yarn_lint-report"() {
+
+}
+
 task zip(type: Zip) {
-  def archiveDir = "sonarqube-docs-$version"
+  def archiveDir = "$version"
   duplicatesStrategy DuplicatesStrategy.EXCLUDE
   baseName "sonar-docs"
 

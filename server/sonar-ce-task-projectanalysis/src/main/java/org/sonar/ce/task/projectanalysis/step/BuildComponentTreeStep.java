@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
  */
 package org.sonar.ce.task.projectanalysis.step;
 
+import java.util.function.Function;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.sonar.ce.task.projectanalysis.analysis.Analysis;
@@ -28,9 +29,11 @@ import org.sonar.ce.task.projectanalysis.batch.BatchReportReader;
 import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.ce.task.projectanalysis.component.ComponentKeyGenerator;
 import org.sonar.ce.task.projectanalysis.component.ComponentTreeBuilder;
-import org.sonar.ce.task.projectanalysis.component.ComponentUuidFactory;
+import org.sonar.ce.task.projectanalysis.component.ComponentUuidFactoryWithMigration;
 import org.sonar.ce.task.projectanalysis.component.DefaultBranchImpl;
 import org.sonar.ce.task.projectanalysis.component.MutableTreeRootHolder;
+import org.sonar.ce.task.projectanalysis.component.ReportModulesPath;
+import org.sonar.ce.task.projectanalysis.issue.IssueRelocationToRoot;
 import org.sonar.ce.task.step.ComputationStep;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
@@ -47,13 +50,17 @@ public class BuildComponentTreeStep implements ComputationStep {
   private final BatchReportReader reportReader;
   private final MutableTreeRootHolder treeRootHolder;
   private final MutableAnalysisMetadataHolder analysisMetadataHolder;
+  private final IssueRelocationToRoot issueRelocationToRoot;
+  private final ReportModulesPath reportModulesPath;
 
-  public BuildComponentTreeStep(DbClient dbClient, BatchReportReader reportReader,
-    MutableTreeRootHolder treeRootHolder, MutableAnalysisMetadataHolder analysisMetadataHolder) {
+  public BuildComponentTreeStep(DbClient dbClient, BatchReportReader reportReader, MutableTreeRootHolder treeRootHolder,
+    MutableAnalysisMetadataHolder analysisMetadataHolder, IssueRelocationToRoot issueRelocationToRoot, ReportModulesPath reportModulesPath) {
     this.dbClient = dbClient;
     this.reportReader = reportReader;
     this.treeRootHolder = treeRootHolder;
     this.analysisMetadataHolder = analysisMetadataHolder;
+    this.issueRelocationToRoot = issueRelocationToRoot;
+    this.reportModulesPath = reportModulesPath;
   }
 
   @Override
@@ -67,26 +74,34 @@ public class BuildComponentTreeStep implements ComputationStep {
       ScannerReport.Component reportProject = reportReader.readComponent(analysisMetadataHolder.getRootComponentRef());
       ComponentKeyGenerator keyGenerator = loadKeyGenerator();
       ComponentKeyGenerator publicKeyGenerator = loadPublicKeyGenerator();
+      ScannerReport.Metadata metadata = reportReader.readMetadata();
 
       // root key of branch, not necessarily of project
-      String rootKey = keyGenerator.generateKey(reportProject, null);
-
+      String rootKey = keyGenerator.generateKey(reportProject.getKey(), null);
+      Function<String, String> pathToKey = path -> keyGenerator.generateKey(reportProject.getKey(), path);
       // loads the UUIDs from database. If they don't exist, then generate new ones
-      ComponentUuidFactory componentUuidFactory = new ComponentUuidFactory(dbClient, dbSession, rootKey);
+      ComponentUuidFactoryWithMigration componentUuidFactoryWithMigration = new ComponentUuidFactoryWithMigration(dbClient, dbSession, rootKey, pathToKey, reportModulesPath.get());
 
-      String rootUuid = componentUuidFactory.getOrCreateForKey(rootKey);
+      String rootUuid = componentUuidFactoryWithMigration.getOrCreateForKey(rootKey);
       SnapshotDto baseAnalysis = loadBaseAnalysis(dbSession, rootUuid);
 
       ComponentTreeBuilder builder = new ComponentTreeBuilder(keyGenerator, publicKeyGenerator,
-        componentUuidFactory::getOrCreateForKey,
+        componentUuidFactoryWithMigration::getOrCreateForKey,
         reportReader::readComponent,
         analysisMetadataHolder.getProject(),
         analysisMetadataHolder.getBranch(),
-        baseAnalysis);
-      String relativePathFromScmRoot = reportReader.readMetadata().getRelativePathFromScmRoot();
-      Component project = builder.buildProject(reportProject, relativePathFromScmRoot);
+        baseAnalysis, issueRelocationToRoot);
+      String relativePathFromScmRoot = metadata.getRelativePathFromScmRoot();
 
-      treeRootHolder.setRoot(project);
+      Component reportTreeRoot = builder.buildProject(reportProject, relativePathFromScmRoot);
+
+      if (analysisMetadataHolder.isShortLivingBranch() || analysisMetadataHolder.isPullRequest()) {
+        Component changedComponentTreeRoot = builder.buildChangedComponentTreeRoot(reportTreeRoot);
+        treeRootHolder.setRoots(changedComponentTreeRoot, reportTreeRoot);
+      } else {
+        treeRootHolder.setRoots(reportTreeRoot, reportTreeRoot);
+      }
+
       analysisMetadataHolder.setBaseAnalysis(toAnalysis(baseAnalysis));
 
       context.getStatistics().add("components", treeRootHolder.getSize());

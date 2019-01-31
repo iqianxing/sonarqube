@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,13 +19,10 @@
  */
 import * as React from 'react';
 import LineOptionsPopup from './LineOptionsPopup';
-import { BranchLike, SourceLine } from '../../../app/types';
 import Toggler from '../../controls/Toggler';
 
 interface Props {
-  branchLike: BranchLike | undefined;
-  componentKey: string;
-  line: SourceLine;
+  line: T.SourceLine;
   onPopupToggle: (x: { index?: number; line: number; name: string; open?: boolean }) => void;
   popupOpen: boolean;
 }
@@ -47,7 +44,7 @@ export default class LineNumber extends React.PureComponent<Props> {
   };
 
   render() {
-    const { branchLike, componentKey, line, popupOpen } = this.props;
+    const { line, popupOpen } = this.props;
     const { line: lineNumber } = line;
     const hasLineNumber = !!lineNumber;
     return hasLineNumber ? (
@@ -61,9 +58,7 @@ export default class LineNumber extends React.PureComponent<Props> {
         <Toggler
           onRequestClose={this.closePopup}
           open={popupOpen}
-          overlay={
-            <LineOptionsPopup branchLike={branchLike} componentKey={componentKey} line={line} />
-          }
+          overlay={<LineOptionsPopup line={line} />}
         />
       </td>
     ) : (

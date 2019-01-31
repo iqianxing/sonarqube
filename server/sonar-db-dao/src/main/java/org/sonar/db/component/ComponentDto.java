@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -147,7 +147,6 @@ public class ComponentDto {
   private String scope;
   private String qualifier;
   private String path;
-  private String deprecatedKey;
   private String name;
   private String longName;
   private String language;
@@ -261,16 +260,6 @@ public class ComponentDto {
 
   public ComponentDto setQualifier(String qualifier) {
     this.qualifier = qualifier;
-    return this;
-  }
-
-  @CheckForNull
-  public String deprecatedKey() {
-    return deprecatedKey;
-  }
-
-  public ComponentDto setDeprecatedKey(@Nullable String deprecatedKey) {
-    this.deprecatedKey = deprecatedKey;
     return this;
   }
 
@@ -483,7 +472,6 @@ public class ComponentDto {
       .append("mainBranchProjectUuid", mainBranchProjectUuid)
       .append("copyComponentUuid", copyComponentUuid)
       .append("path", path)
-      .append("deprecatedKey", deprecatedKey)
       .append("name", name)
       .append("longName", longName)
       .append("language", language)
@@ -509,7 +497,6 @@ public class ComponentDto {
     copy.scope = scope;
     copy.qualifier = qualifier;
     copy.path = path;
-    copy.deprecatedKey = deprecatedKey;
     copy.name = name;
     copy.longName = longName;
     copy.language = language;

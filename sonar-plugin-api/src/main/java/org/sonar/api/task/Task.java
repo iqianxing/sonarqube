@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,9 +25,11 @@ import org.sonar.api.batch.InstantiationStrategy;
 /**
  * Implement this interface to provide the behavior of a task.
  * @since 3.6
+ * @deprecated since 7.6
  */
 @ScannerSide
 @InstantiationStrategy(InstantiationStrategy.PER_TASK)
+@Deprecated
 public interface Task {
 
   void execute();

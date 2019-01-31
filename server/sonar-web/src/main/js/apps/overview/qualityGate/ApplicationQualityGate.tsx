@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,19 +21,19 @@ import * as React from 'react';
 import { keyBy } from 'lodash';
 import ApplicationQualityGateProject from './ApplicationQualityGateProject';
 import Level from '../../../components/ui/Level';
+import DocTooltip from '../../../components/docs/DocTooltip';
+import HelpTooltip from '../../../components/controls/HelpTooltip';
 import { getApplicationQualityGate, ApplicationProject } from '../../../api/quality-gates';
 import { translate } from '../../../helpers/l10n';
-import { LightComponent, Metric, LongLivingBranch } from '../../../app/types';
-import DocTooltip from '../../../components/docs/DocTooltip';
 
 interface Props {
-  branch?: LongLivingBranch;
-  component: LightComponent;
+  branch?: T.LongLivingBranch;
+  component: T.LightComponent;
 }
 
 type State = {
   loading: boolean;
-  metrics?: { [key: string]: Metric };
+  metrics?: { [key: string]: T.Metric };
   projects?: ApplicationProject[];
   status?: string;
 };
@@ -96,6 +96,12 @@ export default class ApplicationQualityGate extends React.PureComponent<Props, S
             doc={import(/* webpackMode: "eager" */ 'Docs/tooltips/quality-gates/project-homepage-quality-gate.md')}
           />
           {status != null && <Level className="big-spacer-left" level={status} />}
+          {status === 'WARN' && (
+            <HelpTooltip
+              className="little-spacer-left"
+              overlay={translate('quality_gates.conditions.warning.tootlip')}
+            />
+          )}
         </h2>
 
         {projects &&

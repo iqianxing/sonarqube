@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,7 +25,6 @@ import { save, get } from '../../../helpers/storage';
 import { hasMessage } from '../../../helpers/l10n';
 import { waitAndUpdate } from '../../../helpers/testUtils';
 import { differenceInDays, toShortNotSoISOString } from '../../../helpers/dates';
-import { LoggedInUser } from '../../types';
 import { EditionKey } from '../../../apps/marketplace/utils';
 
 jest.mock('../../../api/marketplace', () => ({
@@ -47,11 +46,12 @@ jest.mock('../../../helpers/dates', () => ({
   toShortNotSoISOString: jest.fn().mockReturnValue('short-not-iso-date')
 }));
 
-const LOGGED_IN_USER: LoggedInUser = {
+const LOGGED_IN_USER: T.LoggedInUser = {
+  groups: [],
   isLoggedIn: true,
   login: 'luke',
   name: 'Skywalker',
-  showOnboardingTutorial: false
+  scmAccounts: []
 };
 
 beforeEach(() => {
@@ -85,7 +85,15 @@ it('should render only the children', async () => {
     getWrapper({
       canAdmin: false,
       currentUser: { ...LOGGED_IN_USER, showOnboardingTutorial: true },
-      location: { pathname: 'documentation/index' }
+      location: { pathname: '/documentation/' }
+    })
+  );
+
+  await shouldNotHaveModals(
+    getWrapper({
+      canAdmin: false,
+      currentUser: { ...LOGGED_IN_USER, showOnboardingTutorial: true },
+      location: { pathname: '/create-organization' }
     })
   );
 });
@@ -102,29 +110,9 @@ it('should render license prompt', async () => {
   await shouldDisplayLicense(getWrapper());
 });
 
-it('should render onboarding modal', async () => {
-  await shouldDisplayOnboarding(
-    getWrapper({
-      canAdmin: false,
-      currentUser: { ...LOGGED_IN_USER, showOnboardingTutorial: true }
-    })
-  );
-
-  (showLicense as jest.Mock<any>).mockResolvedValueOnce({ isValidEdition: true });
-  await shouldDisplayOnboarding(
-    getWrapper({ currentUser: { ...LOGGED_IN_USER, showOnboardingTutorial: true } })
-  );
-});
-
 async function shouldNotHaveModals(wrapper: ShallowWrapper) {
   await waitAndUpdate(wrapper);
   expect(wrapper.find('LicensePromptModal').exists()).toBeFalsy();
-  expect(wrapper.find('ProjectOnboardingModal').exists()).toBeFalsy();
-}
-
-async function shouldDisplayOnboarding(wrapper: ShallowWrapper) {
-  await waitAndUpdate(wrapper);
-  expect(wrapper.find('ProjectOnboardingModal').exists()).toBeTruthy();
 }
 
 async function shouldDisplayLicense(wrapper: ShallowWrapper) {
@@ -132,17 +120,17 @@ async function shouldDisplayLicense(wrapper: ShallowWrapper) {
   expect(wrapper.find('LicensePromptModal').exists()).toBeTruthy();
 }
 
-function getWrapper(props = {}) {
+function getWrapper(props: Partial<StartupModal['props']> = {}) {
   return shallow(
     <StartupModal
       canAdmin={true}
       currentEdition={EditionKey.enterprise}
       currentUser={LOGGED_IN_USER}
       location={{ pathname: 'foo/bar' }}
-      skipOnboardingAction={jest.fn()}
+      router={{ push: jest.fn() }}
+      skipOnboarding={jest.fn()}
       {...props}>
       <div />
-    </StartupModal>,
-    { context: { router: { push: jest.fn() } } }
+    </StartupModal>
   );
 }

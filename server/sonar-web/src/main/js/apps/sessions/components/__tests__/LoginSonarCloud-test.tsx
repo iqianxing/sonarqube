@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,7 @@
  */
 import * as React from 'react';
 import { shallow } from 'enzyme';
-import LoginSonarCloud from '../LoginSonarCloud';
+import { LoginSonarCloud } from '../LoginSonarCloud';
 
 const identityProvider = {
   backgroundColor: '#000',
@@ -49,4 +49,16 @@ it('logs in with simple form', () => {
   expect(
     shallow(<LoginSonarCloud identityProviders={[]} onSubmit={jest.fn()} returnTo="" />)
   ).toMatchSnapshot();
+});
+
+it("shows an warning message if there's an authorization error", () => {
+  const wrapper = shallow(
+    <LoginSonarCloud
+      authorizationError={true}
+      identityProviders={[identityProvider]}
+      onSubmit={jest.fn()}
+      returnTo=""
+    />
+  );
+  expect(wrapper).toMatchSnapshot();
 });

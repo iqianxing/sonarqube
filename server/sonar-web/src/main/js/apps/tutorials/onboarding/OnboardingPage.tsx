@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,22 +18,23 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import { connect } from 'react-redux';
+import { InjectedRouter } from 'react-router';
 import OnboardingModal from './OnboardingModal';
-import { skipOnboarding } from '../../../api/users';
-import { skipOnboarding as skipOnboardingAction } from '../../../store/users/actions';
-import CreateOrganizationForm from '../../account/organizations/CreateOrganizationForm';
+import { skipOnboarding } from '../../../store/users';
 import TeamOnboardingModal from '../teamOnboarding/TeamOnboardingModal';
-import { Organization } from '../../../app/types';
+import { OnboardingContext } from '../../../app/components/OnboardingContext';
 
 interface DispatchProps {
-  skipOnboardingAction: () => void;
+  skipOnboarding: () => void;
+}
+
+interface OwnProps {
+  router: InjectedRouter;
 }
 
 enum ModalKey {
   onboarding,
-  organizationOnboarding,
   teamOnboarding
 }
 
@@ -41,27 +42,12 @@ interface State {
   modal?: ModalKey;
 }
 
-export class OnboardingPage extends React.PureComponent<DispatchProps, State> {
-  static contextTypes = {
-    openProjectOnboarding: PropTypes.func.isRequired,
-    router: PropTypes.object.isRequired
-  };
-
+export class OnboardingPage extends React.PureComponent<OwnProps & DispatchProps, State> {
   state: State = { modal: ModalKey.onboarding };
 
   closeOnboarding = () => {
-    skipOnboarding();
-    this.props.skipOnboardingAction();
-    this.context.router.replace('/');
-  };
-
-  closeOrganizationOnboarding = ({ key }: Pick<Organization, 'key'>) => {
-    this.closeOnboarding();
-    this.context.router.push(`/organizations/${key}`);
-  };
-
-  openOrganizationOnboarding = () => {
-    this.setState({ modal: ModalKey.organizationOnboarding });
+    this.props.skipOnboarding();
+    this.props.router.replace('/');
   };
 
   openTeamOnboarding = () => {
@@ -73,18 +59,15 @@ export class OnboardingPage extends React.PureComponent<DispatchProps, State> {
     return (
       <>
         {modal === ModalKey.onboarding && (
-          <OnboardingModal
-            onClose={this.closeOnboarding}
-            onOpenOrganizationOnboarding={this.openOrganizationOnboarding}
-            onOpenProjectOnboarding={this.context.openProjectOnboarding}
-            onOpenTeamOnboarding={this.openTeamOnboarding}
-          />
-        )}
-        {modal === ModalKey.organizationOnboarding && (
-          <CreateOrganizationForm
-            onClose={this.closeOnboarding}
-            onCreate={this.closeOrganizationOnboarding}
-          />
+          <OnboardingContext.Consumer>
+            {openProjectOnboarding => (
+              <OnboardingModal
+                onClose={this.closeOnboarding}
+                onOpenProjectOnboarding={openProjectOnboarding}
+                onOpenTeamOnboarding={this.openTeamOnboarding}
+              />
+            )}
+          </OnboardingContext.Consumer>
         )}
         {modal === ModalKey.teamOnboarding && (
           <TeamOnboardingModal onFinish={this.closeOnboarding} />
@@ -94,9 +77,9 @@ export class OnboardingPage extends React.PureComponent<DispatchProps, State> {
   }
 }
 
-const mapDispatchToProps: DispatchProps = { skipOnboardingAction };
+const mapDispatchToProps: DispatchProps = { skipOnboarding };
 
-export default connect<{}, DispatchProps>(
+export default connect(
   null,
   mapDispatchToProps
 )(OnboardingPage);

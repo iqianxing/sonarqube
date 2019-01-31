@@ -38,12 +38,12 @@ exports[`renders meta for pull request 1`] = `
     />
   </div>
   <div
-    className="navbar-context-meta-secondary"
+    className="navbar-context-meta-secondary display-inline-flex-center"
   >
     <a
       className="display-inline-flex-center big-spacer-right"
       href="https://example.com/pull/1234"
-      rel="nofollow"
+      rel="noopener noreferrer"
       target="_blank"
     >
       branches.see_the_pr
@@ -85,7 +85,7 @@ exports[`renders status of short-living branch 1`] = `
     />
   </div>
   <div
-    className="navbar-context-meta-secondary"
+    className="navbar-context-meta-secondary display-inline-flex-center"
   >
     <BranchStatus
       branchLike={
@@ -101,6 +101,49 @@ exports[`renders status of short-living branch 1`] = `
           },
           "type": "SHORT",
         }
+      }
+    />
+    <span
+      className="vertical-separator big-spacer-left big-spacer-right"
+    />
+    <BranchMeasures
+      branchLike={
+        Object {
+          "isMain": false,
+          "mergeBranch": "master",
+          "name": "feature",
+          "status": Object {
+            "bugs": 0,
+            "codeSmells": 2,
+            "qualityGateStatus": "ERROR",
+            "vulnerabilities": 3,
+          },
+          "type": "SHORT",
+        }
+      }
+      componentKey="foo"
+      measures={
+        Array [
+          Object {
+            "metric": "new_coverage",
+            "periods": Array [
+              Object {
+                "index": 1,
+                "value": "95.9943",
+              },
+            ],
+            "value": "0",
+          },
+          Object {
+            "metric": "new_duplicated_lines_density",
+            "periods": Array [
+              Object {
+                "index": 1,
+                "value": "3.5",
+              },
+            ],
+          },
+        ]
       }
     />
   </div>

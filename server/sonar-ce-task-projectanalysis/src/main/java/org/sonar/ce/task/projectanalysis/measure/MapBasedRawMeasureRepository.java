@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,30 +19,27 @@
  */
 package org.sonar.ce.task.projectanalysis.measure;
 
-import com.google.common.base.Function;
-import com.google.common.base.Optional;
-import com.google.common.base.Predicate;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
+import java.util.function.Function;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.ce.task.projectanalysis.metric.Metric;
-import org.sonar.ce.task.projectanalysis.component.Component;
-import org.sonar.ce.task.projectanalysis.metric.Metric;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static com.google.common.collect.FluentIterable.from;
 import static java.lang.String.format;
 import static java.util.Objects.requireNonNull;
 
 /**
  * Map based implementation of MeasureRepository which supports only raw measures.
- *
  * Intended to be used as a delegate of other MeasureRepository implementations (hence the final keyword).
  */
 public final class MapBasedRawMeasureRepository<T> implements MeasureRepository {
@@ -80,7 +77,7 @@ public final class MapBasedRawMeasureRepository<T> implements MeasureRepository 
       throw new UnsupportedOperationException(
         format(
           "a measure can be set only once for a specific Component (key=%s), Metric (key=%s). Use update method",
-          component.getKey(),
+          component.getDbKey(),
           metric.getKey()));
     }
     add(component, metric, measure, OverridePolicy.OVERRIDE);
@@ -96,7 +93,7 @@ public final class MapBasedRawMeasureRepository<T> implements MeasureRepository 
       throw new UnsupportedOperationException(
         format(
           "a measure can be updated only if one already exists for a specific Component (key=%s), Metric (key=%s). Use add method",
-          component.getKey(),
+          component.getDbKey(),
           metric.getKey()));
     }
     add(component, metric, measure, OverridePolicy.OVERRIDE);
@@ -118,7 +115,10 @@ public final class MapBasedRawMeasureRepository<T> implements MeasureRepository 
     if (rawMeasures == null) {
       return Collections.emptySet();
     }
-    return from(rawMeasures.entrySet()).filter(new MatchMetric(metric)).transform(ToMeasure.INSTANCE).toSet();
+    return rawMeasures.entrySet().stream()
+      .filter(new MatchMetric(metric))
+      .map(ToMeasure.INSTANCE)
+      .collect(Collectors.toSet());
   }
 
   @Override
@@ -140,18 +140,18 @@ public final class MapBasedRawMeasureRepository<T> implements MeasureRepository 
     T componentKey = componentToKey.apply(component);
     Map<MeasureKey, Measure> measuresPerMetric = measures.get(componentKey);
     if (measuresPerMetric == null) {
-      return Optional.absent();
+      return Optional.empty();
     }
-    return Optional.fromNullable(measuresPerMetric.get(new MeasureKey(metric.getKey(), null)));
+    return Optional.ofNullable(measuresPerMetric.get(new MeasureKey(metric.getKey(), null)));
   }
 
   private Optional<Measure> find(Component component, Metric metric, Measure measure) {
     T componentKey = componentToKey.apply(component);
     Map<MeasureKey, Measure> measuresPerMetric = measures.get(componentKey);
     if (measuresPerMetric == null) {
-      return Optional.absent();
+      return Optional.empty();
     }
-    return Optional.fromNullable(measuresPerMetric.get(new MeasureKey(metric.getKey(), measure.getDeveloper())));
+    return Optional.ofNullable(measuresPerMetric.get(new MeasureKey(metric.getKey(), measure.getDeveloper())));
   }
 
   public void add(Component component, Metric metric, Measure measure, OverridePolicy overridePolicy) {
@@ -161,11 +161,7 @@ public final class MapBasedRawMeasureRepository<T> implements MeasureRepository 
     requireNonNull(overridePolicy);
 
     T componentKey = componentToKey.apply(component);
-    Map<MeasureKey, Measure> measuresPerMetric = measures.get(componentKey);
-    if (measuresPerMetric == null) {
-      measuresPerMetric = new HashMap<>();
-      measures.put(componentKey, measuresPerMetric);
-    }
+    Map<MeasureKey, Measure> measuresPerMetric = measures.computeIfAbsent(componentKey, key -> new HashMap<>());
     MeasureKey key = new MeasureKey(metric.getKey(), measure.getDeveloper());
     if (!measuresPerMetric.containsKey(key) || overridePolicy == OverridePolicy.OVERRIDE) {
       measuresPerMetric.put(key, measure);
@@ -184,7 +180,7 @@ public final class MapBasedRawMeasureRepository<T> implements MeasureRepository 
     }
 
     @Override
-    public boolean apply(@Nonnull Map.Entry<MeasureKey, Measure> input) {
+    public boolean test(@Nonnull Map.Entry<MeasureKey, Measure> input) {
       return input.getKey().getMetricKey().equals(metric.getKey());
     }
   }

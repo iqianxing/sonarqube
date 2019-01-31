@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,40 +18,44 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import Helmet from 'react-helmet';
 import { omitBy } from 'lodash';
 import PageHeader from './PageHeader';
 import ProjectsList from './ProjectsList';
 import PageSidebar from './PageSidebar';
+import handleRequiredAuthentication from '../../../app/utils/handleRequiredAuthentication';
+import DeferredSpinner from '../../../components/common/DeferredSpinner';
+import ListFooter from '../../../components/controls/ListFooter';
+import OrganizationEmpty from '../../organizations/components/OrganizationEmpty';
+import ScreenPositionHelper from '../../../components/common/ScreenPositionHelper';
 import Suggestions from '../../../app/components/embed-docs-modal/Suggestions';
 import Visualizations from '../visualizations/Visualizations';
-import { CurrentUser, isLoggedIn, Organization } from '../../../app/types';
-import handleRequiredAuthentication from '../../../app/utils/handleRequiredAuthentication';
-import ScreenPositionHelper from '../../../components/common/ScreenPositionHelper';
-import ListFooter from '../../../components/controls/ListFooter';
-import { translate } from '../../../helpers/l10n';
-import { get, save } from '../../../helpers/storage';
-import { RawQuery } from '../../../helpers/query';
 import { Project, Facets } from '../types';
 import { fetchProjects, parseSorting, SORTING_SWITCH } from '../utils';
 import { parseUrlQuery, Query, hasFilterParams, hasVisualizationParams } from '../query';
+import { translate } from '../../../helpers/l10n';
+import { addSideBarClass, removeSideBarClass } from '../../../helpers/pages';
+import { RawQuery } from '../../../helpers/query';
+import { get, save } from '../../../helpers/storage';
 import { isSonarCloud } from '../../../helpers/system';
+import { isLoggedIn } from '../../../helpers/users';
+import { OnboardingContext } from '../../../app/components/OnboardingContext';
+import { withRouter, Location, Router } from '../../../components/hoc/withRouter';
 import '../../../components/search-navigator.css';
 import '../styles.css';
-import DeferredSpinner from '../../../components/common/DeferredSpinner';
 
-export interface Props {
-  currentUser: CurrentUser;
+interface Props {
+  currentUser: T.CurrentUser;
   isFavorite: boolean;
-  location: { pathname: string; query: RawQuery };
-  organization: Organization | undefined;
-  organizationsEnabled: boolean;
+  location: Pick<Location, 'pathname' | 'query'>;
+  organization: T.Organization | undefined;
+  router: Pick<Router, 'push' | 'replace'>;
   storageOptionsSuffix?: string;
 }
 
 interface State {
   facets?: Facets;
+  initialLoading: boolean;
   loading: boolean;
   pageIndex?: number;
   projects?: Project[];
@@ -63,16 +67,12 @@ const PROJECTS_SORT = 'sonarqube.projects.sort';
 const PROJECTS_VIEW = 'sonarqube.projects.view';
 const PROJECTS_VISUALIZATION = 'sonarqube.projects.visualization';
 
-export default class AllProjects extends React.PureComponent<Props, State> {
+export class AllProjects extends React.PureComponent<Props, State> {
   mounted = false;
-
-  static contextTypes = {
-    router: PropTypes.object.isRequired
-  };
 
   constructor(props: Props) {
     super(props);
-    this.state = { loading: true, query: {} };
+    this.state = { initialLoading: true, loading: true, query: {} };
   }
 
   componentDidMount() {
@@ -83,45 +83,37 @@ export default class AllProjects extends React.PureComponent<Props, State> {
       return;
     }
     this.handleQueryChange(true);
-    const footer = document.getElementById('footer');
-    if (footer) {
-      footer.classList.add('page-footer-with-sidebar');
-    }
+    this.updateFooterClass();
   }
 
   componentDidUpdate(prevProps: Props) {
     if (prevProps.location.query !== this.props.location.query) {
       this.handleQueryChange(false);
     }
+
+    if (
+      prevProps.organization &&
+      this.props.organization &&
+      prevProps.organization.key !== this.props.organization.key
+    ) {
+      this.setState({ initialLoading: true });
+    }
+
+    this.updateFooterClass();
   }
 
   componentWillUnmount() {
     this.mounted = false;
-
-    const footer = document.getElementById('footer');
-    if (footer) {
-      footer.classList.remove('page-footer-with-sidebar');
-    }
+    removeSideBarClass();
   }
 
-  getView = () => this.state.query.view || 'overall';
-
-  getVisualization = () => this.state.query.visualization || 'risk';
-
-  getSort = () => this.state.query.sort || 'name';
-
-  stopLoading = () => {
-    if (this.mounted) {
-      this.setState({ loading: false });
-    }
-  };
-
-  fetchProjects = (query: any) => {
+  fetchProjects = (query: Query) => {
     this.setState({ loading: true, query });
     fetchProjects(query, this.props.isFavorite, this.props.organization).then(response => {
       if (this.mounted) {
         this.setState({
           facets: response.facets,
+          initialLoading: false,
           loading: false,
           pageIndex: 1,
           projects: response.projects,
@@ -150,6 +142,8 @@ export default class AllProjects extends React.PureComponent<Props, State> {
     }
   };
 
+  getSort = () => this.state.query.sort || 'name';
+
   getStorageOptions = () => {
     const { storageOptionsSuffix } = this.props;
     const options: {
@@ -167,6 +161,14 @@ export default class AllProjects extends React.PureComponent<Props, State> {
       options.visualization = get(PROJECTS_VISUALIZATION, storageOptionsSuffix) || undefined;
     }
     return options;
+  };
+
+  getView = () => this.state.query.view || 'overall';
+
+  getVisualization = () => this.state.query.visualization || 'risk';
+
+  handleClearAll = () => {
+    this.props.router.push({ pathname: this.props.location.pathname });
   };
 
   handlePerspectiveChange = ({ view, visualization }: { view: string; visualization?: string }) => {
@@ -187,7 +189,7 @@ export default class AllProjects extends React.PureComponent<Props, State> {
           query.sort = (sort.sortDesc ? '-' : '') + SORTING_SWITCH[sort.sortValue];
         }
       }
-      this.context.router.push({ pathname: this.props.location.pathname, query });
+      this.props.router.push({ pathname: this.props.location.pathname, query });
     } else {
       this.updateLocationQuery(query);
     }
@@ -197,12 +199,6 @@ export default class AllProjects extends React.PureComponent<Props, State> {
     save(PROJECTS_VISUALIZATION, visualization, storageOptionsSuffix);
   };
 
-  handleSortChange = (sort: string, desc: boolean) => {
-    const asString = (desc ? '-' : '') + sort;
-    this.updateLocationQuery({ sort: asString });
-    save(PROJECTS_SORT, asString, this.props.storageOptionsSuffix);
-  };
-
   handleQueryChange(initialMount: boolean) {
     const query = parseUrlQuery(this.props.location.query);
     const savedOptions = this.getStorageOptions();
@@ -210,19 +206,40 @@ export default class AllProjects extends React.PureComponent<Props, State> {
 
     // if there is no visualization parameters (sort, view, visualization), but there are saved preferences in the localStorage
     if (initialMount && !hasVisualizationParams(query) && savedOptionsSet) {
-      this.context.router.replace({ pathname: this.props.location.pathname, query: savedOptions });
+      this.props.router.replace({ pathname: this.props.location.pathname, query: savedOptions });
     } else {
       this.fetchProjects(query);
     }
   }
 
-  updateLocationQuery = (newQuery: RawQuery) => {
-    const query = omitBy({ ...this.props.location.query, ...newQuery }, x => !x);
-    this.context.router.push({ pathname: this.props.location.pathname, query });
+  handleSortChange = (sort: string, desc: boolean) => {
+    const asString = (desc ? '-' : '') + sort;
+    this.updateLocationQuery({ sort: asString });
+    save(PROJECTS_SORT, asString, this.props.storageOptionsSuffix);
   };
 
-  handleClearAll = () => {
-    this.context.router.push({ pathname: this.props.location.pathname });
+  stopLoading = () => {
+    if (this.mounted) {
+      this.setState({ initialLoading: false, loading: false });
+    }
+  };
+
+  updateLocationQuery = (newQuery: RawQuery) => {
+    const query = omitBy({ ...this.props.location.query, ...newQuery }, x => !x);
+    this.props.router.push({ pathname: this.props.location.pathname, query });
+  };
+
+  updateFooterClass = () => {
+    const { organization } = this.props;
+    const { initialLoading, projects } = this.state;
+    const isOrganizationContext = isSonarCloud() && organization;
+    const isEmpty = projects && projects.length === 0;
+
+    if (isOrganizationContext && (initialLoading || isEmpty)) {
+      removeSideBarClass();
+    } else {
+      addSideBarClass();
+    }
   };
 
   renderSide = () => (
@@ -279,7 +296,7 @@ export default class AllProjects extends React.PureComponent<Props, State> {
           <div className="layout-page-main-inner">
             {this.state.projects && (
               <Visualizations
-                displayOrganizations={!this.props.organization && this.props.organizationsEnabled}
+                displayOrganizations={!this.props.organization && isSonarCloud()}
                 projects={this.state.projects}
                 sort={this.state.query.sort}
                 total={this.state.total}
@@ -313,18 +330,52 @@ export default class AllProjects extends React.PureComponent<Props, State> {
   };
 
   render() {
+    const { organization } = this.props;
+    const { projects } = this.state;
+    const isOrganizationContext = isSonarCloud() && organization;
+    const initialLoading = isOrganizationContext && this.state.initialLoading;
+    const organizationEmpty =
+      isOrganizationContext &&
+      projects &&
+      projects.length === 0 &&
+      !this.state.loading &&
+      !hasFilterParams(this.state.query);
+
     return (
       <div className="layout-page projects-page" id="projects-page">
         <Suggestions suggestions="projects" />
         <Helmet title={translate('projects.page')} />
 
-        {this.renderSide()}
+        {initialLoading ? (
+          <div className="display-flex-space-around width-100 huge-spacer-top">
+            <DeferredSpinner />
+          </div>
+        ) : (
+          <>
+            {!organizationEmpty && this.renderSide()}
 
-        <div className="layout-page-main">
-          {this.renderHeader()}
-          {this.renderMain()}
-        </div>
+            <div className="layout-page-main">
+              {organizationEmpty && organization ? (
+                <OnboardingContext.Consumer>
+                  {openProjectOnboarding => (
+                    <OrganizationEmpty
+                      openProjectOnboarding={openProjectOnboarding}
+                      organization={organization}
+                    />
+                  )}
+                </OnboardingContext.Consumer>
+              ) : (
+                <>
+                  {this.renderHeader()}
+                  {this.renderMain()}
+                </>
+              )}
+            </div>
+          </>
+        )}
       </div>
     );
   }
 }
+
+export default withRouter(AllProjects);

@@ -1,6 +1,8 @@
 # ---- Gradle
 build/
 .gradle/
+.gradletasknamecache
+classes/
 out/
 
 # ---- Maven (in integration tests)
@@ -13,8 +15,18 @@ target/
 .idea/
 out/
 
+# ---- VS Code
+.vscode/
+*.code-workspace
+
 # Directories generated on build on Windows
 bin/
+
+# npm logs
+npm-debug.log*
+npm.tar.gz
+yarn-debug.log*
+yarn-error.log*
 
 # ---- Eclipse
 .classpath
@@ -37,10 +49,11 @@ Thumbs.db
 # Folder config file
 Desktop.ini
 
-# ---- vscode
-.vscode
+# ---- frontend
+node/
+node_modules/
 
-# ---- Sonar
+# ---- SonarQube
 .sonar/
 
 # scripts patches, they are local to each developer

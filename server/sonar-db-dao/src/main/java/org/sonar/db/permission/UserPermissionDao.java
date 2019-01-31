@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -56,7 +56,7 @@ public class UserPermissionDao implements Dao {
       // Pagination is done in Java because it's too complex to use SQL pagination in Oracle and MsSQL with the distinct
       .skip(query.getPageOffset())
       .limit(query.getPageSize())
-      .collect(MoreCollectors.toList());
+      .collect(MoreCollectors.toArrayList());
   }
 
   public int countUsersByQuery(DbSession dbSession, PermissionQuery query) {

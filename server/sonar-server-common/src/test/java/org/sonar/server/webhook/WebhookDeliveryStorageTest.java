@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,13 +28,14 @@ import org.sonar.core.util.UuidFactory;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.DbTester;
-import org.sonar.db.webhook.WebhookDbTesting;
 import org.sonar.db.webhook.WebhookDeliveryDto;
+import org.sonar.db.webhook.WebhookDeliveryTesting;
 
+import static org.apache.commons.lang.RandomStringUtils.randomAlphabetic;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-import static org.sonar.db.webhook.WebhookDbTesting.selectAllDeliveryUuids;
+import static org.sonar.db.webhook.WebhookDeliveryTesting.selectAllDeliveryUuids;
 
 public class WebhookDeliveryStorageTest {
 
@@ -101,6 +102,20 @@ public class WebhookDeliveryStorageTest {
     assertThat(selectAllDeliveryUuids(dbTester, dbSession)).containsOnly("D2", "D3");
   }
 
+  @Test
+  public void persist_effective_url_if_present() {
+    when(uuidFactory.create()).thenReturn(DELIVERY_UUID);
+    String effectiveUrl = randomAlphabetic(15);
+    WebhookDelivery delivery = newBuilderTemplate()
+      .setEffectiveUrl(effectiveUrl)
+      .build();
+
+    underTest.persist(delivery);
+
+    WebhookDeliveryDto dto = dbClient.webhookDeliveryDao().selectByUuid(dbSession, DELIVERY_UUID).get();
+    assertThat(dto.getUrl()).isEqualTo(effectiveUrl);
+  }
+
   private static WebhookDelivery.Builder newBuilderTemplate() {
     return new WebhookDelivery.Builder()
       .setWebhook(new Webhook("WEBHOOK_UUID_1", "COMPONENT1", "TASK1", RandomStringUtils.randomAlphanumeric(40),"Jenkins", "http://jenkins"))
@@ -111,7 +126,7 @@ public class WebhookDeliveryStorageTest {
   }
 
   private static WebhookDeliveryDto newDto(String uuid, String componentUuid, long at) {
-    return WebhookDbTesting.newDto()
+    return WebhookDeliveryTesting.newDto()
       .setUuid(uuid)
       .setComponentUuid(componentUuid)
       .setCreatedAt(at);

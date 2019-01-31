@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,20 +19,31 @@
  */
 package org.sonar.db.dialect;
 
+import java.sql.DatabaseMetaData;
+import java.sql.SQLException;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.mockito.Mockito;
+import org.sonar.api.utils.MessageException;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class MsSqlTest {
+
+  @Rule
+  public ExpectedException expectedException = ExpectedException.none();
 
   private MsSql underTest = new MsSql();
 
   @Test
   public void matchesJdbcURL() {
-    assertThat(underTest.matchesJdbcURL("jdbc:sqlserver://localhost:1433;databasename=sonar")).isTrue();
+    assertThat(underTest.matchesJdbcUrl("jdbc:sqlserver://localhost:1433;databasename=sonar")).isTrue();
 
-    assertThat(underTest.matchesJdbcURL("jdbc:hsql:foo")).isFalse();
-    assertThat(underTest.matchesJdbcURL("jdbc:mysql:foo")).isFalse();
+    assertThat(underTest.matchesJdbcUrl("jdbc:hsql:foo")).isFalse();
+    assertThat(underTest.matchesJdbcUrl("jdbc:mysql:foo")).isFalse();
   }
 
   @Test
@@ -50,7 +61,7 @@ public class MsSqlTest {
 
   @Test
   public void do_not_support_jtds_since_5_2() {
-    assertThat(underTest.matchesJdbcURL("jdbc:jtds:sqlserver://localhost;databaseName=SONAR;SelectMethod=Cursor")).isFalse();
+    assertThat(underTest.matchesJdbcUrl("jdbc:jtds:sqlserver://localhost;databaseName=SONAR;SelectMethod=Cursor")).isFalse();
 
   }
 
@@ -62,5 +73,32 @@ public class MsSqlTest {
   @Test
   public void getSqlFromDual() {
     assertThat(underTest.getSqlFromDual()).isEqualTo("");
+  }
+
+  @Test
+  public void init_throws_MessageException_if_mssql_2012() throws Exception {
+    expectedException.expect(MessageException.class);
+    expectedException.expectMessage("Unsupported mssql version: 11.0. Minimal supported version is 12.0.");
+
+    DatabaseMetaData metadata = newMetadata( 11, 0);
+    underTest.init(metadata);
+  }
+
+  @Test
+  public void init_does_not_fail_if_mssql_2014() throws Exception {
+    DatabaseMetaData metadata = newMetadata( 12, 0);
+    underTest.init(metadata);
+  }
+
+  @Test
+  public void supportsUpsert_returns_false() {
+    assertThat(underTest.supportsUpsert()).isFalse();
+  }
+
+  private DatabaseMetaData newMetadata(int dbMajorVersion, int dbMinorVersion) throws SQLException {
+    DatabaseMetaData metadata = mock(DatabaseMetaData.class, Mockito.RETURNS_DEEP_STUBS);
+    when(metadata.getDatabaseMajorVersion()).thenReturn(dbMajorVersion);
+    when(metadata.getDatabaseMinorVersion()).thenReturn(dbMinorVersion);
+    return metadata;
   }
 }

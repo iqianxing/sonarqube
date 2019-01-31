@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,11 +20,10 @@
 import * as React from 'react';
 import LinkRow from './LinkRow';
 import { orderLinks } from './utils';
-import { ProjectLink } from '../../app/types';
 import { translate } from '../../helpers/l10n';
 
 interface Props {
-  links: ProjectLink[];
+  links: T.ProjectLink[];
   onDelete: (linkId: string) => Promise<void>;
 }
 

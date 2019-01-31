@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,8 +21,11 @@ package org.sonar.server.permission.ws.template;
 
 import javax.annotation.Nullable;
 import org.junit.Test;
+import org.sonar.api.resources.Qualifiers;
+import org.sonar.api.resources.ResourceTypes;
 import org.sonar.api.server.ws.WebService;
 import org.sonar.core.permission.GlobalPermissions;
+import org.sonar.db.component.ResourceTypesRule;
 import org.sonar.db.permission.template.PermissionTemplateDto;
 import org.sonar.db.permission.template.PermissionTemplateUserDto;
 import org.sonar.db.user.UserDto;
@@ -31,7 +34,11 @@ import org.sonar.server.exceptions.ForbiddenException;
 import org.sonar.server.exceptions.NotFoundException;
 import org.sonar.server.exceptions.UnauthorizedException;
 import org.sonar.server.issue.ws.AvatarResolverImpl;
+import org.sonar.server.permission.PermissionService;
+import org.sonar.server.permission.PermissionServiceImpl;
 import org.sonar.server.permission.ws.BasePermissionWsTest;
+import org.sonar.server.permission.ws.RequestValidator;
+import org.sonar.server.permission.ws.WsParameters;
 import org.sonar.server.ws.TestRequest;
 import org.sonarqube.ws.Permissions;
 
@@ -50,9 +57,14 @@ import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_T
 
 public class TemplateUsersActionTest extends BasePermissionWsTest<TemplateUsersAction> {
 
+  private ResourceTypes resourceTypes = new ResourceTypesRule().setRootQualifiers(Qualifiers.PROJECT);
+  private PermissionService permissionService = new PermissionServiceImpl(resourceTypes);
+  private WsParameters wsParameters = new WsParameters(permissionService);
+  private RequestValidator requestValidator = new RequestValidator(permissionService);
+
   @Override
   protected TemplateUsersAction buildWsAction() {
-    return new TemplateUsersAction(db.getDbClient(), userSession, newPermissionWsSupport(), new AvatarResolverImpl());
+    return new TemplateUsersAction(db.getDbClient(), userSession, newPermissionWsSupport(), new AvatarResolverImpl(), wsParameters, requestValidator);
   }
 
   @Test
@@ -188,21 +200,6 @@ public class TemplateUsersActionTest extends BasePermissionWsTest<TemplateUsersA
       .executeProtobuf(Permissions.UsersWsResponse.class);
 
     assertThat(response.getUsersList()).extracting("login").containsExactly("login-1", "login-2", "login-3");
-  }
-
-  @Test
-  public void empty_result_when_no_user_on_template() {
-    UserDto user = insertUser(newUserDto().setLogin("login-1").setName("name-1").setEmail("email-1"));
-    PermissionTemplateDto template = addTemplateToDefaultOrganization();
-    PermissionTemplateDto anotherTemplate = addTemplateToDefaultOrganization();
-    addUserToTemplate(newPermissionTemplateUser(USER, anotherTemplate, user));
-
-    loginAsAdmin(db.getDefaultOrganization());
-    Permissions.UsersWsResponse response = newRequest(null, null)
-      .setParam(PARAM_TEMPLATE_NAME, template.getName())
-      .executeProtobuf(Permissions.UsersWsResponse.class);
-
-    assertThat(response.getUsersList()).isEmpty();
   }
 
   @Test

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -67,24 +67,32 @@ public class OrganizationDbTester {
     return dto;
   }
 
-  public void setDefaultTemplates(PermissionTemplateDto projectDefaultTemplate, @Nullable PermissionTemplateDto viewDefaultTemplate) {
-    checkArgument(viewDefaultTemplate == null
-      || viewDefaultTemplate.getOrganizationUuid().equals(projectDefaultTemplate.getOrganizationUuid()),
-      "default template for project and view must belong to the same organization");
+  public void setDefaultTemplates(PermissionTemplateDto projectDefaultTemplate, @Nullable PermissionTemplateDto applicationDefaultTemplate,
+    @Nullable PermissionTemplateDto portfolioDefaultTemplate) {
+    checkArgument(portfolioDefaultTemplate == null
+      || portfolioDefaultTemplate.getOrganizationUuid().equals(projectDefaultTemplate.getOrganizationUuid()),
+      "default template for project and portfolio must belong to the same organization");
+    checkArgument(applicationDefaultTemplate == null
+        || applicationDefaultTemplate.getOrganizationUuid().equals(projectDefaultTemplate.getOrganizationUuid()),
+      "default template for project and application must belong to the same organization");
 
     DbSession dbSession = dbTester.getSession();
     dbTester.getDbClient().organizationDao().setDefaultTemplates(dbSession, projectDefaultTemplate.getOrganizationUuid(),
       new DefaultTemplates()
         .setProjectUuid(projectDefaultTemplate.getUuid())
-        .setViewUuid(viewDefaultTemplate == null ? null : viewDefaultTemplate.getUuid()));
+        .setPortfoliosUuid(portfolioDefaultTemplate == null ? null : portfolioDefaultTemplate.getUuid())
+        .setApplicationsUuid(applicationDefaultTemplate == null ? null : applicationDefaultTemplate.getUuid()));
     dbSession.commit();
   }
 
-  public void setDefaultTemplates(OrganizationDto defaultOrganization,
-    String projectDefaultTemplateUuid, @Nullable String viewDefaultTemplateUuid) {
+  public void setDefaultTemplates(OrganizationDto defaultOrganization, String projectDefaultTemplateUuid,
+    @Nullable String applicationDefaultTemplateUuid, @Nullable String portfoliosDefaultTemplateUuid) {
     DbSession dbSession = dbTester.getSession();
     dbTester.getDbClient().organizationDao().setDefaultTemplates(dbSession, defaultOrganization.getUuid(),
-      new DefaultTemplates().setProjectUuid(projectDefaultTemplateUuid).setViewUuid(viewDefaultTemplateUuid));
+      new DefaultTemplates()
+        .setProjectUuid(projectDefaultTemplateUuid)
+        .setApplicationsUuid(applicationDefaultTemplateUuid)
+        .setPortfoliosUuid(portfoliosDefaultTemplateUuid));
     dbSession.commit();
   }
 

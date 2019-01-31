@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,7 +30,6 @@ import javax.annotation.Nullable;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.resources.Qualifiers;
 import org.sonar.api.server.ServerSide;
-import org.sonar.core.permission.ProjectPermissions;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.component.ComponentDto;
@@ -50,9 +49,9 @@ import org.sonar.server.user.UserSession;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.format;
-import static java.util.Arrays.asList;
 import static java.util.Collections.singletonList;
 import static org.sonar.api.security.DefaultGroups.isAnyone;
+import static org.sonar.api.web.UserRole.PUBLIC_PERMISSIONS;
 
 @ServerSide
 public class PermissionTemplateService {
@@ -152,7 +151,7 @@ public class PermissionTemplateService {
         dbClient.groupPermissionDao().insert(dbSession, dto);
       });
 
-    List<PermissionTemplateCharacteristicDto> characteristics = dbClient.permissionTemplateCharacteristicDao().selectByTemplateIds(dbSession, asList(template.getId()));
+    List<PermissionTemplateCharacteristicDto> characteristics = dbClient.permissionTemplateCharacteristicDao().selectByTemplateIds(dbSession, singletonList(template.getId()));
     if (projectCreatorUserId != null) {
       Set<String> permissionsForCurrentUserAlreadyInDb = usersPermissions.stream()
         .filter(userPermission -> projectCreatorUserId.equals(userPermission.getUserId()))
@@ -170,7 +169,7 @@ public class PermissionTemplateService {
   }
 
   private static boolean permissionValidForProject(ComponentDto project, String permission) {
-    return project.isPrivate() || !ProjectPermissions.PUBLIC_PERMISSIONS.contains(permission);
+    return project.isPrivate() || !PUBLIC_PERMISSIONS.contains(permission);
   }
 
   private static boolean groupNameValidForProject(ComponentDto project, String groupName) {
@@ -206,10 +205,13 @@ public class PermissionTemplateService {
       case Qualifiers.PROJECT:
         return dbClient.permissionTemplateDao().selectByUuid(dbSession, resolvedDefaultTemplates.getProject());
       case Qualifiers.VIEW:
-      case Qualifiers.APP:
-        String viewDefaultTemplateUuid = resolvedDefaultTemplates.getView().orElseThrow(
+        String portDefaultTemplateUuid = resolvedDefaultTemplates.getPortfolio().orElseThrow(
           () -> new IllegalStateException("Attempt to create a view when Governance plugin is not installed"));
-        return dbClient.permissionTemplateDao().selectByUuid(dbSession, viewDefaultTemplateUuid);
+        return dbClient.permissionTemplateDao().selectByUuid(dbSession, portDefaultTemplateUuid);
+      case Qualifiers.APP:
+        String appDefaultTemplateUuid = resolvedDefaultTemplates.getApplication().orElseThrow(
+          () -> new IllegalStateException("Attempt to create a view when Governance plugin is not installed"));
+        return dbClient.permissionTemplateDao().selectByUuid(dbSession, appDefaultTemplateUuid);
       default:
         throw new IllegalArgumentException(format("Qualifier '%s' is not supported", qualifier));
     }

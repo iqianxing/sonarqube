@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,14 +31,12 @@ import org.sonar.api.rule.RuleKey;
 import org.sonar.api.rule.RuleStatus;
 import org.sonar.api.rules.RuleType;
 import org.sonar.api.server.debt.DebtRemediationFunction;
+import org.sonar.ce.task.projectanalysis.analysis.AnalysisMetadataHolder;
 import org.sonar.core.util.stream.MoreCollectors;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.rule.DeprecatedRuleKeyDto;
 import org.sonar.db.rule.RuleDto;
-import org.sonar.ce.task.projectanalysis.analysis.AnalysisMetadataHolder;
-import org.sonar.server.rule.ExternalRuleCreator;
-import org.sonar.server.rule.NewExternalRule;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Objects.requireNonNull;
@@ -50,37 +48,40 @@ public class RuleRepositoryImpl implements RuleRepository {
   @CheckForNull
   private Map<Integer, Rule> rulesById;
 
-  private final ExternalRuleCreator creator;
+  private final AdHocRuleCreator creator;
   private final DbClient dbClient;
   private final AnalysisMetadataHolder analysisMetadataHolder;
 
-  public RuleRepositoryImpl(ExternalRuleCreator creator, DbClient dbClient, AnalysisMetadataHolder analysisMetadataHolder) {
+  private Map<RuleKey, NewAdHocRule> adHocRulesPersist = new HashMap<>();
+
+  public RuleRepositoryImpl(AdHocRuleCreator creator, DbClient dbClient, AnalysisMetadataHolder analysisMetadataHolder) {
     this.creator = creator;
     this.dbClient = dbClient;
     this.analysisMetadataHolder = analysisMetadataHolder;
   }
 
-  public void insertNewExternalRuleIfAbsent(RuleKey ruleKey, Supplier<NewExternalRule> ruleSupplier) {
+  public void addOrUpdateAddHocRuleIfNeeded(RuleKey ruleKey, Supplier<NewAdHocRule> ruleSupplier) {
     ensureInitialized();
 
-    if (!rulesByKey.containsKey(ruleKey)) {
-      rulesByKey.computeIfAbsent(ruleKey, s -> new ExternalRuleWrapper(ruleSupplier.get()));
+    Rule existingRule = rulesByKey.get(ruleKey);
+    if (existingRule == null || (existingRule.isAdHoc() && !adHocRulesPersist.containsKey(ruleKey))) {
+      NewAdHocRule newAdHocRule = ruleSupplier.get();
+      adHocRulesPersist.put(ruleKey, newAdHocRule);
+      rulesByKey.put(ruleKey, new AdHocRuleWrapper(newAdHocRule));
     }
   }
 
   @Override
-  public void persistNewExternalRules(DbSession dbSession) {
+  public void saveOrUpdateAddHocRules(DbSession dbSession) {
     ensureInitialized();
 
-    rulesByKey.values().stream()
-      .filter(ExternalRuleWrapper.class::isInstance)
-      .forEach(extRule -> persistAndIndex(dbSession, (ExternalRuleWrapper) extRule));
+    adHocRulesPersist.values().forEach(r -> persistAndIndex(dbSession, r));
   }
 
-  private void persistAndIndex(DbSession dbSession, ExternalRuleWrapper external) {
-    Rule rule = new RuleImpl(creator.persistAndIndex(dbSession, external.getDelegate()));
+  private void persistAndIndex(DbSession dbSession, NewAdHocRule adHocRule) {
+    Rule rule = new RuleImpl(creator.persistAndIndex(dbSession, adHocRule, analysisMetadataHolder.getOrganization().toDto()));
     rulesById.put(rule.getId(), rule);
-    rulesByKey.put(external.getKey(), rule);
+    rulesByKey.put(adHocRule.getKey(), rule);
   }
 
   @Override
@@ -145,30 +146,30 @@ public class RuleRepositoryImpl implements RuleRepository {
     }
   }
 
-  private static class ExternalRuleWrapper implements Rule {
-    private final NewExternalRule externalRule;
+  private static class AdHocRuleWrapper implements Rule {
+    private final NewAdHocRule addHocRule;
 
-    private ExternalRuleWrapper(NewExternalRule externalRule) {
-      this.externalRule = externalRule;
+    private AdHocRuleWrapper(NewAdHocRule addHocRule) {
+      this.addHocRule = addHocRule;
     }
 
-    public NewExternalRule getDelegate() {
-      return externalRule;
+    public NewAdHocRule getDelegate() {
+      return addHocRule;
     }
 
     @Override
     public int getId() {
-      return 0;
+      throw new UnsupportedOperationException("Rule is not persisted, can't know the id");
     }
 
     @Override
     public RuleKey getKey() {
-      return externalRule.getKey();
+      return addHocRule.getKey();
     }
 
     @Override
     public String getName() {
-      return externalRule.getName();
+      return addHocRule.getName();
     }
 
     @Override
@@ -188,6 +189,11 @@ public class RuleRepositoryImpl implements RuleRepository {
     }
 
     @Override
+    public boolean isAdHoc() {
+      return true;
+    }
+
+    @Override
     public Set<String> getTags() {
       return Collections.emptySet();
     }
@@ -201,7 +207,7 @@ public class RuleRepositoryImpl implements RuleRepository {
     @CheckForNull
     @Override
     public String getPluginKey() {
-      return externalRule.getPluginKey();
+      return null;
     }
   }
 }

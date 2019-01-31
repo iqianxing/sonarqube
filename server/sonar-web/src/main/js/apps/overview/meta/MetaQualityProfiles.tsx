@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,17 +25,16 @@ import Tooltip from '../../../components/controls/Tooltip';
 import { translate, translateWithParameters } from '../../../helpers/l10n';
 import { getQualityProfileUrl } from '../../../helpers/urls';
 import { searchRules } from '../../../api/rules';
-import { getLanguages } from '../../../store/rootReducer';
-import { ComponentQualityProfile } from '../../../app/types';
+import { getLanguages, Store } from '../../../store/rootReducer';
 
 interface StateProps {
-  languages: { [key: string]: { name: string } };
+  languages: T.Languages;
 }
 
 interface OwnProps {
   headerClassName?: string;
   organization?: string;
-  profiles: ComponentQualityProfile[];
+  profiles: T.ComponentQualityProfile[];
 }
 
 interface State {
@@ -90,7 +89,7 @@ class MetaQualityProfiles extends React.PureComponent<StateProps & OwnProps, Sta
     return count || 0;
   }
 
-  renderProfile(profile: ComponentQualityProfile) {
+  renderProfile(profile: T.ComponentQualityProfile) {
     const languageFromStore = this.props.languages[profile.language];
     const languageName = languageFromStore ? languageFromStore.name : profile.language;
 
@@ -147,8 +146,8 @@ class MetaQualityProfiles extends React.PureComponent<StateProps & OwnProps, Sta
   }
 }
 
-const mapStateToProps = (state: any) => ({
+const mapStateToProps = (state: Store) => ({
   languages: getLanguages(state)
 });
 
-export default connect<StateProps, {}, OwnProps>(mapStateToProps)(MetaQualityProfiles);
+export default connect(mapStateToProps)(MetaQualityProfiles);

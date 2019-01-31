@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -35,8 +35,7 @@ jest.mock('../../../../api/components', () => ({
 
 import * as React from 'react';
 import { mount } from 'enzyme';
-import DefaultPageSelector from '../DefaultPageSelector';
-import { CurrentUser } from '../../../../app/types';
+import { DefaultPageSelector } from '../DefaultPageSelector';
 import { doAsync } from '../../../../helpers/testUtils';
 
 const get = require('../../../../helpers/storage').get as jest.Mock<any>;
@@ -83,12 +82,15 @@ it('fetches favorites', () => {
 });
 
 function mountRender(
-  currentUser: CurrentUser = { isLoggedIn: true },
+  currentUser: T.CurrentUser = { isLoggedIn: true },
   query: any = {},
   replace: any = jest.fn()
 ) {
   return mount(
-    <DefaultPageSelector currentUser={currentUser} location={{ pathname: '/projects', query }} />,
-    { context: { router: { replace } } }
+    <DefaultPageSelector
+      currentUser={currentUser}
+      location={{ pathname: '/projects', query }}
+      router={{ replace }}
+    />
   );
 }

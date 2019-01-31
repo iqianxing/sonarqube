@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,7 +27,6 @@ import javax.annotation.Nullable;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.session.ResultHandler;
 import org.apache.ibatis.session.RowBounds;
-import org.sonar.db.KeyLongValue;
 
 public interface ComponentMapper {
 
@@ -35,7 +34,10 @@ public interface ComponentMapper {
   ComponentDto selectByKey(String key);
 
   @CheckForNull
-  ComponentDto selectByKeyAndBranchKey(@Param("key") String key, @Param("dbKey") String dbKey, @Param("branch") String branch);
+  ComponentDto selectBranchByKeyAndBranchKey(@Param("key") String key, @Param("dbKey") String dbKey, @Param("branch") String branch);
+
+  @CheckForNull
+  ComponentDto selectPrByKeyAndBranchKey(@Param("key") String key, @Param("dbKey") String dbKey, @Param("branch") String branch);
 
   @CheckForNull
   ComponentDto selectById(long id);
@@ -64,19 +66,19 @@ public interface ComponentMapper {
 
   List<ComponentDto> selectComponentsByQualifiers(@Param("qualifiers") Collection<String> qualifiers);
 
+  int countEnabledModulesByProjectUuid(@Param("projectUuid") String projectUuid);
+
   /**
    * Counts the number of components with the specified id belonging to the specified organization.
    *
    * @return 1 or 0. Either because the organization uuid is not the one of the component or because the component does
-   *         not exist.
+   * not exist.
    */
   int countComponentByOrganizationAndId(@Param("organizationUuid") String organizationUuid, @Param("componentId") long componentId);
 
   List<ComponentDto> selectByQuery(@Nullable @Param("organizationUuid") String organizationUuid, @Param("query") ComponentQuery query, RowBounds rowBounds);
 
   int countByQuery(@Nullable @Param("organizationUuid") String organizationUuid, @Param("query") ComponentQuery query);
-
-  List<KeyLongValue> countByNclocRanges();
 
   List<ComponentDto> selectDescendants(@Param("query") ComponentTreeQuery query, @Param("baseUuid") String baseUuid, @Param("baseUuidPath") String baseUuidPath);
 
@@ -87,7 +89,7 @@ public interface ComponentMapper {
    */
   List<ComponentDto> selectProjects();
 
-  List<ComponentDto> selectAllRootsByOrganization(@Param("organizationUuid") String organizationUuid);
+  List<ComponentDto> selectProjectsByOrganization(@Param("organizationUuid") String organizationUuid);
 
   /**
    * Return all descendant modules (including itself) from a given component uuid and scope
@@ -162,4 +164,8 @@ public interface ComponentMapper {
   void updateTags(ComponentDto component);
 
   List<KeyWithUuidDto> selectComponentKeysHavingIssuesToMerge(@Param("mergeBranchUuid") String mergeBranchUuid);
+
+  List<ProjectNclocDistributionDto> selectPrivateProjectsWithNcloc(@Param("organizationUuid") String organizationUuid);
+
+  List<ComponentWithModuleUuidDto> selectEnabledComponentsWithModuleUuidFromProjectKey(String projectKey);
 }

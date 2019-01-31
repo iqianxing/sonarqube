@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,13 +19,15 @@
  */
 package org.sonar.server.user;
 
+import com.google.common.collect.ImmutableSet;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
-import org.sonar.core.permission.ProjectPermissions;
+import org.sonar.api.web.UserRole;
 import org.sonar.core.util.stream.MoreCollectors;
 import org.sonar.db.component.ComponentDto;
 import org.sonar.db.organization.OrganizationDto;
@@ -36,33 +38,23 @@ import org.sonar.server.exceptions.UnauthorizedException;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang.StringUtils.defaultString;
+import static org.sonar.server.user.UserSession.IdentityProvider.SONARQUBE;
 
 public abstract class AbstractUserSession implements UserSession {
+  private static final Set<String> PUBLIC_PERMISSIONS = ImmutableSet.of(UserRole.USER, UserRole.CODEVIEWER);
   private static final String INSUFFICIENT_PRIVILEGES_MESSAGE = "Insufficient privileges";
-  private static final ForbiddenException INSUFFICIENT_PRIVILEGES_EXCEPTION = new ForbiddenException(INSUFFICIENT_PRIVILEGES_MESSAGE);
   private static final String AUTHENTICATION_IS_REQUIRED_MESSAGE = "Authentication is required";
 
   protected static Identity computeIdentity(UserDto userDto) {
-    switch (userDto.getExternalIdentityProvider()) {
-      case "github":
-        return new Identity(IdentityProvider.GITHUB, externalIdentityOf(userDto));
-      case "bitbucket":
-        return new Identity(IdentityProvider.BITBUCKET, externalIdentityOf(userDto));
-      case "sonarqube":
-        return new Identity(IdentityProvider.SONARQUBE, null);
-      default:
-        return new Identity(IdentityProvider.OTHER, externalIdentityOf(userDto));
-    }
+    IdentityProvider identityProvider = IdentityProvider.getFromKey(userDto.getExternalIdentityProvider());
+    ExternalIdentity externalIdentity = identityProvider == SONARQUBE ? null : externalIdentityOf(userDto);
+    return new Identity(identityProvider, externalIdentity);
   }
 
-  @CheckForNull
   private static ExternalIdentity externalIdentityOf(UserDto userDto) {
     String externalId = userDto.getExternalId();
     String externalLogin = userDto.getExternalLogin();
-    if (externalId == null && externalLogin == null) {
-      return null;
-    }
-    return new ExternalIdentity(externalId == null ? externalLogin : externalId, externalLogin);
+    return new ExternalIdentity(externalId, externalLogin);
   }
 
   protected static final class Identity {
@@ -139,7 +131,7 @@ public abstract class AbstractUserSession implements UserSession {
    * Naive implementation, to be overridden if needed
    */
   protected List<ComponentDto> doKeepAuthorizedComponents(String permission, Collection<ComponentDto> components) {
-    boolean allowPublicComponent = ProjectPermissions.PUBLIC_PERMISSIONS.contains(permission);
+    boolean allowPublicComponent = PUBLIC_PERMISSIONS.contains(permission);
     return components.stream()
       .filter(c -> (allowPublicComponent && !c.isPrivate()) || hasComponentPermission(permission, c))
       .collect(MoreCollectors.toList());
@@ -191,7 +183,7 @@ public abstract class AbstractUserSession implements UserSession {
   }
 
   public static ForbiddenException insufficientPrivilegesException() {
-    return INSUFFICIENT_PRIVILEGES_EXCEPTION;
+    return new ForbiddenException(INSUFFICIENT_PRIVILEGES_MESSAGE);
   }
 
   @Override

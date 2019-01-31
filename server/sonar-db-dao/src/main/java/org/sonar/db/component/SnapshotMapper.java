@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -41,8 +41,6 @@ public interface SnapshotMapper {
   List<SnapshotDto> selectLastSnapshotsByRootComponentUuids(@Param("componentUuids") Collection<String> componentIds);
 
   List<SnapshotDto> selectSnapshotsByQuery(@Param("query") SnapshotQuery query);
-
-  List<SnapshotDto> selectPreviousVersionSnapshots(@Param("componentUuid") String componentUuid, @Param("lastVersion") String lastVersion);
 
   List<SnapshotDto> selectOldestSnapshots(@Param("componentUuid") String componentUuid, RowBounds rowBounds);
 

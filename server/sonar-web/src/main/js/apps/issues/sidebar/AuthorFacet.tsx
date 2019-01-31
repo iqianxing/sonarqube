@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,10 +24,9 @@ import { translate } from '../../../helpers/l10n';
 import ListStyleFacet from '../../../components/facet/ListStyleFacet';
 import { searchIssueAuthors } from '../../../api/issues';
 import { highlightTerm } from '../../../helpers/search';
-import { Component } from '../../../app/types';
 
 interface Props {
-  component: Component | undefined;
+  component: T.Component | undefined;
   fetching: boolean;
   loadSearchResultCount: (property: string, changes: Partial<Query>) => Promise<Facet>;
   onChange: (changes: Partial<Query>) => void;

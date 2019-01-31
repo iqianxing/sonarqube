@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,7 +18,6 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import { difference } from 'lodash';
 import DeleteForm from './DeleteForm';
 import Form from './Form';
@@ -27,16 +26,17 @@ import {
   deletePermissionTemplate,
   updatePermissionTemplate
 } from '../../../api/permissions';
-import { PermissionTemplate } from '../../../app/types';
 import ActionsDropdown, { ActionsDropdownItem } from '../../../components/controls/ActionsDropdown';
 import QualifierIcon from '../../../components/icons-components/QualifierIcon';
 import { translate } from '../../../helpers/l10n';
+import { withRouter, Router } from '../../../components/hoc/withRouter';
 
-export interface Props {
+interface Props {
   fromDetails?: boolean;
   organization?: { isDefault?: boolean; key: string };
-  permissionTemplate: PermissionTemplate;
+  permissionTemplate: T.PermissionTemplate;
   refresh: () => void;
+  router: Pick<Router, 'replace'>;
   topQualifiers: string[];
 }
 
@@ -45,13 +45,8 @@ interface State {
   updateModal: boolean;
 }
 
-export default class ActionsCell extends React.PureComponent<Props, State> {
+export class ActionsCell extends React.PureComponent<Props, State> {
   mounted = false;
-
-  static contextTypes = {
-    router: PropTypes.object
-  };
-
   state: State = { deleteForm: false, updateModal: false };
 
   componentDidMount() {
@@ -97,7 +92,7 @@ export default class ActionsCell extends React.PureComponent<Props, State> {
       const pathname = this.props.organization
         ? `/organizations/${this.props.organization.key}/permission_templates`
         : '/permission_templates';
-      this.context.router.replace(pathname);
+      this.props.router.replace(pathname);
       this.props.refresh();
     });
   };
@@ -215,3 +210,5 @@ export default class ActionsCell extends React.PureComponent<Props, State> {
     );
   }
 }
+
+export default withRouter(ActionsCell);

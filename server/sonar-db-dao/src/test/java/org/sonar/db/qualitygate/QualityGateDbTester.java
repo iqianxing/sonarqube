@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -99,7 +99,6 @@ public class QualityGateDbTester {
     QualityGateConditionDto condition = new QualityGateConditionDto().setQualityGateId(qualityGate.getId())
       .setMetricId(metric.getId())
       .setOperator("GT")
-      .setWarningThreshold(randomNumeric(10))
       .setErrorThreshold(randomNumeric(10));
     Arrays.stream(dtoPopulators).forEach(dtoPopulator -> dtoPopulator.accept(condition));
     dbClient.gateConditionDao().insert(condition, dbSession);

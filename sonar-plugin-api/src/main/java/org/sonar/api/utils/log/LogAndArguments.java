@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
  */
 package org.sonar.api.utils.log;
 
+import java.util.Arrays;
 import java.util.Optional;
 import javax.annotation.Nullable;
 
@@ -61,5 +62,14 @@ public final class LogAndArguments {
 
   public String getFormattedMsg() {
     return msg;
+  }
+
+  @Override
+  public String toString() {
+    return "LogAndArguments{" +
+      "rawMsg='" + rawMsg + '\'' +
+      ", args=" + Arrays.toString(args) +
+      ", msg='" + msg + '\'' +
+      '}';
   }
 }

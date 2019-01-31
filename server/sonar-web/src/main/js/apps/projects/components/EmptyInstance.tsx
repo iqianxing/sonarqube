@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,27 +18,28 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import { translate } from '../../../helpers/l10n';
 import { Button } from '../../../components/ui/buttons';
-import { Organization, CurrentUser, isLoggedIn } from '../../../app/types';
 import { isSonarCloud } from '../../../helpers/system';
+import { hasGlobalPermission, isLoggedIn } from '../../../helpers/users';
+import { OnboardingContextShape } from '../../../app/components/OnboardingContext';
 
 interface Props {
-  organization?: Organization;
-  currentUser: CurrentUser;
+  currentUser: T.CurrentUser;
+  openProjectOnboarding: OnboardingContextShape;
+  organization?: T.Organization;
 }
 
 export default class EmptyInstance extends React.PureComponent<Props> {
-  static contextTypes = {
-    openProjectOnboarding: PropTypes.func
+  analyzeNewProject = () => {
+    this.props.openProjectOnboarding(this.props.organization);
   };
 
   render() {
     const { currentUser, organization } = this.props;
     const showNewProjectButton = isSonarCloud()
-      ? organization && organization.canProvisionProjects
-      : isLoggedIn(currentUser);
+      ? organization && organization.actions && organization.actions.provision
+      : isLoggedIn(currentUser) && hasGlobalPermission(currentUser, 'provisioning');
 
     return (
       <div className="projects-empty-list">
@@ -53,8 +54,8 @@ export default class EmptyInstance extends React.PureComponent<Props> {
               {translate('projects.no_projects.empty_instance.how_to_add_projects')}
             </p>
             <p className="big-spacer-top">
-              <Button onClick={this.context.openProjectOnboarding}>
-                {translate('embed_docs.analyze_new_project')}
+              <Button onClick={this.analyzeNewProject}>
+                {translate('my_account.create_new.TRK')}
               </Button>
             </p>
           </div>

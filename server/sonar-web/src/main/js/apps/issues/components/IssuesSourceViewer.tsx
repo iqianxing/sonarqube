@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,18 +19,17 @@
  */
 import * as React from 'react';
 import { getLocations, getSelectedLocation } from '../utils';
-import { BranchLike, Issue } from '../../../app/types';
 import SourceViewer from '../../../components/SourceViewer/SourceViewer';
 import { scrollToElement } from '../../../helpers/scrolling';
 
 interface Props {
-  branchLike: BranchLike | undefined;
-  loadIssues: (component: string, from: number, to: number) => Promise<Issue[]>;
+  branchLike: T.BranchLike | undefined;
+  loadIssues: (component: string, from: number, to: number) => Promise<T.Issue[]>;
   locationsNavigator: boolean;
-  onIssueChange: (issue: Issue) => void;
+  onIssueChange: (issue: T.Issue) => void;
   onIssueSelect: (issueKey: string) => void;
   onLocationSelect: (index: number) => void;
-  openIssue: Issue;
+  openIssue: T.Issue;
   selectedFlowIndex: number | undefined;
   selectedLocationIndex: number | undefined;
 }

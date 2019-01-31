@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,6 +26,7 @@ import com.google.common.io.Resources;
 import java.util.List;
 import java.util.Optional;
 import org.sonar.api.security.DefaultGroups;
+import org.sonar.api.server.ws.Change;
 import org.sonar.api.server.ws.Request;
 import org.sonar.api.server.ws.Response;
 import org.sonar.api.server.ws.WebService;
@@ -44,14 +45,13 @@ import org.sonarqube.ws.Permissions.Group;
 import org.sonarqube.ws.Permissions.WsGroupsResponse;
 
 import static java.util.Collections.emptyList;
-import static org.sonar.core.util.Protobuf.setNullable;
+import static java.util.Optional.ofNullable;
 import static org.sonar.db.permission.PermissionQuery.DEFAULT_PAGE_SIZE;
 import static org.sonar.db.permission.PermissionQuery.RESULTS_MAX_SIZE;
 import static org.sonar.db.permission.PermissionQuery.SEARCH_QUERY_MIN_LENGTH;
 import static org.sonar.server.permission.PermissionPrivilegeChecker.checkProjectAdmin;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createOrganizationParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createPermissionParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createProjectParameters;
+import static org.sonar.server.permission.ws.WsParameters.createOrganizationParameter;
+import static org.sonar.server.permission.ws.WsParameters.createProjectParameters;
 import static org.sonar.server.ws.WsUtils.writeProtobuf;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_ORGANIZATION;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_PERMISSION;
@@ -59,12 +59,14 @@ import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_P
 public class GroupsAction implements PermissionsWsAction {
   private final DbClient dbClient;
   private final UserSession userSession;
-  private final PermissionWsSupport support;
+  private final PermissionWsSupport wsSupport;
+  private final WsParameters wsParameters;
 
-  public GroupsAction(DbClient dbClient, UserSession userSession, PermissionWsSupport support) {
+  public GroupsAction(DbClient dbClient, UserSession userSession, PermissionWsSupport wsSupport, WsParameters wsParameters) {
     this.dbClient = dbClient;
     this.userSession = userSession;
-    this.support = support;
+    this.wsSupport = wsSupport;
+    this.wsParameters = wsParameters;
   }
 
   @Override
@@ -81,23 +83,25 @@ public class GroupsAction implements PermissionsWsAction {
         "<li>'Administer' rights on the specified project</li>" +
         "</ul>")
       .addPagingParams(DEFAULT_PAGE_SIZE, RESULTS_MAX_SIZE)
+      .setChangelog(
+        new Change("7.4", "The response list is returning all groups even those without permissions, the groups with permission are at the top of the list."))
       .setResponseExample(Resources.getResource(getClass(), "groups-example.json"))
       .setHandler(this);
 
     action.createSearchQuery("sonar", "names")
-      .setDescription("Limit search to group names that contain the supplied string. When this parameter is not set, only groups having at least one permission are returned.")
+      .setDescription("Limit search to group names that contain the supplied string.")
       .setMinimumLength(SEARCH_QUERY_MIN_LENGTH);
 
     createOrganizationParameter(action).setSince("6.2");
-    createPermissionParameter(action).setRequired(false);
+    wsParameters.createPermissionParameter(action).setRequired(false);
     createProjectParameters(action);
   }
 
   @Override
   public void handle(Request request, Response response) throws Exception {
     try (DbSession dbSession = dbClient.openSession(false)) {
-      OrganizationDto org = support.findOrganization(dbSession, request.param(PARAM_ORGANIZATION));
-      Optional<ProjectId> projectId = support.findProjectId(dbSession, request);
+      OrganizationDto org = wsSupport.findOrganization(dbSession, request.param(PARAM_ORGANIZATION));
+      Optional<ProjectId> projectId = wsSupport.findProjectId(dbSession, request);
       checkProjectAdmin(userSession, org.getUuid(), projectId);
 
       PermissionQuery query = buildPermissionQuery(request, org, projectId);
@@ -122,9 +126,7 @@ public class GroupsAction implements PermissionsWsAction {
     if (project.isPresent()) {
       permissionQuery.setComponentUuid(project.get().getUuid());
     }
-    if (textQuery == null) {
-      permissionQuery.withAtLeastOnePermission();
-    }
+
     return permissionQuery.build();
   }
 
@@ -139,7 +141,7 @@ public class GroupsAction implements PermissionsWsAction {
       if (group.getId() != 0) {
         wsGroup.setId(String.valueOf(group.getId()));
       }
-      setNullable(group.getDescription(), wsGroup::setDescription);
+      ofNullable(group.getDescription()).ifPresent(wsGroup::setDescription);
       wsGroup.addAllPermissions(permissionsByGroupId.get(group.getId()));
     });
 

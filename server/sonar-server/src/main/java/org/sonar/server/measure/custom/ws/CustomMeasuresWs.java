@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -33,7 +33,8 @@ public class CustomMeasuresWs implements WebService {
   @Override
   public void define(Context context) {
     NewController controller = context.createController(ENDPOINT)
-      .setDescription("Manage custom measures for a project. See also api/metrics.")
+      .setDescription("Manage custom measures for a project. See also api/metrics.<br/>" +
+        "Custom measures are deprecated. Please use projects tags instead.")
       .setSince("5.2");
 
     for (CustomMeasuresWsAction action : actions) {

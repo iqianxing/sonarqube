@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,10 @@ import java.util.List;
 import javax.annotation.Nullable;
 import org.junit.Before;
 import org.junit.Test;
+import org.sonar.api.resources.Qualifiers;
+import org.sonar.api.resources.ResourceTypes;
 import org.sonar.core.permission.GlobalPermissions;
+import org.sonar.db.component.ResourceTypesRule;
 import org.sonar.db.permission.PermissionQuery;
 import org.sonar.db.permission.template.PermissionTemplateDto;
 import org.sonar.db.user.GroupDto;
@@ -31,7 +34,10 @@ import org.sonar.server.exceptions.BadRequestException;
 import org.sonar.server.exceptions.ForbiddenException;
 import org.sonar.server.exceptions.NotFoundException;
 import org.sonar.server.exceptions.UnauthorizedException;
+import org.sonar.server.permission.PermissionService;
+import org.sonar.server.permission.PermissionServiceImpl;
 import org.sonar.server.permission.ws.BasePermissionWsTest;
+import org.sonar.server.permission.ws.WsParameters;
 import org.sonar.server.ws.TestRequest;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,10 +56,13 @@ public class RemoveGroupFromTemplateActionTest extends BasePermissionWsTest<Remo
 
   private GroupDto group;
   private PermissionTemplateDto template;
+  private ResourceTypes resourceTypes = new ResourceTypesRule().setRootQualifiers(Qualifiers.PROJECT);
+  private PermissionService permissionService = new PermissionServiceImpl(resourceTypes);
+  private WsParameters wsParameters = new WsParameters(permissionService);
 
   @Override
   protected RemoveGroupFromTemplateAction buildWsAction() {
-    return new RemoveGroupFromTemplateAction(db.getDbClient(), newPermissionWsSupport(), userSession);
+    return new RemoveGroupFromTemplateAction(db.getDbClient(), newPermissionWsSupport(), userSession, wsParameters);
   }
 
   @Before
@@ -66,7 +75,7 @@ public class RemoveGroupFromTemplateActionTest extends BasePermissionWsTest<Remo
   }
 
   @Test
-  public void remove_group_from_template() throws Exception {
+  public void remove_group_from_template() {
     newRequest(group.getName(), template.getUuid(), PERMISSION);
 
     assertThat(getGroupNamesInTemplateAndPermission(template, PERMISSION)).isEmpty();
@@ -95,7 +104,7 @@ public class RemoveGroupFromTemplateActionTest extends BasePermissionWsTest<Remo
   }
 
   @Test
-  public void remove_group_twice_without_error() throws Exception {
+  public void remove_group_twice_without_error() {
     newRequest(group.getName(), template.getUuid(), PERMISSION);
     newRequest(group.getName(), template.getUuid(), PERMISSION);
 
@@ -103,7 +112,7 @@ public class RemoveGroupFromTemplateActionTest extends BasePermissionWsTest<Remo
   }
 
   @Test
-  public void remove_anyone_group_from_template() throws Exception {
+  public void remove_anyone_group_from_template() {
     addGroupToTemplate(template, null, PERMISSION);
 
     newRequest(ANYONE, template.getUuid(), PERMISSION);
@@ -112,14 +121,14 @@ public class RemoveGroupFromTemplateActionTest extends BasePermissionWsTest<Remo
   }
 
   @Test
-  public void fail_if_not_a_project_permission() throws Exception {
+  public void fail_if_not_a_project_permission() {
     expectedException.expect(IllegalArgumentException.class);
 
     newRequest(group.getName(), template.getUuid(), GlobalPermissions.PROVISIONING);
   }
 
   @Test
-  public void fail_if_insufficient_privileges() throws Exception {
+  public void fail_if_insufficient_privileges() {
     userSession.logIn().addPermission(SCAN, db.getDefaultOrganization());
 
     expectedException.expect(ForbiddenException.class);
@@ -128,7 +137,7 @@ public class RemoveGroupFromTemplateActionTest extends BasePermissionWsTest<Remo
   }
 
   @Test
-  public void fail_if_not_logged_in() throws Exception {
+  public void fail_if_not_logged_in() {
     expectedException.expect(UnauthorizedException.class);
     userSession.anonymous();
 
@@ -136,28 +145,28 @@ public class RemoveGroupFromTemplateActionTest extends BasePermissionWsTest<Remo
   }
 
   @Test
-  public void fail_if_group_params_missing() throws Exception {
+  public void fail_if_group_params_missing() {
     expectedException.expect(BadRequestException.class);
 
     newRequest(null, template.getUuid(), PERMISSION);
   }
 
   @Test
-  public void fail_if_permission_missing() throws Exception {
+  public void fail_if_permission_missing() {
     expectedException.expect(IllegalArgumentException.class);
 
     newRequest(group.getName(), template.getUuid(), null);
   }
 
   @Test
-  public void fail_if_template_missing() throws Exception {
+  public void fail_if_template_missing() {
     expectedException.expect(BadRequestException.class);
 
     newRequest(group.getName(), null, PERMISSION);
   }
 
   @Test
-  public void fail_if_group_does_not_exist() throws Exception {
+  public void fail_if_group_does_not_exist() {
     expectedException.expect(NotFoundException.class);
     expectedException.expectMessage("No group with name 'unknown-group-name'");
 
@@ -165,7 +174,7 @@ public class RemoveGroupFromTemplateActionTest extends BasePermissionWsTest<Remo
   }
 
   @Test
-  public void fail_if_template_key_does_not_exist() throws Exception {
+  public void fail_if_template_key_does_not_exist() {
     expectedException.expect(NotFoundException.class);
     expectedException.expectMessage("Permission template with id 'unknown-key' is not found");
 

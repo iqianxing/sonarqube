@@ -47,6 +47,7 @@ message Metadata {
   string scm_revision_id = 13;
 
   string pull_request_key = 14;
+  map<string, string> modules_project_relative_path_by_key = 15;
 
   message QProfile {
     string key = 1;
@@ -79,6 +80,8 @@ message ActiveRule {
   Severity severity = 3;
   map<string,string> params_by_key = 4;
   int64 createdAt = 5;
+  int64 updatedAt = 6;
+  string q_profile_key = 7;
 }
 
 message ComponentLink {
@@ -87,20 +90,18 @@ message ComponentLink {
   
   enum ComponentLinkType {
     UNSET = 0;
-	HOME = 1;
-	SCM = 2;
-	// SCM_DEV is no more set since 7.1. See SONAR-10299
-	IGNORED_SCM_DEV = 3;
-	ISSUE = 4;
-	CI = 5;
+    HOME = 1;
+    SCM = 2;
+    // SCM_DEV is no more set since 7.1. See SONAR-10299
+    IGNORED_SCM_DEV = 3;
+    ISSUE = 4;
+    CI = 5;
   }
 }
 
 message Component {
   int32 ref = 1;
 
-  // Path relative to module base directory
-  string path = 2;
   string name = 3;
   ComponentType type = 4;
   bool is_test = 5;
@@ -121,31 +122,30 @@ message Component {
   // Path relative to project base directory
   string project_relative_path = 14;
   
-	enum ComponentType {
-	  UNSET = 0;
-	  PROJECT = 1;
-	  MODULE = 2;
-	  DIRECTORY = 3;
-	  FILE = 4;
-	}
-	
-	enum FileStatus {
-	  UNAVAILABLE = 0;
-	  SAME = 1;
-	  CHANGED = 2;
-	  ADDED = 3;
-	}
-	
+  enum ComponentType {
+    UNSET = 0;
+    PROJECT = 1;
+    MODULE = 2 [deprecated=true];
+    DIRECTORY = 3 [deprecated=true];
+    FILE = 4;
+  }
+
+  enum FileStatus {
+    UNAVAILABLE = 0;
+    SAME = 1;
+    CHANGED = 2;
+    ADDED = 3;
+  }
 }
 
 message Measure {
   string metric_key = 1;
   oneof value {
-	  BoolValue boolean_value = 2;
-	  IntValue int_value = 3;
-	  LongValue long_value = 4;
-	  DoubleValue double_value = 5;
-	  StringValue string_value = 6;
+    BoolValue boolean_value = 2;
+    IntValue int_value = 3;
+    LongValue long_value = 4;
+    DoubleValue double_value = 5;
+    StringValue string_value = 6;
   }
   
   message BoolValue {
@@ -187,17 +187,23 @@ message Issue {
 }
 
 message ExternalIssue {
-  string rule_repository = 1;
-  string rule_key = 2;
-  // Only when issue component is a file. Can also be empty for a file if this is an issue global to the file.
+  string engine_id = 1;
+  string rule_id = 2;
   string msg = 3;
   Severity severity = 4;
   int64 effort = 5;
-  // Only when issue component is a file. Can also be empty for a file if this is an issue global to the file.
-  // Will be identical to the first location of the first flow
   TextRange text_range = 6;
   repeated Flow flow = 7;
   IssueType type = 8;
+}
+
+message AdHocRule {
+    string engine_id = 1;
+    string rule_id = 2;
+    string name = 3;
+    string description = 4;
+    Severity severity = 5;
+    IssueType type = 6;
 }
 
 enum IssueType {
@@ -271,6 +277,10 @@ message LineSgnificantCode {
   int32 end_offset = 3;
 }
 
+message ChangedLines {
+  repeated int32 line = 1;
+}
+
 message Symbol {
   TextRange declaration = 1;
   repeated TextRange reference = 2;
@@ -299,40 +309,19 @@ message SyntaxHighlightingRule {
   
   enum HighlightingType {
     UNSET = 0;
-	  ANNOTATION = 1;
-	  CONSTANT = 2;
-	  COMMENT = 3;
-	  CPP_DOC = 4;
-	  STRUCTURED_COMMENT = 5;
-	  KEYWORD = 6;
-	  HIGHLIGHTING_STRING = 7;
-	  KEYWORD_LIGHT = 8;
-	  PREPROCESS_DIRECTIVE = 9;
-	}
-}
-
-message Test {
-  string name = 1;
-  TestStatus status = 2;
-  int64 duration_in_ms = 3;
-  string stacktrace = 4;
-  string msg = 5;
-  
-	enum TestStatus {
-	  UNSET = 0;
-	  OK = 1;
-	  FAILURE = 2;
-	  ERROR = 3;
-	  SKIPPED = 4;
-	}
-}
-
-message CoverageDetail {
-  string test_name = 1;
-  repeated CoveredFile covered_file = 2;
-
-  message CoveredFile {
-    int32 file_ref = 1;
-    repeated int32 covered_line = 2 [packed = true];
+    ANNOTATION = 1;
+    CONSTANT = 2;
+    COMMENT = 3;
+    CPP_DOC = 4;
+    STRUCTURED_COMMENT = 5;
+    KEYWORD = 6;
+    HIGHLIGHTING_STRING = 7;
+    KEYWORD_LIGHT = 8;
+    PREPROCESS_DIRECTIVE = 9;
   }
+}
+
+message AnalysisWarning {
+  string text = 1;
+  int64 timestamp = 2;
 }

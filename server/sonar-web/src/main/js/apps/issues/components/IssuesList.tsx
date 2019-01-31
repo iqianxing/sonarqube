@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,21 +20,20 @@
 import * as React from 'react';
 import ListItem from './ListItem';
 import { Query } from '../utils';
-import { BranchLike, Component, Issue } from '../../../app/types';
 
 interface Props {
-  branchLike: BranchLike | undefined;
+  branchLike: T.BranchLike | undefined;
   checked: string[];
-  component: Component | undefined;
-  issues: Issue[];
+  component: T.Component | undefined;
+  issues: T.Issue[];
   onFilterChange: (changes: Partial<Query>) => void;
-  onIssueChange: (issue: Issue) => void;
-  onIssueCheck: ((issueKey: string, event: Event) => void) | undefined;
+  onIssueChange: (issue: T.Issue) => void;
+  onIssueCheck: ((issueKey: string, event: { shiftKey?: boolean }) => void) | undefined;
   onIssueClick: (issueKey: string) => void;
   onPopupToggle: (issue: string, popupName: string, open?: boolean) => void;
   openPopup: { issue: string; name: string } | undefined;
   organization: { key: string } | undefined;
-  selectedIssue: Issue | undefined;
+  selectedIssue: T.Issue | undefined;
 }
 
 export default class IssuesList extends React.PureComponent<Props> {

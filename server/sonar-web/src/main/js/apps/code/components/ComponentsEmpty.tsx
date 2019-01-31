@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,13 +18,17 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
+import * as classNames from 'classnames';
 import { translate } from '../../../helpers/l10n';
 
-export default function ComponentsEmpty() {
+export default function ComponentsEmpty({ isLeak }: { isLeak: boolean }) {
   return (
     <tr>
-      <td colSpan={2}>{translate('no_results')}</td>
-      <td colSpan={6} />
+      <td />
+      <td className="note" colSpan={2}>
+        {translate('no_results')}
+      </td>
+      <td className={classNames({ leak: isLeak })} colSpan={10} />
     </tr>
   );
 }

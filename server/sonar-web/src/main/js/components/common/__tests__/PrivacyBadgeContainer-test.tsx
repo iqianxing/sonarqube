@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,12 +20,11 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import { PrivacyBadge } from '../PrivacyBadgeContainer';
-import { Visibility, OrganizationSubscription } from '../../../app/types';
 import { isSonarCloud } from '../../../helpers/system';
 
 jest.mock('../../../helpers/system', () => ({ isSonarCloud: jest.fn().mockReturnValue(false) }));
 
-const organization = { key: 'foo', name: 'Foo' };
+const organization: T.Organization = { key: 'foo', name: 'Foo' };
 const loggedInUser = { isLoggedIn: true, login: 'luke', name: 'Skywalker' };
 
 it('renders', () => {
@@ -33,12 +32,12 @@ it('renders', () => {
 });
 
 it('do not render', () => {
-  expect(getWrapper({ visibility: Visibility.Public })).toMatchSnapshot();
+  expect(getWrapper({ visibility: 'public' })).toMatchSnapshot();
 });
 
 it('renders public', () => {
   (isSonarCloud as jest.Mock<any>).mockReturnValueOnce(true);
-  expect(getWrapper({ visibility: Visibility.Public })).toMatchSnapshot();
+  expect(getWrapper({ visibility: 'public' })).toMatchSnapshot();
 });
 
 it('renders public with icon', () => {
@@ -47,10 +46,10 @@ it('renders public with icon', () => {
     getWrapper({
       organization: {
         ...organization,
-        canAdmin: true,
-        subscription: OrganizationSubscription.Paid
+        actions: { admin: true },
+        subscription: 'PAID'
       },
-      visibility: Visibility.Public
+      visibility: 'public'
     })
   ).toMatchSnapshot();
 });
@@ -62,7 +61,7 @@ function getWrapper(props = {}) {
       organization={organization}
       qualifier="TRK"
       userOrganizations={[organization]}
-      visibility={Visibility.Private}
+      visibility={'private'}
       {...props}
     />
   );

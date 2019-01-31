@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,10 +31,10 @@ public class ShortLivingBranchQualityGateTest {
   @Test
   public void defines_short_living_branches_hardcoded_quality_gate_conditions() {
     assertThat(ShortLivingBranchQualityGate.CONDITIONS)
-      .extracting(Condition::getMetricKey, Condition::getOperator, Condition::getErrorThreshold, Condition::getWarnThreshold, Condition::isOnLeak)
+      .extracting(Condition::getMetricKey, Condition::getOperator, Condition::getErrorThreshold)
       .containsExactly(
-        tuple(CoreMetrics.OPEN_ISSUES_KEY, "GT", "0", null, false),
-        tuple(CoreMetrics.REOPENED_ISSUES_KEY, "GT", "0", null, false));
+        tuple(CoreMetrics.OPEN_ISSUES_KEY, "GT", "0"),
+        tuple(CoreMetrics.REOPENED_ISSUES_KEY, "GT", "0"));
   }
 
 }

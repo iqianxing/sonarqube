@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -46,9 +46,6 @@ public class DuplicationDao implements Dao {
     session.getMapper(DuplicationMapper.class).batchInsert(dto);
   }
   
-  /**
-   * @param componentUUid uuid of the component
-   */
   public List<DuplicationUnitDto> selectComponent(DbSession session, String componentUuid, String analysisUuid) {
     return session.getMapper(DuplicationMapper.class).selectComponent(componentUuid, analysisUuid);
   }

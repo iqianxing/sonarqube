@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,6 @@
 import * as React from 'react';
 import { Link } from 'react-router';
 import TaskType from './TaskType';
-import { Task } from '../types';
 import QualifierIcon from '../../../components/icons-components/QualifierIcon';
 import Organization from '../../../components/shared/Organization';
 import {
@@ -34,7 +33,7 @@ import LongLivingBranchIcon from '../../../components/icons-components/LongLivin
 import PullRequestIcon from '../../../components/icons-components/PullRequestIcon';
 
 interface Props {
-  task: Task;
+  task: T.Task;
 }
 
 export default function TaskComponent({ task }: Props) {
@@ -88,7 +87,7 @@ export default function TaskComponent({ task }: Props) {
   );
 }
 
-function getTaskComponentUrl(componentKey: string, task: Task) {
+function getTaskComponentUrl(componentKey: string, task: T.Task) {
   if (task.branch) {
     if (task.branchType === 'SHORT') {
       return getShortLivingBranchUrl(componentKey, task.branch);

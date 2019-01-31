@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,7 +31,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.internal.FileMetadata;
 import org.sonar.scanner.mediumtest.ScannerMediumTester;
-import org.sonar.scanner.mediumtest.TaskResult;
+import org.sonar.scanner.mediumtest.AnalysisResult;
 import org.sonar.scanner.protocol.output.ScannerReport;
 import org.sonar.scanner.repository.FileData;
 import org.sonar.scanner.scan.branch.BranchType;
@@ -66,25 +66,25 @@ public class BranchMediumTest {
     String md5sum = new FileMetadata()
       .readMetadata(Files.newInputStream(filepath), StandardCharsets.UTF_8, FILE_PATH)
       .hash();
-    tester.addFileData(PROJECT_KEY, FILE_PATH, new FileData(md5sum, "1.1"));
+    tester.addFileData(FILE_PATH, new FileData(md5sum, "1.1"));
   }
 
   @Test
-  public void should_skip_report_for_unchanged_files_in_short_branch() {
+  public void should_not_skip_report_for_unchanged_files_in_short_branch() {
     // sanity check, normally report gets generated
-    TaskResult result = getResult(tester);
-    assertThat(getResult(tester).getReportComponent(result.inputFile(FILE_PATH).key())).isNotNull();
+    AnalysisResult result = getResult(tester);
+    assertThat(getResult(tester).getReportComponent(result.inputFile(FILE_PATH))).isNotNull();
     int fileId = 2;
     assertThat(result.getReportReader().readChangesets(fileId)).isNotNull();
     assertThat(result.getReportReader().hasCoverage(fileId)).isTrue();
     assertThat(result.getReportReader().readFileSource(fileId)).isNotNull();
 
-    // file is skipped for short branches (no report, no coverage, no duplications)
-    TaskResult result2 = getResult(tester.setBranchType(BranchType.SHORT));
-    assertThat(result2.getReportComponent(result2.inputFile(FILE_PATH).key())).isNull();
+    // file is not skipped for short branches (need coverage, duplications coming soon)
+    AnalysisResult result2 = getResult(tester.setBranchType(BranchType.SHORT));
+    assertThat(result2.getReportComponent(result2.inputFile(FILE_PATH))).isNotNull();
     assertThat(result2.getReportReader().readChangesets(fileId)).isNull();
-    assertThat(result2.getReportReader().hasCoverage(fileId)).isFalse();
-    assertThat(result.getReportReader().readFileSource(fileId)).isNull();
+    assertThat(result2.getReportReader().hasCoverage(fileId)).isTrue();
+    assertThat(result2.getReportReader().readFileSource(fileId)).isNull();
   }
 
   @Test
@@ -92,9 +92,10 @@ public class BranchMediumTest {
     String branchName = "feature";
     String branchTarget = "branch-1.x";
 
-    TaskResult result = getResult(tester
+    AnalysisResult result = getResult(tester
       .setBranchName(branchName)
       .setBranchTarget(branchTarget)
+      .setLongLivingSonarReferenceBranch(branchTarget)
       .setBranchType(BranchType.SHORT));
 
     ScannerReport.Metadata metadata = result.getReportReader().readMetadata();
@@ -103,9 +104,9 @@ public class BranchMediumTest {
     assertThat(metadata.getMergeBranchName()).isEqualTo(branchTarget);
   }
 
-  private TaskResult getResult(ScannerMediumTester tester) {
+  private AnalysisResult getResult(ScannerMediumTester tester) {
     return tester
-      .newTask()
+      .newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
         .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())

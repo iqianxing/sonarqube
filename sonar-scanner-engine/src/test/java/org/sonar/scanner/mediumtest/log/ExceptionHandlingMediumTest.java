@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -66,7 +66,7 @@ public class ExceptionHandlingMediumTest {
     thrown.expectMessage("Error loading settings");
     thrown.expectCause(CoreMatchers.nullValue(Throwable.class));
 
-    batch.start();
+    batch.execute();
   }
 
   @Test
@@ -87,7 +87,7 @@ public class ExceptionHandlingMediumTest {
       }
     });
 
-    batch.start();
+    batch.execute();
   }
 
   @Test
@@ -95,20 +95,25 @@ public class ExceptionHandlingMediumTest {
     setUp(true);
     thrown.expect(IllegalStateException.class);
     thrown.expectMessage("Unable to load component class");
-    batch.start();
+    batch.execute();
   }
 
   private static class ErrorSettingsLoader implements SettingsLoader {
     boolean withCause = false;
 
     @Override
-    public Map<String, String> load(String componentKey) {
+    public Map<String, String> loadGlobalSettings() {
       if (withCause) {
         IllegalStateException cause = new IllegalStateException("Code 401");
         throw MessageException.of("Error loading settings", cause);
       } else {
         throw MessageException.of("Error loading settings");
       }
+    }
+
+    @Override
+    public Map<String, String> loadProjectSettings() {
+      return null;
     }
   }
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -53,12 +53,12 @@ public class ExtensionUtilsTest {
 
   @Test
   public void testIsScannerSide() {
-    assertThat(ExtensionUtils.isScannerSide(ScannerService.class)).isTrue();
+    assertThat(ExtensionUtils.isDeprecatedScannerSide(ScannerService.class)).isTrue();
 
-    assertThat(ExtensionUtils.isScannerSide(ServerService.class)).isFalse();
-    assertThat(ExtensionUtils.isScannerSide(new ServerService())).isFalse();
-    assertThat(ExtensionUtils.isScannerSide(new WebServerService())).isFalse();
-    assertThat(ExtensionUtils.isScannerSide(new ComputeEngineService())).isFalse();
+    assertThat(ExtensionUtils.isDeprecatedScannerSide(ServerService.class)).isFalse();
+    assertThat(ExtensionUtils.isDeprecatedScannerSide(new ServerService())).isFalse();
+    assertThat(ExtensionUtils.isDeprecatedScannerSide(new WebServerService())).isFalse();
+    assertThat(ExtensionUtils.isDeprecatedScannerSide(new ComputeEngineService())).isFalse();
   }
 
   @ScannerSide

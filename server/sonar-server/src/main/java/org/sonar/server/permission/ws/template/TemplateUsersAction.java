@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -38,22 +38,22 @@ import org.sonar.db.user.UserDto;
 import org.sonar.server.issue.ws.AvatarResolver;
 import org.sonar.server.permission.ws.PermissionWsSupport;
 import org.sonar.server.permission.ws.PermissionsWsAction;
+import org.sonar.server.permission.ws.RequestValidator;
+import org.sonar.server.permission.ws.WsParameters;
 import org.sonar.server.user.UserSession;
 import org.sonarqube.ws.Permissions;
 import org.sonarqube.ws.Permissions.UsersWsResponse;
 
 import static com.google.common.base.Strings.emptyToNull;
+import static java.util.Optional.ofNullable;
 import static org.sonar.api.server.ws.WebService.Param.PAGE;
 import static org.sonar.api.server.ws.WebService.Param.PAGE_SIZE;
 import static org.sonar.api.server.ws.WebService.Param.TEXT_QUERY;
-import static org.sonar.core.util.Protobuf.setNullable;
 import static org.sonar.db.permission.PermissionQuery.DEFAULT_PAGE_SIZE;
 import static org.sonar.db.permission.PermissionQuery.RESULTS_MAX_SIZE;
 import static org.sonar.db.permission.PermissionQuery.SEARCH_QUERY_MIN_LENGTH;
 import static org.sonar.server.permission.PermissionPrivilegeChecker.checkGlobalAdmin;
-import static org.sonar.server.permission.ws.PermissionRequestValidator.validateProjectPermission;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createProjectPermissionParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createTemplateParameters;
+import static org.sonar.server.permission.ws.WsParameters.createTemplateParameters;
 import static org.sonar.server.ws.WsUtils.writeProtobuf;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_PERMISSION;
 
@@ -61,14 +61,19 @@ public class TemplateUsersAction implements PermissionsWsAction {
 
   private final DbClient dbClient;
   private final UserSession userSession;
-  private final PermissionWsSupport support;
+  private final PermissionWsSupport wsSupport;
   private final AvatarResolver avatarResolver;
+  private final WsParameters wsParameters;
+  private final RequestValidator requestValidator;
 
-  public TemplateUsersAction(DbClient dbClient, UserSession userSession, PermissionWsSupport support, AvatarResolver avatarResolver) {
+  public TemplateUsersAction(DbClient dbClient, UserSession userSession, PermissionWsSupport wsSupport, AvatarResolver avatarResolver,
+    WsParameters wsParameters, RequestValidator requestValidator) {
     this.dbClient = dbClient;
     this.userSession = userSession;
-    this.support = support;
+    this.wsSupport = wsSupport;
     this.avatarResolver = avatarResolver;
+    this.wsParameters = wsParameters;
+    this.requestValidator = requestValidator;
   }
 
   @Override
@@ -89,7 +94,7 @@ public class TemplateUsersAction implements PermissionsWsAction {
       .setDescription("Limit search to user names that contain the supplied string. <br/>" +
         "When this parameter is not set, only users having at least one permission are returned.")
       .setExampleValue("eri");
-    createProjectPermissionParameter(action).setRequired(false);
+    wsParameters.createProjectPermissionParameter(action).setRequired(false);
     createTemplateParameters(action);
   }
 
@@ -97,7 +102,7 @@ public class TemplateUsersAction implements PermissionsWsAction {
   public void handle(Request wsRequest, Response wsResponse) throws Exception {
     try (DbSession dbSession = dbClient.openSession(false)) {
       WsTemplateRef templateRef = WsTemplateRef.fromRequest(wsRequest);
-      PermissionTemplateDto template = support.findTemplate(dbSession, templateRef);
+      PermissionTemplateDto template = wsSupport.findTemplate(dbSession, templateRef);
       checkGlobalAdmin(userSession, template.getOrganizationUuid());
 
       PermissionQuery query = buildQuery(wsRequest, template);
@@ -111,19 +116,16 @@ public class TemplateUsersAction implements PermissionsWsAction {
     }
   }
 
-  private static PermissionQuery buildQuery(Request wsRequest, PermissionTemplateDto template) {
+  private PermissionQuery buildQuery(Request wsRequest, PermissionTemplateDto template) {
     String textQuery = wsRequest.param(TEXT_QUERY);
     String permission = wsRequest.param(PARAM_PERMISSION);
     PermissionQuery.Builder query = PermissionQuery.builder()
       .setOrganizationUuid(template.getOrganizationUuid())
       .setTemplate(template.getUuid())
-      .setPermission(permission != null ? validateProjectPermission(permission) : null)
+      .setPermission(permission != null ? requestValidator.validateProjectPermission(permission) : null)
       .setPageIndex(wsRequest.mandatoryParamAsInt(PAGE))
       .setPageSize(wsRequest.mandatoryParamAsInt(PAGE_SIZE))
       .setSearchQuery(textQuery);
-    if (textQuery == null) {
-      query.withAtLeastOnePermission();
-    }
     return query.build();
   }
 
@@ -136,9 +138,9 @@ public class TemplateUsersAction implements PermissionsWsAction {
       Permissions.User.Builder userResponse = responseBuilder.addUsersBuilder()
         .setLogin(user.getLogin())
         .addAllPermissions(permissionsByUserId.get(user.getId()));
-      setNullable(user.getEmail(), userResponse::setEmail);
-      setNullable(user.getName(), userResponse::setName);
-      setNullable(emptyToNull(user.getEmail()), u -> userResponse.setAvatar(avatarResolver.create(user)));
+      ofNullable(user.getEmail()).ifPresent(userResponse::setEmail);
+      ofNullable(user.getName()).ifPresent(userResponse::setName);
+      ofNullable(emptyToNull(user.getEmail())).ifPresent(u -> userResponse.setAvatar(avatarResolver.create(user)));
     });
     responseBuilder.getPagingBuilder()
       .setPageIndex(paging.pageIndex())

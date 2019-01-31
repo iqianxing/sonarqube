@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,11 +19,14 @@
  */
 package org.sonar.server.qualitygate.ws;
 
+import com.tngtech.java.junit.dataprovider.DataProvider;
+import com.tngtech.java.junit.dataprovider.DataProviderRunner;
+import com.tngtech.java.junit.dataprovider.UseDataProvider;
 import java.util.ArrayList;
-import javax.annotation.Nullable;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
 import org.sonar.api.server.ws.WebService;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
@@ -33,6 +36,7 @@ import org.sonar.db.organization.OrganizationDto;
 import org.sonar.db.qualitygate.QGateWithOrgDto;
 import org.sonar.db.qualitygate.QualityGateConditionDto;
 import org.sonar.db.qualitygate.QualityGateDto;
+import org.sonar.server.exceptions.BadRequestException;
 import org.sonar.server.exceptions.ForbiddenException;
 import org.sonar.server.organization.TestDefaultOrganizationProvider;
 import org.sonar.server.qualitygate.QualityGateConditionsUpdater;
@@ -50,9 +54,8 @@ import static org.sonar.server.qualitygate.ws.QualityGatesWsParameters.PARAM_GAT
 import static org.sonar.server.qualitygate.ws.QualityGatesWsParameters.PARAM_METRIC;
 import static org.sonar.server.qualitygate.ws.QualityGatesWsParameters.PARAM_OPERATOR;
 import static org.sonar.server.qualitygate.ws.QualityGatesWsParameters.PARAM_ORGANIZATION;
-import static org.sonar.server.qualitygate.ws.QualityGatesWsParameters.PARAM_PERIOD;
-import static org.sonar.server.qualitygate.ws.QualityGatesWsParameters.PARAM_WARNING;
 
+@RunWith(DataProviderRunner.class)
 public class CreateConditionActionTest {
 
   @Rule
@@ -73,24 +76,6 @@ public class CreateConditionActionTest {
   private WsActionTester ws = new WsActionTester(underTest);
 
   @Test
-  public void create_warning_condition() {
-    OrganizationDto organization = db.organizations().insert();
-    logInAsQualityGateAdmin(organization);
-    QGateWithOrgDto qualityGate = db.qualityGates().insertQualityGate(organization);
-    MetricDto metric = insertMetric();
-
-    ws.newRequest()
-      .setParam(PARAM_GATE_ID, qualityGate.getId().toString())
-      .setParam(PARAM_METRIC, metric.getKey())
-      .setParam(PARAM_OPERATOR, "LT")
-      .setParam(PARAM_WARNING, "90")
-      .setParam(PARAM_ORGANIZATION, organization.getKey())
-      .execute();
-
-    assertCondition(qualityGate, metric, "LT", "90", null, null);
-  }
-
-  @Test
   public void create_error_condition() {
     OrganizationDto organization = db.organizations().insert();
     logInAsQualityGateAdmin(organization);
@@ -105,7 +90,7 @@ public class CreateConditionActionTest {
       .setParam(PARAM_ORGANIZATION, organization.getKey())
       .execute();
 
-    assertCondition(qualityGate, metric, "LT", null, "90", null);
+    assertCondition(qualityGate, metric, "LT", "90");
   }
 
   @Test
@@ -120,11 +105,10 @@ public class CreateConditionActionTest {
       .setParam(PARAM_METRIC, metric.getKey())
       .setParam(PARAM_OPERATOR, "LT")
       .setParam(PARAM_ERROR, "90")
-      .setParam(PARAM_PERIOD, "1")
       .setParam(PARAM_ORGANIZATION, organization.getKey())
       .execute();
 
-    assertCondition(qualityGate, metric, "LT", null, "90", 1);
+    assertCondition(qualityGate, metric, "LT", "90");
   }
 
   @Test
@@ -140,48 +124,10 @@ public class CreateConditionActionTest {
       .setParam(PARAM_GATE_ID, qualityGate.getId().toString())
       .setParam(PARAM_METRIC, metric.getKey())
       .setParam(PARAM_OPERATOR, "LT")
-      .setParam(PARAM_WARNING, "90")
+      .setParam(PARAM_ERROR, "10")
       .execute();
 
-    assertCondition(qualityGate, metric, "LT", "90", null, null);
-  }
-
-  @Test
-  public void create_warning_condition_with_empty_string_on_error() {
-    OrganizationDto organization = db.organizations().insert();
-    logInAsQualityGateAdmin(organization);
-    QGateWithOrgDto qualityGate = db.qualityGates().insertQualityGate(organization);
-    MetricDto metric = insertMetric();
-
-    ws.newRequest()
-      .setParam(PARAM_GATE_ID, qualityGate.getId().toString())
-      .setParam(PARAM_METRIC, metric.getKey())
-      .setParam(PARAM_OPERATOR, "LT")
-      .setParam(PARAM_WARNING, "90")
-      .setParam(PARAM_ERROR, "")
-      .setParam(PARAM_ORGANIZATION, organization.getKey())
-      .execute();
-
-    assertCondition(qualityGate, metric, "LT", "90", null, null);
-  }
-
-  @Test
-  public void create_error_condition_with_empty_string_on_warning() {
-    OrganizationDto organization = db.organizations().insert();
-    logInAsQualityGateAdmin(organization);
-    QGateWithOrgDto qualityGate = db.qualityGates().insertQualityGate(organization);
-    MetricDto metric = insertMetric();
-
-    ws.newRequest()
-      .setParam(PARAM_GATE_ID, qualityGate.getId().toString())
-      .setParam(PARAM_METRIC, metric.getKey())
-      .setParam(PARAM_OPERATOR, "LT")
-      .setParam(PARAM_WARNING, "")
-      .setParam(PARAM_ERROR, "90")
-      .setParam(PARAM_ORGANIZATION, organization.getKey())
-      .execute();
-
-    assertCondition(qualityGate, metric, "LT", null, "90", null);
+    assertCondition(qualityGate, metric, "LT", "10");
   }
 
   @Test
@@ -204,6 +150,45 @@ public class CreateConditionActionTest {
   }
 
   @Test
+  public void fail_with_unknown_operator() {
+    OrganizationDto organization = db.organizations().insert();
+    logInAsQualityGateAdmin(organization);
+    QGateWithOrgDto qualityGate = db.qualityGates().insertQualityGate(organization);
+    MetricDto metric = db.measures().insertMetric(m -> m.setValueType(INT.name()).setHidden(false).setDirection(0));
+
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage("Value of parameter 'op' (ABC) must be one of: [LT, GT]");
+
+    ws.newRequest()
+      .setParam(PARAM_GATE_ID, qualityGate.getId().toString())
+      .setParam(PARAM_METRIC, metric.getKey())
+      .setParam(PARAM_OPERATOR, "ABC")
+      .setParam(PARAM_ERROR, "90")
+      .setParam(PARAM_ORGANIZATION, organization.getKey())
+      .execute();
+  }
+
+  @Test
+  @UseDataProvider("invalid_operators_for_direction")
+  public void fail_with_invalid_operators_for_direction(String operator, int direction) {
+    OrganizationDto organization = db.organizations().insert();
+    logInAsQualityGateAdmin(organization);
+    QGateWithOrgDto qualityGate = db.qualityGates().insertQualityGate(organization);
+    MetricDto metric = db.measures().insertMetric(m -> m.setValueType(INT.name()).setHidden(false).setDirection(direction));
+
+    expectedException.expect(BadRequestException.class);
+    expectedException.expectMessage(format("Operator %s is not allowed for this metric.", operator));
+
+    ws.newRequest()
+      .setParam(PARAM_GATE_ID, qualityGate.getId().toString())
+      .setParam(PARAM_METRIC, metric.getKey())
+      .setParam(PARAM_OPERATOR, operator)
+      .setParam(PARAM_ERROR, "90")
+      .setParam(PARAM_ORGANIZATION, organization.getKey())
+      .execute();
+  }
+
+  @Test
   public void test_response() {
     OrganizationDto organization = db.organizations().insert();
     logInAsQualityGateAdmin(organization);
@@ -215,8 +200,6 @@ public class CreateConditionActionTest {
       .setParam(PARAM_METRIC, metric.getKey())
       .setParam(PARAM_OPERATOR, "LT")
       .setParam(PARAM_ERROR, "45")
-      .setParam(PARAM_WARNING, "90")
-      .setParam(PARAM_PERIOD, "1")
       .setParam(PARAM_ORGANIZATION, organization.getKey())
       .executeProtobuf(CreateConditionResponse.class);
 
@@ -224,9 +207,7 @@ public class CreateConditionActionTest {
     assertThat(response.getId()).isEqualTo(condition.getId());
     assertThat(response.getMetric()).isEqualTo(metric.getKey());
     assertThat(response.getOp()).isEqualTo("LT");
-    assertThat(response.getWarning()).isEqualTo("90");
     assertThat(response.getError()).isEqualTo("45");
-    assertThat(response.getPeriod()).isEqualTo(1);
   }
 
   @Test
@@ -260,18 +241,24 @@ public class CreateConditionActionTest {
       .containsExactlyInAnyOrder(
         tuple("gateId", true),
         tuple("metric", true),
-        tuple("period", false),
+        tuple("error", true),
         tuple("op", false),
-        tuple("warning", false),
-        tuple("error", false),
         tuple("organization", false));
   }
 
-  private void assertCondition(QualityGateDto qualityGate, MetricDto metric, String operator, @Nullable String warning, @Nullable String error, @Nullable Integer period) {
+  @DataProvider
+  public static Object[][] invalid_operators_for_direction() {
+    return new Object[][] {
+      {"LT", -1},
+      {"GT", 1},
+    };
+  }
+
+  private void assertCondition(QualityGateDto qualityGate, MetricDto metric, String operator, String error) {
     assertThat(dbClient.gateConditionDao().selectForQualityGate(dbSession, qualityGate.getId()))
       .extracting(QualityGateConditionDto::getQualityGateId, QualityGateConditionDto::getMetricId, QualityGateConditionDto::getOperator,
-        QualityGateConditionDto::getWarningThreshold, QualityGateConditionDto::getErrorThreshold, QualityGateConditionDto::getPeriod)
-      .containsExactlyInAnyOrder(tuple(qualityGate.getId(), metric.getId().longValue(), operator, warning, error, period));
+        QualityGateConditionDto::getErrorThreshold)
+      .containsExactlyInAnyOrder(tuple(qualityGate.getId(), metric.getId().longValue(), operator, error));
   }
 
   private void logInAsQualityGateAdmin(OrganizationDto organization) {
@@ -279,6 +266,9 @@ public class CreateConditionActionTest {
   }
 
   private MetricDto insertMetric() {
-    return db.measures().insertMetric(m -> m.setValueType(INT.name()).setHidden(false));
+    return db.measures().insertMetric(m -> m
+      .setValueType(INT.name())
+      .setHidden(false)
+      .setDirection(0));
   }
 }

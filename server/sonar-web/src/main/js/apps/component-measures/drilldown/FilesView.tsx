@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,42 +23,41 @@ import { throttle } from 'lodash';
 import ComponentsList from './ComponentsList';
 import ListFooter from '../../../components/controls/ListFooter';
 import { Button } from '../../../components/ui/buttons';
-import {
-  ComponentMeasure,
-  ComponentMeasureEnhanced,
-  Metric,
-  Paging,
-  BranchLike
-} from '../../../app/types';
 import { translate, translateWithParameters } from '../../../helpers/l10n';
 import { isPeriodBestValue, isDiffMetric, formatMeasure } from '../../../helpers/measures';
 import { scrollToElement } from '../../../helpers/scrolling';
+import { Alert } from '../../../components/ui/Alert';
+import { View } from '../utils';
 
 interface Props {
-  branchLike?: BranchLike;
-  components: ComponentMeasureEnhanced[];
+  branchLike?: T.BranchLike;
+  components: T.ComponentMeasureEnhanced[];
+  defaultShowBestMeasures: boolean;
   fetchMore: () => void;
   handleSelect: (component: string) => void;
   handleOpen: (component: string) => void;
   loadingMore: boolean;
-  metric: Metric;
-  metrics: { [metric: string]: Metric };
-  paging?: Paging;
-  rootComponent: ComponentMeasure;
+  metric: T.Metric;
+  metrics: { [metric: string]: T.Metric };
+  paging?: T.Paging;
+  rootComponent: T.ComponentMeasure;
   selectedKey?: string;
   selectedIdx?: number;
+  view: View;
 }
 
 interface State {
   showBestMeasures: boolean;
 }
 
-export default class ListView extends React.PureComponent<Props, State> {
+const keyScope = 'measures-files';
+
+export default class FilesView extends React.PureComponent<Props, State> {
   listContainer?: HTMLElement | null;
 
   constructor(props: Props) {
     super(props);
-    this.state = { showBestMeasures: false };
+    this.state = { showBestMeasures: props.defaultShowBestMeasures };
     this.selectNext = throttle(this.selectNext, 100);
     this.selectPrevious = throttle(this.selectPrevious, 100);
   }
@@ -74,8 +73,8 @@ export default class ListView extends React.PureComponent<Props, State> {
     if (this.props.selectedKey !== undefined && prevProps.selectedKey !== this.props.selectedKey) {
       this.scrollToElement();
     }
-    if (prevProps.metric.key !== this.props.metric.key) {
-      this.setState({ showBestMeasures: false });
+    if (prevProps.metric.key !== this.props.metric.key || prevProps.view !== this.props.view) {
+      this.setState({ showBestMeasures: this.props.defaultShowBestMeasures });
     }
   }
 
@@ -84,26 +83,27 @@ export default class ListView extends React.PureComponent<Props, State> {
   }
 
   attachShortcuts() {
-    key('up', 'measures-files', () => {
+    key('up', keyScope, () => {
       this.selectPrevious();
       return false;
     });
-    key('down', 'measures-files', () => {
+    key('down', keyScope, () => {
       this.selectNext();
       return false;
     });
-    key('right', 'measures-files', () => {
+    key('right', keyScope, () => {
       this.openSelected();
       return false;
     });
   }
 
   detachShortcuts() {
-    ['up', 'down', 'right'].forEach(action => key.unbind(action, 'measures-files'));
+    ['up', 'down', 'right'].forEach(action => key.unbind(action, keyScope));
   }
 
-  getVisibleComponents = (components: ComponentMeasureEnhanced[], showBestMeasures: boolean) => {
-    if (showBestMeasures) {
+  getVisibleComponents = () => {
+    const { components } = this.props;
+    if (this.state.showBestMeasures) {
       return components;
     }
     const filtered = components.filter(component => !this.hasBestValue(component));
@@ -117,7 +117,7 @@ export default class ListView extends React.PureComponent<Props, State> {
     this.setState({ showBestMeasures: true });
   };
 
-  hasBestValue = (component: ComponentMeasureEnhanced) => {
+  hasBestValue = (component: T.ComponentMeasureEnhanced) => {
     const { metric } = this.props;
     const focusedMeasure = component.measures.find(measure => measure.metric.key === metric.key);
     if (focusedMeasure && isDiffMetric(metric.key)) {
@@ -133,8 +133,8 @@ export default class ListView extends React.PureComponent<Props, State> {
   };
 
   selectPrevious = () => {
-    const { components, selectedIdx } = this.props;
-    const visibleComponents = this.getVisibleComponents(components, this.state.showBestMeasures);
+    const { selectedIdx } = this.props;
+    const visibleComponents = this.getVisibleComponents();
     if (selectedIdx !== undefined && selectedIdx > 0) {
       this.props.handleSelect(visibleComponents[selectedIdx - 1].key);
     } else {
@@ -143,8 +143,8 @@ export default class ListView extends React.PureComponent<Props, State> {
   };
 
   selectNext = () => {
-    const { components, selectedIdx } = this.props;
-    const visibleComponents = this.getVisibleComponents(components, this.state.showBestMeasures);
+    const { selectedIdx } = this.props;
+    const visibleComponents = this.getVisibleComponents();
     if (selectedIdx !== undefined && selectedIdx < visibleComponents.length - 1) {
       this.props.handleSelect(visibleComponents[selectedIdx + 1].key);
     } else {
@@ -163,7 +163,7 @@ export default class ListView extends React.PureComponent<Props, State> {
 
   render() {
     const { components } = this.props;
-    const filteredComponents = this.getVisibleComponents(components, this.state.showBestMeasures);
+    const filteredComponents = this.getVisibleComponents();
     const hidingBestMeasures = filteredComponents.length < components.length;
     return (
       <div ref={elem => (this.listContainer = elem)}>
@@ -175,19 +175,23 @@ export default class ListView extends React.PureComponent<Props, State> {
           onClick={this.props.handleOpen}
           rootComponent={this.props.rootComponent}
           selectedComponent={this.props.selectedKey}
+          view={this.props.view}
         />
-        {hidingBestMeasures && (
-          <div className="alert alert-info spacer-top">
-            {translateWithParameters(
-              'component_measures.hidden_best_score_metrics',
-              components.length - filteredComponents.length,
-              formatMeasure(this.props.metric.bestValue, this.props.metric.type)
-            )}
-            <Button className="button-link spacer-left" onClick={this.handleShowBestMeasures}>
-              {translate('show_all')}
-            </Button>
-          </div>
-        )}
+        {hidingBestMeasures &&
+          this.props.paging && (
+            <Alert className="spacer-top" variant="info">
+              <div className="display-flex-center">
+                {translateWithParameters(
+                  'component_measures.hidden_best_score_metrics',
+                  formatMeasure(this.props.paging.total - filteredComponents.length, 'INT'),
+                  formatMeasure(this.props.metric.bestValue, this.props.metric.type)
+                )}
+                <Button className="button-small spacer-left" onClick={this.handleShowBestMeasures}>
+                  {translate('show_them')}
+                </Button>
+              </div>
+            </Alert>
+          )}
         {!hidingBestMeasures &&
           this.props.paging &&
           this.props.components.length > 0 && (

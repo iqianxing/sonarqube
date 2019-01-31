@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,14 +24,13 @@ import java.util.HashMap;
 import java.util.Map;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.ce.task.projectanalysis.component.Component;
-import org.sonar.core.issue.DefaultIssue;
-import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.ce.task.projectanalysis.measure.Measure;
 import org.sonar.ce.task.projectanalysis.measure.MeasureRepository;
 import org.sonar.ce.task.projectanalysis.metric.Metric;
 import org.sonar.ce.task.projectanalysis.metric.MetricRepository;
 import org.sonar.ce.task.projectanalysis.period.Period;
 import org.sonar.ce.task.projectanalysis.period.PeriodHolder;
+import org.sonar.core.issue.DefaultIssue;
 
 import static org.sonar.api.measures.CoreMetrics.NEW_RELIABILITY_REMEDIATION_EFFORT_KEY;
 import static org.sonar.api.measures.CoreMetrics.NEW_SECURITY_REMEDIATION_EFFORT_KEY;
@@ -45,7 +44,7 @@ import static org.sonar.api.utils.DateUtils.truncateToSeconds;
  * {@link CoreMetrics#NEW_SECURITY_REMEDIATION_EFFORT_KEY}
  */
 public class NewEffortAggregator extends IssueVisitor {
-
+  private final Map<String, NewEffortCounter> counterByComponentUuid = new HashMap<>();
   private final PeriodHolder periodHolder;
   private final MeasureRepository measureRepository;
 
@@ -53,7 +52,6 @@ public class NewEffortAggregator extends IssueVisitor {
   private final Metric newReliabilityEffortMetric;
   private final Metric newSecurityEffortMetric;
 
-  private Map<Integer, NewEffortCounter> counterByComponentRef = new HashMap<>();
   private NewEffortCounter counter = null;
 
   public NewEffortAggregator(PeriodHolder periodHolder, MetricRepository metricRepository, MeasureRepository measureRepository) {
@@ -68,9 +66,9 @@ public class NewEffortAggregator extends IssueVisitor {
   @Override
   public void beforeComponent(Component component) {
     counter = new NewEffortCounter();
-    counterByComponentRef.put(component.getReportAttributes().getRef(), counter);
+    counterByComponentUuid.put(component.getUuid(), counter);
     for (Component child : component.getChildren()) {
-      NewEffortCounter childSum = counterByComponentRef.remove(child.getReportAttributes().getRef());
+      NewEffortCounter childSum = counterByComponentUuid.remove(child.getUuid());
       if (childSum != null) {
         counter.add(childSum);
       }
@@ -86,16 +84,17 @@ public class NewEffortAggregator extends IssueVisitor {
 
   @Override
   public void afterComponent(Component component) {
-    computeMeasure(component, newMaintainabilityEffortMetric, counter.maintainabilitySum);
-    computeMeasure(component, newReliabilityEffortMetric, counter.reliabilitySum);
-    computeMeasure(component, newSecurityEffortMetric, counter.securitySum);
+    if (periodHolder.hasPeriod()) {
+      computeMeasure(component, newMaintainabilityEffortMetric, counter.maintainabilitySum);
+      computeMeasure(component, newReliabilityEffortMetric, counter.reliabilitySum);
+      computeMeasure(component, newSecurityEffortMetric, counter.securitySum);
+    }
     counter = null;
   }
 
   private void computeMeasure(Component component, Metric metric, EffortSum effortSum) {
-    if (!effortSum.isEmpty) {
-      measureRepository.add(component, metric, Measure.newMeasureBuilder().setVariation(effortSum.newEffort).createNoValue());
-    }
+    double variation = effortSum.isEmpty ? 0.0 : effortSum.newEffort;
+    measureRepository.add(component, metric, Measure.newMeasureBuilder().setVariation(variation).createNoValue());
   }
 
   private static class NewEffortCounter {

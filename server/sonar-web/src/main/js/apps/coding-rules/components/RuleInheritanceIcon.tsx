@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,15 +19,14 @@
  */
 import * as React from 'react';
 import * as theme from '../../../app/theme';
-import { RuleInheritance } from '../../../app/types';
 
 interface Props {
   className?: string;
-  inheritance: RuleInheritance.Inherited | RuleInheritance.Overridden;
+  inheritance: T.RuleInheritance;
 }
 
 export default function RuleInheritanceIcon({ className, inheritance, ...other }: Props) {
-  const fill = inheritance === RuleInheritance.Overridden ? theme.red : theme.baseFontColor;
+  const fill = inheritance === 'OVERRIDES' ? theme.red : theme.baseFontColor;
 
   return (
     <svg

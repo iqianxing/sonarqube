@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,10 +19,10 @@
  */
 import { connect } from 'react-redux';
 import GlobalMessages from '../../components/controls/GlobalMessages';
-import { getGlobalMessages } from '../../store/rootReducer';
-import { closeGlobalMessage } from '../../store/globalMessages/duck';
+import { getGlobalMessages, Store } from '../../store/rootReducer';
+import { closeGlobalMessage } from '../../store/globalMessages';
 
-const mapStateToProps = (state: any) => ({
+const mapStateToProps = (state: Store) => ({
   messages: getGlobalMessages(state)
 });
 

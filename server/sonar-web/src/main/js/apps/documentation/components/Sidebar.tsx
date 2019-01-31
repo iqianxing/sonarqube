@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,11 @@
 import * as React from 'react';
 import Menu from './Menu';
 import SearchResults from './SearchResults';
-import { DocumentationEntry } from '../utils';
+import { DocumentationEntry, DocsNavigationItem } from '../utils';
 import SearchBox from '../../../components/controls/SearchBox';
 
 interface Props {
+  navigation: DocsNavigationItem[];
   pages: DocumentationEntry[];
   splat: string;
 }
@@ -36,7 +37,7 @@ export default class Sidebar extends React.PureComponent<Props, State> {
   state: State = { query: '' };
 
   handleSearch = (query: string) => {
-    this.setState({ query });
+    this.setState({ query: query.trim() });
   };
 
   render() {
@@ -53,12 +54,17 @@ export default class Sidebar extends React.PureComponent<Props, State> {
           <div className="list-group">
             {this.state.query ? (
               <SearchResults
+                navigation={this.props.navigation}
                 pages={this.props.pages}
                 query={this.state.query}
                 splat={this.props.splat}
               />
             ) : (
-              <Menu pages={this.props.pages} splat={this.props.splat} />
+              <Menu
+                navigation={this.props.navigation}
+                pages={this.props.pages}
+                splat={this.props.splat}
+              />
             )}
           </div>
         </div>

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,19 +23,18 @@ import UserActions from './UserActions';
 import UserGroups from './UserGroups';
 import UserListItemIdentity from './UserListItemIdentity';
 import UserScmAccounts from './UserScmAccounts';
-import { IdentityProvider, User } from '../../../app/types';
 import BulletListIcon from '../../../components/icons-components/BulletListIcon';
 import Avatar from '../../../components/ui/Avatar';
 import { ButtonIcon } from '../../../components/ui/buttons';
 import { translate } from '../../../helpers/l10n';
 
 interface Props {
-  identityProvider?: IdentityProvider;
+  identityProvider?: T.IdentityProvider;
   isCurrentUser: boolean;
   onUpdateUsers: () => void;
-  organizationsEnabled: boolean;
+  organizationsEnabled?: boolean;
   updateTokensCount: (login: string, tokensCount: number) => void;
-  user: User;
+  user: T.User;
 }
 
 interface State {

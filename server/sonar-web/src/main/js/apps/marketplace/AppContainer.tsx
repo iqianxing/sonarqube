@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,8 +20,7 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
 import App from './App';
-import { EditionKey } from './utils';
-import { getAppState, getGlobalSettingValue } from '../../store/rootReducer';
+import { getAppState, getGlobalSettingValue, Store } from '../../store/rootReducer';
 import { RawQuery } from '../../helpers/query';
 import MarketplaceContext from '../../app/components/MarketplaceContext';
 
@@ -30,17 +29,17 @@ interface OwnProps {
 }
 
 interface StateToProps {
-  currentEdition?: EditionKey;
-  standaloneMode: boolean;
+  currentEdition?: T.EditionKey;
+  standaloneMode?: boolean;
   updateCenterActive: boolean;
 }
 
-const mapStateToProps = (state: any) => {
+const mapStateToProps = (state: Store) => {
+  const updateCenterActive = getGlobalSettingValue(state, 'sonar.updatecenter.activate');
   return {
     currentEdition: getAppState(state).edition,
     standaloneMode: getAppState(state).standalone,
-    updateCenterActive:
-      (getGlobalSettingValue(state, 'sonar.updatecenter.activate') || {}).value === 'true'
+    updateCenterActive: Boolean(updateCenterActive && updateCenterActive.value === 'true')
   };
 };
 
@@ -52,4 +51,4 @@ const WithMarketplaceContext = (props: StateToProps & OwnProps) => (
   </MarketplaceContext.Consumer>
 );
 
-export default connect<StateToProps, {}, OwnProps>(mapStateToProps)(WithMarketplaceContext);
+export default connect(mapStateToProps)(WithMarketplaceContext);

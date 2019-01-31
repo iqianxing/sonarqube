@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -39,12 +39,12 @@ final class AuthenticationError {
   }
 
   static void handleError(Exception e, HttpServletResponse response, String message) {
-    LOGGER.error(message, e);
+    LOGGER.warn(message, e);
     redirectToUnauthorized(response);
   }
 
   static void handleError(HttpServletResponse response, String message) {
-    LOGGER.error(message);
+    LOGGER.warn(message);
     redirectToUnauthorized(response);
   }
 

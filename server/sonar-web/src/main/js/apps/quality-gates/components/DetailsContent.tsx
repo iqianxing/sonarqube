@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,16 +22,15 @@ import Conditions from './Conditions';
 import Projects from './Projects';
 import DocTooltip from '../../../components/docs/DocTooltip';
 import { translate } from '../../../helpers/l10n';
-import { Condition as ICondition, Metric, QualityGate } from '../../../app/types';
 
 interface Props {
   isDefault?: boolean;
-  metrics: { [key: string]: Metric };
+  metrics: { [key: string]: T.Metric };
   organization?: string;
-  onAddCondition: (condition: ICondition) => void;
-  onRemoveCondition: (Condition: ICondition) => void;
-  onSaveCondition: (newCondition: ICondition, oldCondition: ICondition) => void;
-  qualityGate: QualityGate;
+  onAddCondition: (condition: T.Condition) => void;
+  onRemoveCondition: (Condition: T.Condition) => void;
+  onSaveCondition: (newCondition: T.Condition, oldCondition: T.Condition) => void;
+  qualityGate: T.QualityGate;
 }
 
 export default class DetailsContent extends React.PureComponent<Props> {
@@ -66,6 +65,8 @@ export default class DetailsContent extends React.PureComponent<Props> {
           ) : (
             <Projects
               canEdit={actions.associateProjects}
+              // pass unique key to re-mount the component when the quality gate changes
+              key={qualityGate.id}
               organization={organization}
               qualityGate={qualityGate}
             />

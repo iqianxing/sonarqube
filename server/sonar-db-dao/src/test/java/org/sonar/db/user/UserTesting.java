@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 package org.sonar.db.user;
 
 import javax.annotation.Nullable;
+import org.sonar.core.util.Uuids;
 
 import static java.util.Collections.singletonList;
 import static org.apache.commons.lang.RandomStringUtils.randomAlphanumeric;
@@ -45,8 +46,6 @@ public class UserTesting {
       .setExternalIdentityProvider(randomAlphanumeric(40))
       .setSalt(randomAlphanumeric(40))
       .setCryptedPassword(randomAlphanumeric(40))
-      // Default quality gate should be set explicitly when needed in tests
-      .setOrganizationUuid("_NOT_SET_")
       .setCreatedAt(nextLong())
       .setUpdatedAt(nextLong());
   }
@@ -88,5 +87,13 @@ public class UserTesting {
       .setEmail(null)
       .setCryptedPassword(null)
       .setSalt(null);
+  }
+
+  public static UserPropertyDto newUserSettingDto(UserDto user) {
+    return new UserPropertyDto()
+      .setUuid(Uuids.createFast())
+      .setUserUuid(user.getUuid())
+      .setKey(randomAlphanumeric(20))
+      .setValue(randomAlphanumeric(100));
   }
 }

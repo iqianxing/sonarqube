@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,7 @@
  */
 package org.sonar.ce.task.projectanalysis.source;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 import org.sonar.api.measures.CoreMetrics;
 import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.ce.task.projectanalysis.component.CrawlerDepthLimit;
@@ -68,17 +68,12 @@ public class LastCommitVisitor extends PathAwareVisitorAdapter<LastCommitVisitor
   }
 
   @Override
-  public void visitModule(Component module, Path<LastCommit> path) {
-    saveAndAggregate(module, path);
-  }
-
-  @Override
   public void visitFile(Component file, Path<LastCommit> path) {
     // load SCM blame information from report. It can be absent when the file was not touched
     // since previous analysis (optimization to decrease execution of blame commands). In this case
     // the date is loaded from database, as it did not change from previous analysis.
 
-    java.util.Optional<ScmInfo> scmInfoOptional = scmInfoRepository.getScmInfo(file);
+    Optional<ScmInfo> scmInfoOptional = scmInfoRepository.getScmInfo(file);
     if (scmInfoOptional.isPresent()) {
       ScmInfo scmInfo = scmInfoOptional.get();
       path.current().addDate(scmInfo.getLatestChangeset().getDate());
@@ -99,10 +94,8 @@ public class LastCommitVisitor extends PathAwareVisitorAdapter<LastCommitVisitor
   @Override
   public void visitProjectView(Component projectView, Path<LastCommit> path) {
     Optional<Measure> rawMeasure = measureRepository.getRawMeasure(projectView, lastCommitDateMetric);
-    if (rawMeasure.isPresent()) {
-      // path.parent() should never fail as a project view must never be a root component
-      path.parent().addDate(rawMeasure.get().getLongValue());
-    }
+    // path.parent() should never fail as a project view must never be a root component
+    rawMeasure.ifPresent(measure -> path.parent().addDate(measure.getLongValue()));
   }
 
   private void saveAndAggregate(Component component, Path<LastCommit> path) {

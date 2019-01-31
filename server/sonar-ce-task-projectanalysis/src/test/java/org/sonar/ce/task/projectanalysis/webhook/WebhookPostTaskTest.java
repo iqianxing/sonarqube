@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -85,9 +85,8 @@ public class WebhookPostTaskTest {
   public void call_webhooks_with_analysis_and_qualitygate() {
     QualityGate.Condition condition = newConditionBuilder()
       .setMetricKey(randomAlphanumeric(96))
-      .setOperator(QualityGate.Operator.values()[random.nextInt(QualityGate.Operator.values().length)])
+      .setOperator(QualityGate.Operator.LESS_THAN)
       .setErrorThreshold(randomAlphanumeric(22))
-      .setWarningThreshold(randomAlphanumeric(23))
       .setOnLeakPeriod(random.nextBoolean())
       .build(QualityGate.EvaluationStatus.OK, randomAlphanumeric(33));
     QualityGate qualityGate = newQualityGateBuilder()
@@ -147,9 +146,7 @@ public class WebhookPostTaskTest {
       Condition qgCondition = new Condition(
         condition.getMetricKey(),
         Condition.Operator.valueOf(condition.getOperator().name()),
-        condition.getErrorThreshold(),
-        condition.getWarningThreshold(),
-        condition.isOnLeakPeriod());
+        condition.getErrorThreshold());
       webQualityGate = EvaluatedQualityGate.newBuilder()
         .setQualityGate(new org.sonar.server.qualitygate.QualityGate(qualityGate.getId(), qualityGate.getName(), Collections.singleton(qgCondition)))
         .setStatus(Metric.Level.valueOf(qualityGate.getStatus().name()))
@@ -158,7 +155,7 @@ public class WebhookPostTaskTest {
     }
 
     verify(payloadFactory).create(new ProjectAnalysis(
-      new org.sonar.server.project.Project(project.getUuid(), project.getKey(), project.getName()),
+      new org.sonar.server.webhook.Project(project.getUuid(), project.getKey(), project.getName()),
       new org.sonar.server.webhook.CeTask(ceTask.getId(), org.sonar.server.webhook.CeTask.Status.valueOf(ceTask.getStatus().name())),
       analysisUUid == null ? null : new Analysis(analysisUUid, date.getTime()),
       new org.sonar.server.webhook.Branch(branch.isMain(), branch.getName().get(), org.sonar.server.webhook.Branch.Type.valueOf(branch.getType().name())),

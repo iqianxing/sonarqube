@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,13 +21,13 @@ import * as React from 'react';
 import OrganizationAvatar from '../../../components/common/OrganizationAvatar';
 import OrganizationLink from '../../../components/ui/OrganizationLink';
 import { translate } from '../../../helpers/l10n';
-import { Organization } from '../../../app/types';
 
 interface Props {
-  organization: Organization;
+  organization: T.Organization;
 }
 
 export default function OrganizationCard({ organization }: Props) {
+  const { actions = {} } = organization;
   return (
     <div className="account-project-card clearfix">
       <aside className="account-project-side note">
@@ -39,9 +39,7 @@ export default function OrganizationCard({ organization }: Props) {
         <OrganizationLink className="spacer-left text-middle" organization={organization}>
           {organization.name}
         </OrganizationLink>
-        {organization.isAdmin && (
-          <span className="outline-badge spacer-left">{translate('admin')}</span>
-        )}
+        {actions.admin && <span className="outline-badge spacer-left">{translate('admin')}</span>}
       </h3>
 
       {!!organization.description && (

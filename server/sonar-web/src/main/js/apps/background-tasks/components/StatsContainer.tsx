@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,10 +19,10 @@
  */
 import { connect } from 'react-redux';
 import Stats from './Stats';
-import { getAppState } from '../../../store/rootReducer';
+import { getAppState, Store } from '../../../store/rootReducer';
 
-const mapStateToProps = (state: any) => ({
+const mapStateToProps = (state: Store) => ({
   isSystemAdmin: !!getAppState(state).canAdmin
 });
 
-export default connect(mapStateToProps)(Stats as any);
+export default connect(mapStateToProps)(Stats);

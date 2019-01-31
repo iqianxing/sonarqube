@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,9 +21,10 @@ import * as React from 'react';
 import AnalyzeTutorialSuggestion from './AnalyzeTutorialSuggestion';
 import ProjectAnalysisStep from '../components/ProjectAnalysisStep';
 import TokenStep from '../components/TokenStep';
-import { Component, LoggedInUser } from '../../../app/types';
 import { isVSTS } from '../../../helpers/almIntegrations';
 import { translate } from '../../../helpers/l10n';
+import InstanceMessage from '../../../components/common/InstanceMessage';
+import { isSonarCloud } from '../../../helpers/system';
 import '../styles.css';
 
 enum Steps {
@@ -32,8 +33,8 @@ enum Steps {
 }
 
 interface Props {
-  component: Component;
-  currentUser: LoggedInUser;
+  component: T.Component;
+  currentUser: T.LoggedInUser;
 }
 
 interface State {
@@ -55,35 +56,37 @@ export default class AnalyzeTutorial extends React.PureComponent<Props, State> {
   render() {
     const { component, currentUser } = this.props;
     const { step, token } = this.state;
-    let stepNumber = 1;
 
-    const almId = component.almId || currentUser.externalProvider;
+    const almKey = (component.alm && component.alm.key) || currentUser.externalProvider;
     return (
       <>
         <div className="page-header big-spacer-bottom">
           <h1 className="page-title">{translate('onboarding.project_analysis.header')}</h1>
-          <p className="page-description">{translate('onboarding.project_analysis.description')}</p>
+          <p className="page-description">
+            <InstanceMessage message={translate('onboarding.project_analysis.description')} />
+          </p>
         </div>
 
-        <AnalyzeTutorialSuggestion almId={almId} />
+        {isSonarCloud() && <AnalyzeTutorialSuggestion almKey={almKey} />}
 
-        {!isVSTS(almId) && (
+        {!isVSTS(almKey) && (
           <>
             <TokenStep
               currentUser={currentUser}
               finished={Boolean(this.state.token)}
+              initialTokenName={`Analyze "${component.name}"`}
               onContinue={this.handleTokenDone}
               onOpen={this.handleTokenOpen}
               open={step === Steps.TOKEN}
-              stepNumber={stepNumber++}
+              stepNumber={1}
             />
 
             <ProjectAnalysisStep
               component={component}
               displayRowLayout={true}
               open={step === Steps.ANALYSIS}
-              organization={component.organization}
-              stepNumber={stepNumber++}
+              organization={isSonarCloud() ? component.organization : undefined}
+              stepNumber={2}
               token={token}
             />
           </>

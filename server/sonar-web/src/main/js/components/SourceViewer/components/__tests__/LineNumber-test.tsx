@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,29 +24,13 @@ import LineNumber from '../LineNumber';
 
 it('render line 3', () => {
   const line = { line: 3 };
-  const wrapper = shallow(
-    <LineNumber
-      branchLike={undefined}
-      componentKey="foo"
-      line={line}
-      onPopupToggle={jest.fn()}
-      popupOpen={false}
-    />
-  );
+  const wrapper = shallow(<LineNumber line={line} onPopupToggle={jest.fn()} popupOpen={false} />);
   expect(wrapper).toMatchSnapshot();
   click(wrapper);
 });
 
 it('render line 0', () => {
   const line = { line: 0 };
-  const wrapper = shallow(
-    <LineNumber
-      branchLike={undefined}
-      componentKey="foo"
-      line={line}
-      onPopupToggle={jest.fn()}
-      popupOpen={false}
-    />
-  );
+  const wrapper = shallow(<LineNumber line={line} onPopupToggle={jest.fn()} popupOpen={false} />);
   expect(wrapper).toMatchSnapshot();
 });

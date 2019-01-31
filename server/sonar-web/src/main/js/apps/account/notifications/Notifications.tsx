@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,16 +20,17 @@
 import * as React from 'react';
 import Helmet from 'react-helmet';
 import { groupBy, partition, uniq, uniqBy, uniqWith } from 'lodash';
-import * as PropTypes from 'prop-types';
 import GlobalNotifications from './GlobalNotifications';
 import Projects from './Projects';
 import { NotificationProject } from './types';
 import * as api from '../../../api/notifications';
-import { Notification } from '../../../app/types';
 import DeferredSpinner from '../../../components/common/DeferredSpinner';
 import { translate } from '../../../helpers/l10n';
+import { Alert } from '../../../components/ui/Alert';
+import { withAppState } from '../../../components/withAppState';
 
 export interface Props {
+  appState: Pick<T.AppState, 'organizationsEnabled'>;
   fetchOrganizations: (organizations: string[]) => void;
 }
 
@@ -37,17 +38,12 @@ interface State {
   channels: string[];
   globalTypes: string[];
   loading: boolean;
-  notifications: Notification[];
+  notifications: T.Notification[];
   perProjectTypes: string[];
 }
 
-export default class Notifications extends React.PureComponent<Props, State> {
+export class Notifications extends React.PureComponent<Props, State> {
   mounted = false;
-
-  static contextTypes = {
-    organizationsEnabled: PropTypes.bool
-  };
-
   state: State = {
     channels: [],
     globalTypes: [],
@@ -69,7 +65,7 @@ export default class Notifications extends React.PureComponent<Props, State> {
     api.getNotifications().then(
       response => {
         if (this.mounted) {
-          if (this.context.organizationsEnabled) {
+          if (this.props.appState.organizationsEnabled) {
             const organizations = uniq(response.notifications
               .filter(n => n.organization)
               .map(n => n.organization) as string[]);
@@ -93,13 +89,13 @@ export default class Notifications extends React.PureComponent<Props, State> {
     );
   };
 
-  addNotificationToState = (added: Notification) => {
+  addNotificationToState = (added: T.Notification) => {
     this.setState(state => ({
       notifications: uniqWith([...state.notifications, added], areNotificationsEqual)
     }));
   };
 
-  removeNotificationFromState = (removed: Notification) => {
+  removeNotificationFromState = (removed: T.Notification) => {
     this.setState(state => ({
       notifications: state.notifications.filter(
         notification => !areNotificationsEqual(notification, removed)
@@ -107,7 +103,7 @@ export default class Notifications extends React.PureComponent<Props, State> {
     }));
   };
 
-  addNotification = (added: Notification) => {
+  addNotification = (added: T.Notification) => {
     // optimistic update
     this.addNotificationToState(added);
 
@@ -118,7 +114,7 @@ export default class Notifications extends React.PureComponent<Props, State> {
     });
   };
 
-  removeNotification = (removed: Notification) => {
+  removeNotification = (removed: T.Notification) => {
     // optimistic update
     this.removeNotificationFromState(removed);
 
@@ -147,7 +143,7 @@ export default class Notifications extends React.PureComponent<Props, State> {
     return (
       <div className="account-body account-container">
         <Helmet title={translate('my_account.notifications')} />
-        <p className="alert alert-info">{translate('notification.dispatcher.information')}</p>
+        <Alert variant="info">{translate('notification.dispatcher.information')}</Alert>
         <DeferredSpinner loading={this.state.loading}>
           {this.state.notifications && (
             <>
@@ -174,6 +170,8 @@ export default class Notifications extends React.PureComponent<Props, State> {
   }
 }
 
-function areNotificationsEqual(a: Notification, b: Notification) {
+export default withAppState(Notifications);
+
+function areNotificationsEqual(a: T.Notification, b: T.Notification) {
   return a.channel === b.channel && a.type === b.type && a.project === b.project;
 }

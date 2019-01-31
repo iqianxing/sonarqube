@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -52,10 +52,9 @@ public class QualityGateDetailsDataTest {
   @Test
   public void verify_json_for_each_type_of_condition() {
     String value = "actualValue";
-    Condition condition = new Condition(new MetricImpl(1, "key1", "name1", Metric.MetricType.STRING), Condition.Operator.GREATER_THAN.getDbValue(), "errorTh", "warnTh", true);
+    Condition condition = new Condition(new MetricImpl(1, "key1", "name1", Metric.MetricType.STRING), Condition.Operator.GREATER_THAN.getDbValue(), "errorTh");
     ImmutableList<EvaluatedCondition> evaluatedConditions = ImmutableList.of(
       new EvaluatedCondition(condition, Measure.Level.OK, value),
-      new EvaluatedCondition(condition, Measure.Level.WARN, value),
       new EvaluatedCondition(condition, Measure.Level.ERROR, value));
     String actualJson = new QualityGateDetailsData(Measure.Level.OK, evaluatedConditions, false).toJson();
 
@@ -65,8 +64,6 @@ public class QualityGateDetailsDataTest {
       "  {" +
       "    \"metric\":\"key1\"," +
       "    \"op\":\"GT\"," +
-      "    \"period\":1," +
-      "    \"warning\":\"warnTh\"," +
       "    \"error\":\"errorTh\"," +
       "    \"actual\":\"actualValue\"," +
       "    \"level\":\"OK\"" +
@@ -74,19 +71,40 @@ public class QualityGateDetailsDataTest {
       "  {" +
       "    \"metric\":\"key1\"," +
       "    \"op\":\"GT\"," +
-      "    \"period\":1," +
-      "    \"warning\":\"warnTh\"," +
       "    \"error\":\"errorTh\"," +
       "    \"actual\":\"actualValue\"," +
-      "    \"level\":\"WARN\"" +
+      "    \"level\":\"ERROR\"" +
+      "  }" +
+      "]" +
+      "}");
+  }
+
+  @Test
+  public void verify_json_for_condition_on_leak_metric() {
+    String value = "actualValue";
+    Condition condition = new Condition(new MetricImpl(1, "new_key1", "name1", Metric.MetricType.STRING), Condition.Operator.GREATER_THAN.getDbValue(), "errorTh");
+    ImmutableList<EvaluatedCondition> evaluatedConditions = ImmutableList.of(
+      new EvaluatedCondition(condition, Measure.Level.OK, value),
+      new EvaluatedCondition(condition, Measure.Level.ERROR, value));
+    String actualJson = new QualityGateDetailsData(Measure.Level.OK, evaluatedConditions, false).toJson();
+
+    JsonAssert.assertJson(actualJson).isSimilarTo("{" +
+      "\"level\":\"OK\"," +
+      "\"conditions\":[" +
+      "  {" +
+      "    \"metric\":\"new_key1\"," +
+      "    \"op\":\"GT\"," +
+      "    \"error\":\"errorTh\"," +
+      "    \"actual\":\"actualValue\"," +
+      "    \"period\":1," +
+      "    \"level\":\"OK\"" +
       "  }," +
       "  {" +
-      "    \"metric\":\"key1\"," +
+      "    \"metric\":\"new_key1\"," +
       "    \"op\":\"GT\"," +
-      "    \"period\":1," +
-      "    \"warning\":\"warnTh\"," +
       "    \"error\":\"errorTh\"," +
       "    \"actual\":\"actualValue\"," +
+      "    \"period\":1," +
       "    \"level\":\"ERROR\"" +
       "  }" +
       "]" +

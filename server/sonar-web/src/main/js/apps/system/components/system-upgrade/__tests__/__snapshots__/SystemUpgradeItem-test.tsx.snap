@@ -29,10 +29,13 @@ exports[`should display correctly 1`] = `
     <DateFormatter
       date="2017-03-01"
       long={true}
-    />
+    >
+      <Component />
+    </DateFormatter>
     <a
       className="spacer-left"
       href="changelogurl"
+      rel="noopener noreferrer"
       target="_blank"
     >
       system.release_notes

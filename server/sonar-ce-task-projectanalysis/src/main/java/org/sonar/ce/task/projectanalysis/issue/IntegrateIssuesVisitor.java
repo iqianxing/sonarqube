@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -61,7 +61,6 @@ public class IntegrateIssuesVisitor extends TypeAwareVisitorAdapter {
   public void visitAny(Component component) {
     try (DiskCache<DefaultIssue>.DiskAppender cacheAppender = issueCache.newAppender()) {
       issueVisitors.beforeComponent(component);
-
       TrackingResult tracking = issueTracking.track(component);
       fillNewOpenIssues(component, tracking.newIssues(), cacheAppender);
       fillExistingOpenIssues(component, tracking.issuesToMerge(), cacheAppender);
@@ -69,7 +68,7 @@ public class IntegrateIssuesVisitor extends TypeAwareVisitorAdapter {
       copyIssues(component, tracking.issuesToCopy(), cacheAppender);
       issueVisitors.afterComponent(component);
     } catch (Exception e) {
-      throw new IllegalStateException(String.format("Fail to process issues of component '%s'", component.getKey()), e);
+      throw new IllegalStateException(String.format("Fail to process issues of component '%s'", component.getDbKey()), e);
     }
   }
 

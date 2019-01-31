@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,45 +18,31 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import { Link } from 'react-router';
 import ProductNewsMenuItem from './ProductNewsMenuItem';
-import { SuggestionLink } from './SuggestionsProvider';
-import { CurrentUser, isLoggedIn, hasGlobalPermission } from '../../types';
+import { SuggestionsContext } from './SuggestionsContext';
 import { translate } from '../../../helpers/l10n';
 import { getBaseUrl } from '../../../helpers/urls';
 import { isSonarCloud } from '../../../helpers/system';
 import { DropdownOverlay } from '../../../components/controls/Dropdown';
 
 interface Props {
-  currentUser: CurrentUser;
   onClose: () => void;
-  suggestions: Array<SuggestionLink>;
 }
 
 export default class EmbedDocsPopup extends React.PureComponent<Props> {
-  static contextTypes = {
-    openProjectOnboarding: PropTypes.func
-  };
-
-  onAnalyzeProjectClick = (event: React.SyntheticEvent<HTMLAnchorElement>) => {
-    event.preventDefault();
-    event.currentTarget.blur();
-    this.context.openProjectOnboarding();
-  };
-
   renderTitle(text: string) {
     return <li className="menu-header">{text}</li>;
   }
 
-  renderSuggestions() {
-    if (this.props.suggestions.length === 0) {
+  renderSuggestions = ({ suggestions }: { suggestions: T.SuggestionLink[] }) => {
+    if (suggestions.length === 0) {
       return null;
     }
     return (
       <>
         {this.renderTitle(translate('embed_docs.suggestion'))}
-        {this.props.suggestions.map((suggestion, index) => (
+        {suggestions.map((suggestion, index) => (
           <li key={index}>
             <Link onClick={this.props.onClose} target="_blank" to={suggestion.link}>
               {suggestion.text}
@@ -66,7 +52,7 @@ export default class EmbedDocsPopup extends React.PureComponent<Props> {
         <li className="divider" />
       </>
     );
-  }
+  };
 
   renderIconLink(link: string, icon: string, text: string) {
     return (
@@ -108,7 +94,7 @@ export default class EmbedDocsPopup extends React.PureComponent<Props> {
           {this.renderIconLink(
             'https://blog.sonarsource.com/product/SonarCloud',
             'sonarcloud-square-logo.svg',
-            translate('embed_docs.news')
+            translate('embed_docs.blog')
           )}
         </li>
         <li>
@@ -119,17 +105,8 @@ export default class EmbedDocsPopup extends React.PureComponent<Props> {
   }
 
   renderSonarQubeLinks() {
-    const { currentUser } = this.props;
     return (
       <React.Fragment>
-        {isLoggedIn(currentUser) &&
-          hasGlobalPermission(currentUser, 'provisioning') && (
-            <li>
-              <a data-test="analyze-new-project" href="#" onClick={this.onAnalyzeProjectClick}>
-                {translate('embed_docs.analyze_new_project')}
-              </a>
-            </li>
-          )}
         <li className="divider" />
         <li>
           <a href="https://community.sonarsource.com/" rel="noopener noreferrer" target="_blank">
@@ -160,7 +137,7 @@ export default class EmbedDocsPopup extends React.PureComponent<Props> {
     return (
       <DropdownOverlay>
         <ul className="menu abs-width-240">
-          {this.renderSuggestions()}
+          <SuggestionsContext.Consumer>{this.renderSuggestions}</SuggestionsContext.Consumer>
           <li>
             <Link onClick={this.props.onClose} target="_blank" to="/documentation">
               {translate('embed_docs.documentation')}

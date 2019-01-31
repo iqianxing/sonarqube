@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,17 +21,17 @@ import * as React from 'react';
 import Helmet from 'react-helmet';
 import { connect } from 'react-redux';
 import { debounce } from 'lodash';
-import { translate } from '../../../helpers/l10n';
-import { updateOrganization } from '../actions';
+import OrganizationAvatar from '../../../components/common/OrganizationAvatar';
 import { SubmitButton } from '../../../components/ui/buttons';
-import { Organization, OrganizationBase } from '../../../app/types';
+import { updateOrganization } from '../actions';
+import { translate } from '../../../helpers/l10n';
 
 interface DispatchProps {
-  updateOrganization: (organization: string, changes: OrganizationBase) => Promise<any>;
+  updateOrganization: (organization: string, changes: T.OrganizationBase) => Promise<any>;
 }
 
 interface OwnProps {
-  organization: Organization;
+  organization: T.Organization;
 }
 
 type Props = OwnProps & DispatchProps;
@@ -119,7 +119,7 @@ export class OrganizationEdit extends React.PureComponent<Props, State> {
               <input
                 disabled={this.state.loading}
                 id="organization-name"
-                maxLength={64}
+                maxLength={255}
                 name="name"
                 onChange={e => this.setState({ name: e.target.value })}
                 required={true}
@@ -138,19 +138,25 @@ export class OrganizationEdit extends React.PureComponent<Props, State> {
                 maxLength={256}
                 name="avatar"
                 onChange={this.handleAvatarInputChange}
+                placeholder={translate('onboarding.create_organization.avatar.placeholder')}
                 type="text"
                 value={this.state.avatar}
               />
               <div className="modal-field-description">
                 {translate('organization.avatar.description')}
               </div>
-              {!!this.state.avatarImage && (
+              {(this.state.avatarImage || this.state.name) && (
                 <div className="spacer-top spacer-bottom">
                   <div className="little-spacer-bottom">
                     {translate('organization.avatar.preview')}
                     {':'}
                   </div>
-                  <img alt="" height={30} src={this.state.avatarImage} />
+                  <OrganizationAvatar
+                    organization={{
+                      avatar: this.state.avatarImage || undefined,
+                      name: this.state.name || ''
+                    }}
+                  />
                 </div>
               )}
             </div>
@@ -197,7 +203,7 @@ export class OrganizationEdit extends React.PureComponent<Props, State> {
 
 const mapDispatchToProps = { updateOrganization: updateOrganization as any };
 
-export default connect<{}, DispatchProps, OwnProps>(
+export default connect(
   null,
   mapDispatchToProps
 )(OrganizationEdit);

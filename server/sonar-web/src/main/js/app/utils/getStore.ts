@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,15 +18,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import { Store } from 'redux';
-import { AppState, CurrentUser } from '../types';
-import { setAppState } from '../../store/appState/duck';
-import rootReducer from '../../store/rootReducer';
-import { receiveCurrentUser } from '../../store/users/actions';
+import { setAppState } from '../../store/appState';
+import rootReducer, { Store as State } from '../../store/rootReducer';
+import { receiveCurrentUser } from '../../store/users';
 import configureStore from '../../store/utils/configureStore';
 
-let store: Store<any>;
+let store: Store<State, any>;
 
-const createStore = (currentUser?: CurrentUser, appState?: AppState) => {
+const createStore = (currentUser?: T.CurrentUser, appState?: T.AppState) => {
   store = configureStore(rootReducer);
   if (currentUser) {
     store.dispatch(receiveCurrentUser(currentUser));
@@ -37,5 +36,5 @@ const createStore = (currentUser?: CurrentUser, appState?: AppState) => {
   return store;
 };
 
-export default (currentUser?: CurrentUser, appState?: AppState) =>
+export default (currentUser?: T.CurrentUser, appState?: T.AppState) =>
   store ? store : createStore(currentUser, appState);

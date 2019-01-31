@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,7 +22,6 @@ package org.sonar.db.organization;
 import java.util.List;
 import javax.annotation.CheckForNull;
 import org.apache.ibatis.annotations.Param;
-import org.sonar.db.KeyLongValue;
 import org.sonar.db.Pagination;
 import org.sonar.db.component.BranchType;
 import org.sonar.db.component.KeyType;
@@ -31,12 +30,6 @@ public interface OrganizationMapper {
   void insert(@Param("organization") OrganizationDto organization, @Param("newProjectPrivate") boolean newProjectPrivate);
 
   int countByQuery(@Param("query") OrganizationQuery organizationQuery);
-
-  List<KeyLongValue> countTeamsByMembers();
-
-  List<KeyLongValue> countTeamsByProjects();
-
-  List<KeyLongValue> countTeamsByNclocRanges();
 
   List<OrganizationDto> selectByQuery(@Param("query") OrganizationQuery organizationQuery,
     @Param("pagination") Pagination pagination);

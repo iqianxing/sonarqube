@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -33,7 +33,8 @@ import org.sonar.db.DbSession;
 import org.sonar.db.DbTester;
 import org.sonar.db.user.UserDto;
 import org.sonar.db.user.UserTesting;
-import org.sonar.server.authentication.CredentialsAuthenticator;
+import org.sonar.server.authentication.Credentials;
+import org.sonar.server.authentication.CredentialsAuthentication;
 import org.sonar.server.authentication.JwtHttpHandler;
 import org.sonar.server.authentication.event.AuthenticationEvent;
 import org.sonar.server.authentication.event.AuthenticationException;
@@ -69,13 +70,13 @@ public class LoginActionTest {
   private HttpServletResponse response = mock(HttpServletResponse.class);
   private FilterChain chain = mock(FilterChain.class);
 
-  private CredentialsAuthenticator credentialsAuthenticator = mock(CredentialsAuthenticator.class);
+  private CredentialsAuthentication credentialsAuthentication = mock(CredentialsAuthentication.class);
   private JwtHttpHandler jwtHttpHandler = mock(JwtHttpHandler.class);
   private AuthenticationEvent authenticationEvent = mock(AuthenticationEvent.class);
   private TestUserSessionFactory userSessionFactory = TestUserSessionFactory.standalone();
 
   private UserDto user = UserTesting.newUserDto().setLogin(LOGIN);
-  private LoginAction underTest = new LoginAction(credentialsAuthenticator, jwtHttpHandler, threadLocalUserSession, authenticationEvent, userSessionFactory);
+  private LoginAction underTest = new LoginAction(credentialsAuthentication, jwtHttpHandler, threadLocalUserSession, authenticationEvent, userSessionFactory);
 
   @Before
   public void setUp() throws Exception {
@@ -93,30 +94,30 @@ public class LoginActionTest {
 
   @Test
   public void do_authenticate() throws Exception {
-    when(credentialsAuthenticator.authenticate(LOGIN, PASSWORD, request, FORM)).thenReturn(user);
+    when(credentialsAuthentication.authenticate(new Credentials(LOGIN, PASSWORD), request, FORM)).thenReturn(user);
 
     executeRequest(LOGIN, PASSWORD);
 
     assertThat(threadLocalUserSession.isLoggedIn()).isTrue();
-    verify(credentialsAuthenticator).authenticate(LOGIN, PASSWORD, request, FORM);
+    verify(credentialsAuthentication).authenticate(new Credentials(LOGIN, PASSWORD), request, FORM);
     verify(jwtHttpHandler).generateToken(user, request, response);
     verifyZeroInteractions(chain);
     verifyZeroInteractions(authenticationEvent);
   }
 
   @Test
-  public void ignore_get_request() throws Exception {
+  public void ignore_get_request() {
     when(request.getMethod()).thenReturn("GET");
 
     underTest.doFilter(request, response, chain);
 
-    verifyZeroInteractions(credentialsAuthenticator, jwtHttpHandler, chain);
+    verifyZeroInteractions(credentialsAuthentication, jwtHttpHandler, chain);
     verifyZeroInteractions(authenticationEvent);
   }
 
   @Test
   public void return_authorized_code_when_unauthorized_exception_is_thrown() throws Exception {
-    doThrow(new UnauthorizedException("error !")).when(credentialsAuthenticator).authenticate(LOGIN, PASSWORD, request, FORM);
+    doThrow(new UnauthorizedException("error !")).when(credentialsAuthentication).authenticate(new Credentials(LOGIN, PASSWORD), request, FORM);
 
     executeRequest(LOGIN, PASSWORD);
 

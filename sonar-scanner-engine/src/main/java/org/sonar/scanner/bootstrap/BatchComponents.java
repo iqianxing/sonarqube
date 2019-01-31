@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,19 +25,14 @@ import java.util.List;
 import org.sonar.core.component.DefaultResourceTypes;
 import org.sonar.core.config.CorePropertyDefinitions;
 import org.sonar.core.issue.tracking.Tracker;
+import org.sonar.scanner.cpd.JavaCpdBlockIndexerSensor;
 import org.sonar.scanner.externalissue.ExternalIssuesImportSensor;
 import org.sonar.scanner.genericcoverage.GenericCoverageSensor;
 import org.sonar.scanner.genericcoverage.GenericTestExecutionSensor;
 import org.sonar.scanner.issue.tracking.ServerIssueFromWs;
 import org.sonar.scanner.issue.tracking.TrackedIssue;
 import org.sonar.scanner.scan.report.JSONReport;
-import org.sonar.scanner.scm.ScmConfiguration;
-import org.sonar.scanner.scm.ScmPublisher;
 import org.sonar.scanner.source.ZeroCoverageSensor;
-import org.sonar.scanner.task.ListTask;
-import org.sonar.scanner.task.ScanTask;
-import org.sonar.scanner.task.Tasks;
-import org.sonar.scanner.task.ViewsTask;
 
 public class BatchComponents {
   private BatchComponents() {
@@ -46,23 +41,11 @@ public class BatchComponents {
 
   public static Collection<Object> all(GlobalAnalysisMode analysisMode) {
     List<Object> components = Lists.newArrayList(
-      DefaultResourceTypes.get(),
-
-      // Tasks
-      Tasks.class,
-      ListTask.DEFINITION,
-      ListTask.class,
-      ScanTask.DEFINITION,
-      ScanTask.class,
-      ViewsTask.DEFINITION,
-      ViewsTask.class);
+      DefaultResourceTypes.get());
     components.addAll(CorePropertyDefinitions.all());
     if (!analysisMode.isIssues()) {
-      // SCM
-      components.add(ScmConfiguration.class);
-      components.add(ScmPublisher.class);
-
       components.add(ZeroCoverageSensor.class);
+      components.add(JavaCpdBlockIndexerSensor.class);
 
       // Generic coverage
       components.add(GenericCoverageSensor.class);

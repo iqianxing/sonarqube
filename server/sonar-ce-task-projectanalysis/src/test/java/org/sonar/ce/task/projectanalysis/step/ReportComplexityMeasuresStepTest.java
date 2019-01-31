@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,7 +29,6 @@ import org.sonar.ce.task.step.ComputationStep;
 import org.sonar.ce.task.step.TestComputationStepContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.guava.api.Assertions.assertThat;
 import static org.sonar.api.measures.CoreMetrics.CLASSES;
 import static org.sonar.api.measures.CoreMetrics.CLASSES_KEY;
 import static org.sonar.api.measures.CoreMetrics.CLASS_COMPLEXITY;
@@ -58,7 +57,6 @@ import static org.sonar.api.measures.CoreMetrics.FUNCTION_COMPLEXITY_DISTRIBUTIO
 import static org.sonar.api.measures.CoreMetrics.FUNCTION_COMPLEXITY_KEY;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.DIRECTORY;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.FILE;
-import static org.sonar.ce.task.projectanalysis.component.Component.Type.MODULE;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.PROJECT;
 import static org.sonar.ce.task.projectanalysis.component.ReportComponent.builder;
 import static org.sonar.ce.task.projectanalysis.measure.Measure.newMeasureBuilder;
@@ -68,8 +66,6 @@ import static org.sonar.ce.task.projectanalysis.measure.MeasureRepoEntry.toEntri
 public class ReportComplexityMeasuresStepTest {
 
   private static final int ROOT_REF = 1;
-  private static final int MODULE_REF = 11;
-  private static final int SUB_MODULE_REF = 111;
   private static final int DIRECTORY_REF = 1111;
   private static final int FILE_1_REF = 11111;
   private static final int FILE_2_REF = 11121;
@@ -80,16 +76,10 @@ public class ReportComplexityMeasuresStepTest {
   public TreeRootHolderRule treeRootHolder = new TreeRootHolderRule()
     .setRoot(builder(PROJECT, ROOT_REF)
       .addChildren(
-        builder(MODULE, MODULE_REF)
+        builder(DIRECTORY, DIRECTORY_REF)
           .addChildren(
-            builder(MODULE, SUB_MODULE_REF)
-              .addChildren(
-                builder(DIRECTORY, DIRECTORY_REF)
-                  .addChildren(
-                    builder(FILE, FILE_1_REF).build(),
-                    builder(FILE, FILE_2_REF).build())
-                  .build())
-              .build())
+            builder(FILE, FILE_1_REF).build(),
+            builder(FILE, FILE_2_REF).build())
           .build())
       .build());
   @Rule
@@ -139,13 +129,11 @@ public class ReportComplexityMeasuresStepTest {
 
     underTest.execute(new TestComputationStepContext());
 
-    assertThat(measureRepository.getAddedRawMeasure(FILE_1_REF, metricKey)).isAbsent();
-    assertThat(measureRepository.getAddedRawMeasure(FILE_2_REF, metricKey)).isAbsent();
+    assertThat(measureRepository.getAddedRawMeasure(FILE_1_REF, metricKey)).isNotPresent();
+    assertThat(measureRepository.getAddedRawMeasure(FILE_2_REF, metricKey)).isNotPresent();
 
     int expectedNonFileValue = 50;
     assertThat(toEntries(measureRepository.getAddedRawMeasures(DIRECTORY_REF))).contains(entryOf(metricKey, newMeasureBuilder().create(expectedNonFileValue)));
-    assertThat(toEntries(measureRepository.getAddedRawMeasures(SUB_MODULE_REF))).contains(entryOf(metricKey, newMeasureBuilder().create(expectedNonFileValue)));
-    assertThat(toEntries(measureRepository.getAddedRawMeasures(MODULE_REF))).contains(entryOf(metricKey, newMeasureBuilder().create(expectedNonFileValue)));
     assertThat(toEntries(measureRepository.getAddedRawMeasures(ROOT_REF))).contains(entryOf(metricKey, newMeasureBuilder().create(expectedNonFileValue)));
   }
 
@@ -170,13 +158,11 @@ public class ReportComplexityMeasuresStepTest {
 
     underTest.execute(new TestComputationStepContext());
 
-    assertThat(measureRepository.getAddedRawMeasure(FILE_1_REF, metricKey)).isAbsent();
-    assertThat(measureRepository.getAddedRawMeasure(FILE_2_REF, metricKey)).isAbsent();
+    assertThat(measureRepository.getAddedRawMeasure(FILE_1_REF, metricKey)).isNotPresent();
+    assertThat(measureRepository.getAddedRawMeasure(FILE_2_REF, metricKey)).isNotPresent();
 
     String expectedNonFileValue = "0.5=3;3.5=7;6.5=10";
     assertThat(toEntries(measureRepository.getAddedRawMeasures(DIRECTORY_REF))).contains(entryOf(metricKey, newMeasureBuilder().create(expectedNonFileValue)));
-    assertThat(toEntries(measureRepository.getAddedRawMeasures(SUB_MODULE_REF))).contains(entryOf(metricKey, newMeasureBuilder().create(expectedNonFileValue)));
-    assertThat(toEntries(measureRepository.getAddedRawMeasures(MODULE_REF))).contains(entryOf(metricKey, newMeasureBuilder().create(expectedNonFileValue)));
     assertThat(toEntries(measureRepository.getAddedRawMeasures(ROOT_REF))).contains(entryOf(metricKey, newMeasureBuilder().create(expectedNonFileValue)));
   }
 
@@ -209,8 +195,6 @@ public class ReportComplexityMeasuresStepTest {
 
     double expectedNonFileValue = 2d;
     assertThat(toEntries(measureRepository.getAddedRawMeasures(DIRECTORY_REF))).contains(entryOf(metricKey, newMeasureBuilder().create(expectedNonFileValue, 1)));
-    assertThat(toEntries(measureRepository.getAddedRawMeasures(SUB_MODULE_REF))).contains(entryOf(metricKey, newMeasureBuilder().create(expectedNonFileValue, 1)));
-    assertThat(toEntries(measureRepository.getAddedRawMeasures(MODULE_REF))).contains(entryOf(metricKey, newMeasureBuilder().create(expectedNonFileValue, 1)));
     assertThat(toEntries(measureRepository.getAddedRawMeasures(ROOT_REF))).contains(entryOf(metricKey, newMeasureBuilder().create(expectedNonFileValue, 1)));
   }
 

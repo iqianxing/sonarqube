@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,6 +27,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.mockito.stubbing.Answer;
 import org.sonar.api.config.internal.MapSettings;
+import org.sonar.server.platform.OfficialDistribution;
 import org.sonar.server.platform.Platform;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
@@ -47,10 +48,11 @@ public class WebPagesCacheTest {
 
   private ServletContext servletContext = mock(ServletContext.class);
 
+  private OfficialDistribution officialDistribution = mock(OfficialDistribution.class);
   private Platform platform = mock(Platform.class);
   private MapSettings mapSettings = new MapSettings();
 
-  private WebPagesCache underTest = new WebPagesCache(platform, mapSettings.asConfig());
+  private WebPagesCache underTest = new WebPagesCache(platform, mapSettings.asConfig(), officialDistribution);
 
   @Before
   public void setUp() throws Exception {

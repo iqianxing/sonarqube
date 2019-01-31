@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,7 @@ import java.io.File;
 import java.nio.charset.Charset;
 import java.util.SortedSet;
 import javax.annotation.CheckForNull;
-import org.sonar.api.batch.ScannerSide;
+import org.sonar.api.scanner.ScannerSide;
 
 /**
  * The {@link FileSystem} manages all the source files to be analyzed.
@@ -164,9 +164,6 @@ public interface FileSystem {
 
     @CheckForNull
     InputFile inputFile(String relativePath);
-
-    @CheckForNull
-    InputDir inputDir(String relativePath);
 
     /**
      * @since 6.3

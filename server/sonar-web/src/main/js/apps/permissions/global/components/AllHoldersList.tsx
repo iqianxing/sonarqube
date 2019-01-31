@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,39 +18,45 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
+import { connect } from 'react-redux';
 import SearchForm from '../../shared/components/SearchForm';
 import HoldersList from '../../shared/components/HoldersList';
-import { translate } from '../../../../helpers/l10n';
-import { Organization } from '../../../../app/types';
-import { PermissionUser, PermissionGroup } from '../../../../api/permissions';
+import ListFooter from '../../../../components/controls/ListFooter';
+import {
+  PERMISSIONS_ORDER_GLOBAL,
+  convertToPermissionDefinitions,
+  PERMISSIONS_ORDER_GLOBAL_GOV
+} from '../../utils';
+import { Store, getAppState } from '../../../../store/rootReducer';
 
-const PERMISSIONS_ORDER = ['admin', 'profileadmin', 'gateadmin', 'scan', 'provisioning'];
+interface StateProps {
+  appState: Pick<T.AppState, 'qualifiers'>;
+}
 
-interface Props {
+interface OwnProps {
   filter: string;
   grantPermissionToGroup: (groupName: string, permission: string) => Promise<void>;
   grantPermissionToUser: (login: string, permission: string) => Promise<void>;
-  groups: PermissionGroup[];
+  groups: T.PermissionGroup[];
+  groupsPaging?: T.Paging;
   loadHolders: () => void;
+  loading?: boolean;
+  onLoadMore: () => void;
   onFilter: (filter: string) => void;
   onSearch: (query: string) => void;
-  onSelectPermission: (permission: string) => void;
-  organization?: Organization;
+  organization?: T.Organization;
   query: string;
   revokePermissionFromGroup: (groupName: string, permission: string) => Promise<void>;
   revokePermissionFromUser: (login: string, permission: string) => Promise<void>;
-  selectedPermission?: string;
-  users: PermissionUser[];
+  users: T.PermissionUser[];
+  usersPaging?: T.Paging;
 }
 
-export default class AllHoldersList extends React.PureComponent<Props> {
-  componentDidMount() {
-    this.props.loadHolders();
-  }
+type Props = StateProps & OwnProps;
 
-  handleToggleUser = (user: PermissionUser, permission: string) => {
+export class AllHoldersList extends React.PureComponent<Props> {
+  handleToggleUser = (user: T.PermissionUser, permission: string) => {
     const hasPermission = user.permissions.includes(permission);
-
     if (hasPermission) {
       return this.props.revokePermissionFromUser(user.login, permission);
     } else {
@@ -58,7 +64,7 @@ export default class AllHoldersList extends React.PureComponent<Props> {
     }
   };
 
-  handleToggleGroup = (group: PermissionGroup, permission: string) => {
+  handleToggleGroup = (group: T.PermissionGroup, permission: string) => {
     const hasPermission = group.permissions.includes(permission);
 
     if (hasPermission) {
@@ -69,29 +75,51 @@ export default class AllHoldersList extends React.PureComponent<Props> {
   };
 
   render() {
+    const { filter, groups, groupsPaging, users, usersPaging } = this.props;
     const l10nPrefix = this.props.organization ? 'organizations_permissions' : 'global_permissions';
-    const permissions = PERMISSIONS_ORDER.map(p => ({
-      key: p,
-      name: translate(l10nPrefix, p),
-      description: translate(l10nPrefix, p, 'desc')
-    }));
+    const governanceInstalled = this.props.appState.qualifiers.includes('VW');
+    const permissions = convertToPermissionDefinitions(
+      governanceInstalled ? PERMISSIONS_ORDER_GLOBAL_GOV : PERMISSIONS_ORDER_GLOBAL,
+      l10nPrefix
+    );
+
+    let count = 0;
+    let total = 0;
+    if (filter !== 'users') {
+      count += groups.length;
+      total += groupsPaging ? groupsPaging.total : groups.length;
+    }
+    if (filter !== 'groups') {
+      count += users.length;
+      total += usersPaging ? usersPaging.total : users.length;
+    }
 
     return (
-      <HoldersList
-        groups={this.props.groups}
-        onSelectPermission={this.props.onSelectPermission}
-        onToggleGroup={this.handleToggleGroup}
-        onToggleUser={this.handleToggleUser}
-        permissions={permissions}
-        selectedPermission={this.props.selectedPermission}
-        users={this.props.users}>
-        <SearchForm
+      <>
+        <HoldersList
           filter={this.props.filter}
-          onFilter={this.props.onFilter}
-          onSearch={this.props.onSearch}
+          groups={this.props.groups}
+          loading={this.props.loading}
+          onToggleGroup={this.handleToggleGroup}
+          onToggleUser={this.handleToggleUser}
+          permissions={permissions}
           query={this.props.query}
-        />
-      </HoldersList>
+          users={this.props.users}>
+          <SearchForm
+            filter={this.props.filter}
+            onFilter={this.props.onFilter}
+            onSearch={this.props.onSearch}
+            query={this.props.query}
+          />
+        </HoldersList>
+        <ListFooter count={count} loadMore={this.props.onLoadMore} total={total} />
+      </>
     );
   }
 }
+
+const mapStateToProps = (state: Store): StateProps => ({
+  appState: getAppState(state)
+});
+
+export default connect(mapStateToProps)(AllHoldersList);

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,19 +20,17 @@
 import * as React from 'react';
 import ActivationFormModal from './ActivationFormModal';
 import { Profile as BaseProfile } from '../../../api/quality-profiles';
-import { Rule, RuleDetails, RuleActivation } from '../../../app/types';
 import { Button } from '../../../components/ui/buttons';
 
 interface Props {
-  activation?: RuleActivation;
+  activation?: T.RuleActivation;
   buttonText: string;
   className?: string;
   modalHeader: string;
   onDone: (severity: string) => Promise<void>;
   organization: string | undefined;
   profiles: BaseProfile[];
-  rule: Rule | RuleDetails;
-  updateMode?: boolean;
+  rule: T.Rule | T.RuleDetails;
 }
 
 interface State {
@@ -40,16 +38,7 @@ interface State {
 }
 
 export default class ActivationButton extends React.PureComponent<Props, State> {
-  mounted = false;
   state: State = { modal: false };
-
-  componentDidMount() {
-    this.mounted = true;
-  }
-
-  componentWillUnmount() {
-    this.mounted = false;
-  }
 
   handleButtonClick = () => {
     this.setState({ modal: true });
@@ -78,7 +67,6 @@ export default class ActivationButton extends React.PureComponent<Props, State> 
             organization={this.props.organization}
             profiles={this.props.profiles}
             rule={this.props.rule}
-            updateMode={this.props.updateMode}
           />
         )}
       </>

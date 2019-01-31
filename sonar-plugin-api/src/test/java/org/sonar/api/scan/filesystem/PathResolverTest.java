@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -184,9 +184,9 @@ public class PathResolverTest {
   @Test
   public void supportSymlink() {
     PathResolver resolver = new PathResolver();
-    File rootDir = new File("src/test/resources/org/sonar/api/scan/filesystem/sample-with-symlink");
+    File rootDir = new File("test-resources/org/sonar/api/scan/filesystem/sample-with-symlink");
 
-    assertThat(resolver.relativePath(rootDir, new File("src/test/resources/org/sonar/api/scan/filesystem/sample-with-symlink/testx/ClassOneTest.java"))).isEqualTo(
+    assertThat(resolver.relativePath(rootDir, new File("test-resources/org/sonar/api/scan/filesystem/sample-with-symlink/testx/ClassOneTest.java"))).isEqualTo(
       "testx/ClassOneTest.java");
   }
 }

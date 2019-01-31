@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -88,9 +88,9 @@ public class ScannerReportWriter {
     }
   }
 
-  public File writeComponentExternalIssues(int componentRef, Iterable<ScannerReport.ExternalIssue> issues) {
-    File file = fileStructure.fileFor(FileStructure.Domain.EXTERNAL_ISSUES, componentRef);
-    Protobuf.writeStream(issues, file, false);
+  public File writeComponentChangedLines(int componentRef, ScannerReport.ChangedLines changedLines) {
+    File file = fileStructure.fileFor(FileStructure.Domain.CHANGED_LINES, componentRef);
+    Protobuf.write(changedLines, file);
     return file;
   }
 
@@ -100,6 +100,15 @@ public class ScannerReportWriter {
       issue.writeDelimitedTo(out);
     } catch (Exception e) {
       throw ContextException.of("Unable to write external issue", e).addContext("file", file);
+    }
+  }
+
+  public void appendAdHocRule(ScannerReport.AdHocRule adHocRule) {
+    File file = fileStructure.adHocRules();
+    try (OutputStream out = new BufferedOutputStream(new FileOutputStream(file, true))) {
+      adHocRule.writeDelimitedTo(out);
+    } catch (Exception e) {
+      throw ContextException.of("Unable to write ad hoc rule", e).addContext("file", file);
     }
   }
 
@@ -145,21 +154,15 @@ public class ScannerReportWriter {
     return file;
   }
 
-  public File writeTests(int componentRef, Iterable<ScannerReport.Test> tests) {
-    File file = fileStructure.fileFor(FileStructure.Domain.TESTS, componentRef);
-    Protobuf.writeStream(tests, file, false);
-    return file;
-  }
-
-  public File writeCoverageDetails(int componentRef, Iterable<ScannerReport.CoverageDetail> tests) {
-    File file = fileStructure.fileFor(FileStructure.Domain.COVERAGE_DETAILS, componentRef);
-    Protobuf.writeStream(tests, file, false);
-    return file;
-  }
-
   public File writeContextProperties(Iterable<ScannerReport.ContextProperty> properties) {
     File file = fileStructure.contextProperties();
     Protobuf.writeStream(properties, file, false);
+    return file;
+  }
+
+  public File writeAnalysisWarnings(Iterable<ScannerReport.AnalysisWarning> analysisWarnings) {
+    File file = fileStructure.analysisWarnings();
+    Protobuf.writeStream(analysisWarnings, file, false);
     return file;
   }
 

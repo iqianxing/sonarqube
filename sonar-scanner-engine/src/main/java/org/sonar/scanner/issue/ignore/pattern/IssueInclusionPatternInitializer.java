@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,8 +20,11 @@
 package org.sonar.scanner.issue.ignore.pattern;
 
 import org.sonar.api.config.Configuration;
+import org.sonar.core.config.IssueExclusionProperties;
 
 public class IssueInclusionPatternInitializer extends AbstractPatternInitializer {
+
+  public static final String CONFIG_KEY = IssueExclusionProperties.INCLUSION_KEY_PREFIX + ".multicriteria";
 
   public IssueInclusionPatternInitializer(Configuration settings) {
     super(settings);
@@ -29,6 +32,6 @@ public class IssueInclusionPatternInitializer extends AbstractPatternInitializer
 
   @Override
   protected String getMulticriteriaConfigurationKey() {
-    return "sonar.issue.enforce" + ".multicriteria";
+    return CONFIG_KEY;
   }
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,12 +18,11 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import { CustomMeasure } from '../../../app/types';
 import DateFormatter from '../../../components/intl/DateFormatter';
 import { translate } from '../../../helpers/l10n';
 
 interface Props {
-  measure: CustomMeasure;
+  measure: T.CustomMeasure;
 }
 
 export default function MeasureDate({ measure }: Props) {

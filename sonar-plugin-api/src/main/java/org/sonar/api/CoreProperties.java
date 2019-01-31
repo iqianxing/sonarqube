@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -45,6 +45,11 @@ public interface CoreProperties {
   String SUBCATEGORY_DATABASE_CLEANER = "databaseCleaner";
 
   /**
+   * @since 7.6
+   */
+  String SUBCATEGORY_MODULES = "subProjects";
+
+  /**
    * @since 4.0
    */
   String SUBCATEGORY_DUPLICATIONS = "duplications";
@@ -79,7 +84,6 @@ public interface CoreProperties {
    */
   String CATEGORY_EXTERNAL_ISSUES = "externalIssues";
 
-  
   /**
    * @since 2.11
    */
@@ -351,18 +355,22 @@ public interface CoreProperties {
 
   /**
    * @since 3.5
+   * @deprecated since 7.6
    */
+  @Deprecated
   String TASK = "sonar.task";
 
   /**
    * @since 3.6
+   * @deprecated since 7.6
    */
+  @Deprecated
   String SCAN_TASK = "scan";
 
   /**
    * @since 3.6
    */
-  //TODO remove?
+  // TODO remove?
   String PROFILING_LOG_PROPERTY = "sonar.showProfiling";
 
   /**
@@ -508,6 +516,11 @@ public interface CoreProperties {
   String SCM_DISABLED_KEY = "sonar.scm.disabled";
 
   /**
+   * @since 7.6
+   */
+  String SCM_EXCLUSIONS_DISABLED_KEY = "sonar.scm.exclusions.disabled";
+
+  /**
    * @since 5.0
    */
   String SCM_PROVIDER_KEY = "sonar.scm.provider";
@@ -523,4 +536,9 @@ public interface CoreProperties {
    * @since 5.1
    */
   String DEFAULT_ISSUE_ASSIGNEE = "sonar.issues.defaultAssigneeLogin";
+
+  /**
+   * @since 7.6
+   */
+  String MODULE_LEVEL_ARCHIVED_SETTINGS = "sonar.subproject.settings.archived";
 }

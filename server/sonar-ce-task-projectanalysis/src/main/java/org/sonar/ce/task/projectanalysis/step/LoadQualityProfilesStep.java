@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -35,6 +35,8 @@ import org.sonar.ce.task.step.ComputationStep;
 import org.sonar.core.util.CloseableIterator;
 import org.sonar.scanner.protocol.output.ScannerReport;
 
+import static com.google.common.base.Strings.emptyToNull;
+
 public class LoadQualityProfilesStep implements ComputationStep {
 
   private final BatchReportReader batchReportReader;
@@ -55,8 +57,7 @@ public class LoadQualityProfilesStep implements ComputationStep {
         ScannerReport.ActiveRule scannerReportActiveRule = batchActiveRules.next();
         Optional<Rule> rule = ruleRepository.findByKey(RuleKey.of(scannerReportActiveRule.getRuleRepository(), scannerReportActiveRule.getRuleKey()));
         if (rule.isPresent() && rule.get().getStatus() != RuleStatus.REMOVED && !rule.get().isExternal()) {
-          ActiveRule activeRule = convert(scannerReportActiveRule, rule.get());
-          activeRules.add(activeRule);
+          activeRules.add(convert(scannerReportActiveRule, rule.get()));
         }
       }
     }
@@ -72,6 +73,7 @@ public class LoadQualityProfilesStep implements ComputationStep {
   private static ActiveRule convert(ScannerReport.ActiveRule input, Rule rule) {
     RuleKey key = RuleKey.of(input.getRuleRepository(), input.getRuleKey());
     Map<String, String> params = new HashMap<>(input.getParamsByKeyMap());
-    return new ActiveRule(key, input.getSeverity().name(), params, input.getCreatedAt(), rule.getPluginKey());
+    long updatedAt = input.getUpdatedAt();
+    return new ActiveRule(key, input.getSeverity().name(), params, updatedAt == 0 ? input.getCreatedAt() : updatedAt, rule.getPluginKey(), emptyToNull(input.getQProfileKey()));
   }
 }

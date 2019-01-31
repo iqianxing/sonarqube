@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -39,7 +39,9 @@ import org.sonar.api.CoreProperties;
  * Since 6.5, plugins should no longer manipulate the project's structure.
  *
  * @since 2.9
+ * @deprecated since 7.6 use {@link org.sonar.api.scanner.fs.InputProject}
  */
+@Deprecated
 public class ProjectDefinition {
 
   public static final String SOURCES_PROPERTY = "sonar.sources";

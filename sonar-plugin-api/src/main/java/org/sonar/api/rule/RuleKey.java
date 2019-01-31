@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,19 +34,16 @@ import static org.apache.commons.lang.StringUtils.isEmpty;
 @Immutable
 public class RuleKey implements Serializable, Comparable<RuleKey> {
 
-  /**
-   * @deprecated since 5.5, manual rule feature has been dropped
-   */
-  @Deprecated
-  public static final String MANUAL_REPOSITORY_KEY = "manual";
   public static final String EXTERNAL_RULE_REPO_PREFIX = "external_";
 
   private final String repository;
   private final String rule;
+  private final String toString;
 
   protected RuleKey(String repositoryKey, String ruleKey) {
     this.repository = repositoryKey;
     this.rule = ruleKey;
+    this.toString = repositoryKey + ":" + ruleKey;
   }
 
   /**
@@ -84,13 +81,6 @@ public class RuleKey implements Serializable, Comparable<RuleKey> {
     return rule;
   }
 
-  /**
-   * @deprecated since 5.5, manual rule feature has been dropped
-   */
-  @Deprecated
-  public boolean isManual() {
-    return false;
-  }
 
   @Override
   public boolean equals(@Nullable Object o) {
@@ -116,7 +106,7 @@ public class RuleKey implements Serializable, Comparable<RuleKey> {
    */
   @Override
   public String toString() {
-    return String.format("%s:%s", repository, rule);
+    return toString;
   }
 
   @Override

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,7 +29,11 @@ import java.net.URI;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.function.Consumer;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -56,6 +60,10 @@ public class DefaultInputFile extends DefaultInputComponent implements InputFile
   private Metadata metadata;
   private boolean published;
   private boolean excludedForCoverage;
+  private boolean excludedForDuplication;
+  private final Set<Integer> noSonarLines = new HashSet<>();
+  private boolean ignoreAllIssues;
+  private Collection<int[]> ignoreIssuesOnlineRanges = new ArrayList<>();
 
   public DefaultInputFile(DefaultIndexedFile indexedFile, Consumer<DefaultInputFile> metadataGenerator) {
     this(indexedFile, metadataGenerator, null);
@@ -63,7 +71,7 @@ public class DefaultInputFile extends DefaultInputComponent implements InputFile
 
   // For testing
   public DefaultInputFile(DefaultIndexedFile indexedFile, Consumer<DefaultInputFile> metadataGenerator, @Nullable String contents) {
-    super(indexedFile.batchId());
+    super(indexedFile.scannerId());
     this.indexedFile = indexedFile;
     this.metadataGenerator = metadataGenerator;
     this.metadata = null;
@@ -82,7 +90,7 @@ public class DefaultInputFile extends DefaultInputComponent implements InputFile
   public InputStream inputStream() throws IOException {
     return contents != null ? new ByteArrayInputStream(contents.getBytes(charset()))
       : new BOMInputStream(Files.newInputStream(path()),
-        ByteOrderMark.UTF_8, ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE);
+      ByteOrderMark.UTF_8, ByteOrderMark.UTF_16LE, ByteOrderMark.UTF_16BE, ByteOrderMark.UTF_32LE, ByteOrderMark.UTF_32BE);
   }
 
   @Override
@@ -118,6 +126,15 @@ public class DefaultInputFile extends DefaultInputComponent implements InputFile
 
   public boolean isExcludedForCoverage() {
     return excludedForCoverage;
+  }
+
+  public DefaultInputFile setExcludedForDuplication(boolean excludedForDuplication) {
+    this.excludedForDuplication = excludedForDuplication;
+    return this;
+  }
+
+  public boolean isExcludedForDuplication() {
+    return excludedForDuplication;
   }
 
   /**
@@ -171,10 +188,6 @@ public class DefaultInputFile extends DefaultInputComponent implements InputFile
     return indexedFile.key();
   }
 
-  public String moduleKey() {
-    return indexedFile.moduleKey();
-  }
-
   @Override
   public int hashCode() {
     return indexedFile.hashCode();
@@ -203,7 +216,7 @@ public class DefaultInputFile extends DefaultInputComponent implements InputFile
   @Override
   public boolean isEmpty() {
     checkMetadata();
-    return metadata.lastValidOffset() == 0;
+    return metadata.isEmpty();
   }
 
   @Override
@@ -214,7 +227,6 @@ public class DefaultInputFile extends DefaultInputComponent implements InputFile
 
   public int lastValidOffset() {
     checkMetadata();
-    Preconditions.checkState(metadata.lastValidOffset() >= 0, "InputFile is not properly initialized.");
     return metadata.lastValidOffset();
   }
 
@@ -231,12 +243,20 @@ public class DefaultInputFile extends DefaultInputComponent implements InputFile
     return metadata.nonBlankLines();
   }
 
-  public int[] originalLineOffsets() {
+  public int[] originalLineStartOffsets() {
     checkMetadata();
-    Preconditions.checkState(metadata.originalLineOffsets() != null, "InputFile is not properly initialized.");
-    Preconditions.checkState(metadata.originalLineOffsets().length == metadata.lines(),
-      "InputFile is not properly initialized. 'originalLineOffsets' property length should be equal to 'lines'");
-    return metadata.originalLineOffsets();
+    Preconditions.checkState(metadata.originalLineStartOffsets() != null, "InputFile is not properly initialized.");
+    Preconditions.checkState(metadata.originalLineStartOffsets().length == metadata.lines(),
+      "InputFile is not properly initialized. 'originalLineStartOffsets' property length should be equal to 'lines'");
+    return metadata.originalLineStartOffsets();
+  }
+
+  public int[] originalLineEndOffsets() {
+    checkMetadata();
+    Preconditions.checkState(metadata.originalLineEndOffsets() != null, "InputFile is not properly initialized.");
+    Preconditions.checkState(metadata.originalLineEndOffsets().length == metadata.lines(),
+      "InputFile is not properly initialized. 'originalLineEndOffsets' property length should be equal to 'lines'");
+    return metadata.originalLineEndOffsets();
   }
 
   @Override
@@ -290,8 +310,9 @@ public class DefaultInputFile extends DefaultInputComponent implements InputFile
     Preconditions.checkArgument(globalOffset >= 0, "%s is not a valid offset for a file", globalOffset);
     Preconditions.checkArgument(globalOffset <= lastValidOffset(), "%s is not a valid offset for file %s. Max offset is %s", globalOffset, this, lastValidOffset());
     int line = findLine(globalOffset);
-    int startLineOffset = originalLineOffsets()[line - 1];
-    return new DefaultTextPointer(line, globalOffset - startLineOffset);
+    int startLineOffset = originalLineStartOffsets()[line - 1];
+    // In case the global offset is between \r and \n, move the pointer to a valid location
+    return new DefaultTextPointer(line, Math.min(globalOffset, originalLineEndOffsets()[line - 1]) - startLineOffset);
   }
 
   public DefaultInputFile setStatus(Status status) {
@@ -314,11 +335,7 @@ public class DefaultInputFile extends DefaultInputComponent implements InputFile
   }
 
   private int lineLength(int line) {
-    return lastValidGlobalOffsetForLine(line) - originalLineOffsets()[line - 1];
-  }
-
-  private int lastValidGlobalOffsetForLine(int line) {
-    return line < this.metadata.lines() ? (originalLineOffsets()[line] - 1) : lastValidOffset();
+    return originalLineEndOffsets()[line - 1] - originalLineStartOffsets()[line - 1];
   }
 
   private static TextRange newRangeValidPointers(TextPointer start, TextPointer end, boolean acceptEmptyRange) {
@@ -328,7 +345,7 @@ public class DefaultInputFile extends DefaultInputComponent implements InputFile
   }
 
   private int findLine(int globalOffset) {
-    return Math.abs(Arrays.binarySearch(originalLineOffsets(), globalOffset) + 1);
+    return Math.abs(Arrays.binarySearch(originalLineStartOffsets(), globalOffset) + 1);
   }
 
   public DefaultInputFile setMetadata(Metadata metadata) {
@@ -365,4 +382,30 @@ public class DefaultInputFile extends DefaultInputComponent implements InputFile
     return indexedFile.uri();
   }
 
+  public void noSonarAt(Set<Integer> noSonarLines) {
+    this.noSonarLines.addAll(noSonarLines);
+  }
+
+  public boolean hasNoSonarAt(int line) {
+    return this.noSonarLines.contains(line);
+  }
+
+  public boolean isIgnoreAllIssues() {
+    return ignoreAllIssues;
+  }
+
+  public void setIgnoreAllIssues(boolean ignoreAllIssues) {
+    this.ignoreAllIssues = ignoreAllIssues;
+  }
+
+  public void addIgnoreIssuesOnLineRanges(Collection<int[]> lineRanges) {
+    this.ignoreIssuesOnlineRanges.addAll(lineRanges);
+  }
+
+  public boolean isIgnoreAllIssuesOnLine(@Nullable Integer line) {
+    if (line == null) {
+      return false;
+    }
+    return ignoreIssuesOnlineRanges.stream().anyMatch(r -> r[0] <= line && line <= r[1]);
+  }
 }

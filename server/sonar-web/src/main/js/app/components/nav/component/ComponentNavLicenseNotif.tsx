@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,14 +19,14 @@
  */
 import * as React from 'react';
 import { Link } from 'react-router';
-import * as PropTypes from 'prop-types';
-import NavBarNotif from '../../../../components/nav/NavBarNotif';
 import { translate } from '../../../../helpers/l10n';
-import { Task } from '../../../../api/ce';
 import { isValidLicense } from '../../../../api/marketplace';
+import { withAppState } from '../../../../components/withAppState';
+import { Alert } from '../../../../components/ui/Alert';
 
 interface Props {
-  currentTask?: Task;
+  appState: Pick<T.AppState, 'canAdmin'>;
+  currentTask?: T.Task;
 }
 
 interface State {
@@ -34,13 +34,8 @@ interface State {
   loading: boolean;
 }
 
-export default class ComponentNavLicenseNotif extends React.PureComponent<Props, State> {
+export class ComponentNavLicenseNotif extends React.PureComponent<Props, State> {
   mounted = false;
-
-  static contextTypes = {
-    canAdmin: PropTypes.bool.isRequired
-  };
-
   state: State = { loading: false };
 
   componentDidMount() {
@@ -78,25 +73,25 @@ export default class ComponentNavLicenseNotif extends React.PureComponent<Props,
 
     if (isValidLicense && currentTask.errorType !== 'LICENSING_LOC') {
       return (
-        <NavBarNotif className="alert alert-danger">
-          <span className="little-spacer-right">
-            {translate('component_navigation.status.last_blocked_due_to_bad_license')}
-          </span>
-        </NavBarNotif>
+        <Alert display="banner" variant="error">
+          {translate('component_navigation.status.last_blocked_due_to_bad_license')}
+        </Alert>
       );
     }
 
     return (
-      <NavBarNotif className="alert alert-danger">
+      <Alert display="banner" variant="error">
         <span className="little-spacer-right">{currentTask.errorMessage}</span>
-        {this.context.canAdmin ? (
+        {this.props.appState.canAdmin ? (
           <Link to="/admin/extension/license/app">
             {translate('license.component_navigation.button', currentTask.errorType)}.
           </Link>
         ) : (
           translate('please_contact_administrator')
         )}
-      </NavBarNotif>
+      </Alert>
     );
   }
 }
+
+export default withAppState(ComponentNavLicenseNotif);

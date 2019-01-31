@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,7 +17,6 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-/* eslint-disable camelcase */
 import { uniq } from 'lodash';
 import { Query, convertToFilter } from './query';
 import { translate, translateWithParameters } from '../../helpers/l10n';
@@ -26,7 +25,6 @@ import { getOrganizations } from '../../api/organizations';
 import { searchProjects, Facet } from '../../api/components';
 import { getMeasuresForProjects } from '../../api/measures';
 import { isDiffMetric, getPeriodValue } from '../../helpers/measures';
-import { Organization } from '../../app/types';
 
 interface SortingOption {
   class?: string;
@@ -165,7 +163,7 @@ export function parseSorting(sort: string): { sortValue: string; sortDesc: boole
 export function fetchProjects(
   query: Query,
   isFavorite: boolean,
-  organization: Organization | undefined,
+  organization: T.Organization | undefined,
   pageIndex = 1
 ) {
   const ps = query.view === 'visualizations' ? PAGE_SIZE_VISUALIZATIONS : PAGE_SIZE;
@@ -248,7 +246,7 @@ function convertToQueryData(
   return data;
 }
 
-function fetchProjectMeasures(projects: Array<{ key: string }>, query: Query) {
+export function fetchProjectMeasures(projects: Array<{ key: string }>, query: Query) {
   if (!projects.length) {
     return Promise.resolve([]);
   }
@@ -258,9 +256,9 @@ function fetchProjectMeasures(projects: Array<{ key: string }>, query: Query) {
   return getMeasuresForProjects(projectKeys, metrics);
 }
 
-function fetchProjectOrganizations(
+export function fetchProjectOrganizations(
   projects: Array<{ organization: string }>,
-  organization: Organization | undefined
+  organization: T.Organization | undefined
 ) {
   if (organization) {
     return Promise.resolve([organization]);

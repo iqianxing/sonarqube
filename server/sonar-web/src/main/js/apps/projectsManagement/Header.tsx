@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,8 +18,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import ChangeVisibilityForm from './ChangeVisibilityForm';
-import { Organization, Visibility } from '../../app/types';
+import ChangeDefaultVisibilityForm from './ChangeDefaultVisibilityForm';
 import { EditButton, Button } from '../../components/ui/buttons';
 import { translate } from '../../helpers/l10n';
 import { isSonarCloud } from '../../helpers/system';
@@ -27,8 +26,8 @@ import { isSonarCloud } from '../../helpers/system';
 export interface Props {
   hasProvisionPermission?: boolean;
   onProjectCreate: () => void;
-  onVisibilityChange: (visibility: Visibility) => void;
-  organization: Organization;
+  onVisibilityChange: (visibility: T.Visibility) => void;
+  organization: T.Organization;
 }
 
 interface State {
@@ -76,13 +75,14 @@ export default class Header extends React.PureComponent<Props, State> {
 
         <p className="page-description">{translate('projects_management.page.description')}</p>
 
-        {this.state.visibilityForm && (
-          <ChangeVisibilityForm
-            onClose={this.closeVisiblityForm}
-            onConfirm={this.props.onVisibilityChange}
-            organization={organization}
-          />
-        )}
+        {!isSonarCloud() &&
+          this.state.visibilityForm && (
+            <ChangeDefaultVisibilityForm
+              onClose={this.closeVisiblityForm}
+              onConfirm={this.props.onVisibilityChange}
+              organization={organization}
+            />
+          )}
       </header>
     );
   }

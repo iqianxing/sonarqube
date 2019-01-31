@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,12 +19,12 @@
  */
 import * as React from 'react';
 import { getPermissionTemplates, applyTemplateToProject } from '../../../../api/permissions';
-import { PermissionTemplate } from '../../../../app/types';
 import DeferredSpinner from '../../../../components/common/DeferredSpinner';
 import SimpleModal from '../../../../components/controls/SimpleModal';
 import Select from '../../../../components/controls/Select';
 import { SubmitButton, ResetButtonLink } from '../../../../components/ui/buttons';
 import { translateWithParameters, translate } from '../../../../helpers/l10n';
+import { Alert } from '../../../../components/ui/Alert';
 
 interface Props {
   onApply?: () => void;
@@ -37,7 +37,7 @@ interface State {
   done: boolean;
   loading: boolean;
   permissionTemplate?: string;
-  permissionTemplates?: PermissionTemplate[];
+  permissionTemplates?: T.PermissionTemplate[];
 }
 
 export default class ApplyTemplate extends React.PureComponent<Props, State> {
@@ -107,9 +107,7 @@ export default class ApplyTemplate extends React.PureComponent<Props, State> {
 
             <div className="modal-body">
               {this.state.done ? (
-                <div className="alert alert-success">
-                  {translate('projects_role.apply_template.success')}
-                </div>
+                <Alert variant="success">{translate('projects_role.apply_template.success')}</Alert>
               ) : (
                 <>
                   {this.state.loading ? (
@@ -123,6 +121,7 @@ export default class ApplyTemplate extends React.PureComponent<Props, State> {
                       {this.state.permissionTemplates && (
                         <Select
                           clearable={false}
+                          id="project-permissions-template"
                           onChange={this.handlePermissionTemplateChange}
                           options={this.state.permissionTemplates.map(permissionTemplate => ({
                             label: permissionTemplate.name,

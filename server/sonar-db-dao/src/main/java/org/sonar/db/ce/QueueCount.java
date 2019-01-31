@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,11 +21,11 @@ package org.sonar.db.ce;
 
 public class QueueCount {
   // set by reflection by MyBatis
-  private String componentUuid;
+  private String mainComponentUuid;
   private int total;
 
-  public String getComponentUuid() {
-    return componentUuid;
+  public String getMainComponentUuid() {
+    return mainComponentUuid;
   }
 
   public int getTotal() {

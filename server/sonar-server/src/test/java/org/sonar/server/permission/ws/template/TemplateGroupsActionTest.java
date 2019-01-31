@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,10 @@ package org.sonar.server.permission.ws.template;
 
 import javax.annotation.Nullable;
 import org.junit.Test;
+import org.sonar.api.resources.Qualifiers;
+import org.sonar.api.resources.ResourceTypes;
 import org.sonar.core.permission.GlobalPermissions;
+import org.sonar.db.component.ResourceTypesRule;
 import org.sonar.db.organization.OrganizationDto;
 import org.sonar.db.permission.template.PermissionTemplateDto;
 import org.sonar.db.permission.template.PermissionTemplateGroupDto;
@@ -30,7 +33,11 @@ import org.sonar.server.exceptions.BadRequestException;
 import org.sonar.server.exceptions.ForbiddenException;
 import org.sonar.server.exceptions.NotFoundException;
 import org.sonar.server.exceptions.UnauthorizedException;
+import org.sonar.server.permission.PermissionService;
+import org.sonar.server.permission.PermissionServiceImpl;
 import org.sonar.server.permission.ws.BasePermissionWsTest;
+import org.sonar.server.permission.ws.RequestValidator;
+import org.sonar.server.permission.ws.WsParameters;
 import org.sonarqube.ws.Permissions.WsGroupsResponse;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,9 +58,14 @@ import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_T
 
 public class TemplateGroupsActionTest extends BasePermissionWsTest<TemplateGroupsAction> {
 
+  private ResourceTypes resourceTypes = new ResourceTypesRule().setRootQualifiers(Qualifiers.PROJECT);
+  private PermissionService permissionService = new PermissionServiceImpl(resourceTypes);
+  private WsParameters wsParameters = new WsParameters(permissionService);
+  private RequestValidator requestValidator = new RequestValidator(permissionService);
+
   @Override
   protected TemplateGroupsAction buildWsAction() {
-    return new TemplateGroupsAction(db.getDbClient(), userSession, newPermissionWsSupport());
+    return new TemplateGroupsAction(db.getDbClient(), userSession, newPermissionWsSupport(), wsParameters, requestValidator);
   }
 
   @Test
@@ -130,7 +142,7 @@ public class TemplateGroupsActionTest extends BasePermissionWsTest<TemplateGroup
       .setParam(PARAM_TEMPLATE_ID, template.getUuid())
       .executeProtobuf(WsGroupsResponse.class);
 
-    assertThat(response.getGroupsList()).extracting("name").containsExactly("Anyone", "group-1-name", "group-2-name");
+    assertThat(response.getGroupsList()).extracting("name").containsExactly("Anyone", "group-1-name", "group-2-name", "group-3-name");
     assertThat(response.getGroups(0).getPermissionsList()).containsOnly("user", "issueadmin");
     assertThat(response.getGroups(1).getPermissionsList()).containsOnly("codeviewer", "admin");
     assertThat(response.getGroups(2).getPermissionsList()).containsOnly("user", "admin");
@@ -188,7 +200,7 @@ public class TemplateGroupsActionTest extends BasePermissionWsTest<TemplateGroup
       .setParam(PARAM_TEMPLATE_NAME, template.getName())
       .executeProtobuf(WsGroupsResponse.class);
 
-    assertThat(response.getGroupsList()).extracting("name").containsExactly("Anyone", "group-1-name", "group-2-name");
+    assertThat(response.getGroupsList()).extracting("name").containsExactly("Anyone", "group-1-name", "group-2-name", "group-3-name");
   }
 
   @Test

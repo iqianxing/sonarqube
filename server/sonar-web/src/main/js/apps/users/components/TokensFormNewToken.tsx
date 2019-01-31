@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 import * as React from 'react';
 import ClipboardButton from '../../../components/controls/ClipboardButton';
 import { translateWithParameters } from '../../../helpers/l10n';
+import { Alert } from '../../../components/ui/Alert';
 
 interface Props {
   token: { name: string; token: string };
@@ -28,9 +29,9 @@ interface Props {
 export default function TokensFormNewToken({ token }: Props) {
   return (
     <div className="panel panel-white big-spacer-top">
-      <p className="alert alert-warning">
+      <Alert variant="warning">
         {translateWithParameters('users.tokens.new_token_created', token.name)}
-      </p>
+      </Alert>
       <ClipboardButton copyValue={token.token} />
       <code className="big-spacer-left text-success">{token.token}</code>
     </div>

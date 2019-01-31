@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,25 +21,25 @@ import * as React from 'react';
 import { connect } from 'react-redux';
 import App from './App';
 import forSingleOrganization from '../organizations/forSingleOrganization';
-import { Organization, LoggedInUser, Visibility } from '../../app/types';
-import { getAppState, getOrganizationByKey, getCurrentUser } from '../../store/rootReducer';
-import { receiveOrganizations } from '../../store/organizations/duck';
+import { getAppState, getOrganizationByKey, getCurrentUser, Store } from '../../store/rootReducer';
+import { receiveOrganizations } from '../../store/organizations';
 import { changeProjectDefaultVisibility } from '../../api/permissions';
-import { fetchOrganization } from '../organizations/actions';
+import { fetchOrganization } from '../../store/rootActions';
 
 interface StateProps {
   appState: { defaultOrganization: string; qualifiers: string[] };
-  currentUser: LoggedInUser;
-  organization?: Organization;
+  currentUser: T.LoggedInUser;
+  organization?: T.Organization;
 }
 
 interface DispatchProps {
   fetchOrganization: (organization: string) => void;
-  onVisibilityChange: (organization: Organization, visibility: Visibility) => void;
+  onVisibilityChange: (organization: T.Organization, visibility: T.Visibility) => void;
 }
 
 interface OwnProps {
   onRequestFail: (error: any) => void;
+  organization: T.Organization;
 }
 
 class AppContainer extends React.PureComponent<OwnProps & StateProps & DispatchProps> {
@@ -51,7 +51,11 @@ class AppContainer extends React.PureComponent<OwnProps & StateProps & DispatchP
     }
   }
 
-  handleVisibilityChange = (visibility: Visibility) => {
+  handleOrganizationUpgrade = () => {
+    this.props.fetchOrganization(this.props.organization.key);
+  };
+
+  handleVisibilityChange = (visibility: T.Visibility) => {
     if (this.props.organization) {
       this.props.onVisibilityChange(this.props.organization, visibility);
     }
@@ -65,11 +69,13 @@ class AppContainer extends React.PureComponent<OwnProps & StateProps & DispatchP
     }
 
     const topLevelQualifiers = organization.isDefault ? this.props.appState.qualifiers : ['TRK'];
+    const { actions = {} } = organization;
 
     return (
       <App
         currentUser={this.props.currentUser}
-        hasProvisionPermission={organization.canProvisionProjects}
+        hasProvisionPermission={actions.provision}
+        onOrganizationUpgrade={this.handleOrganizationUpgrade}
         onVisibilityChange={this.handleVisibilityChange}
         organization={organization}
         topLevelQualifiers={topLevelQualifiers}
@@ -78,14 +84,14 @@ class AppContainer extends React.PureComponent<OwnProps & StateProps & DispatchP
   }
 }
 
-const mapStateToProps = (state: any, ownProps: any) => ({
+const mapStateToProps = (state: Store, ownProps: OwnProps) => ({
   appState: getAppState(state),
-  currentUser: getCurrentUser(state) as LoggedInUser,
+  currentUser: getCurrentUser(state) as T.LoggedInUser,
   organization:
     ownProps.organization || getOrganizationByKey(state, getAppState(state).defaultOrganization)
 });
 
-const onVisibilityChange = (organization: Organization, visibility: Visibility) => (
+const onVisibilityChange = (organization: T.Organization, visibility: T.Visibility) => (
   dispatch: Function
 ) => {
   const currentVisibility = organization.projectVisibility;
@@ -97,12 +103,12 @@ const onVisibilityChange = (organization: Organization, visibility: Visibility) 
 
 const mapDispatchToProps = (dispatch: Function) => ({
   fetchOrganization: (key: string) => dispatch(fetchOrganization(key)),
-  onVisibilityChange: (organization: Organization, visibility: Visibility) =>
+  onVisibilityChange: (organization: T.Organization, visibility: T.Visibility) =>
     dispatch(onVisibilityChange(organization, visibility))
 });
 
 export default forSingleOrganization(
-  connect<StateProps, DispatchProps, OwnProps>(
+  connect(
     mapStateToProps,
     mapDispatchToProps
   )(AppContainer)

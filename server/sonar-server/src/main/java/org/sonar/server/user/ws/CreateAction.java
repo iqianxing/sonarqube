@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -40,10 +40,11 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.emptyToNull;
 import static com.google.common.base.Strings.isNullOrEmpty;
 import static java.util.Collections.emptyList;
-import static org.sonar.core.util.Protobuf.setNullable;
+import static java.util.Optional.ofNullable;
 import static org.sonar.server.user.ExternalIdentity.SQ_AUTHORITY;
 import static org.sonar.server.user.UserUpdater.EMAIL_MAX_LENGTH;
 import static org.sonar.server.user.UserUpdater.LOGIN_MAX_LENGTH;
+import static org.sonar.server.user.UserUpdater.LOGIN_MIN_LENGTH;
 import static org.sonar.server.user.UserUpdater.NAME_MAX_LENGTH;
 import static org.sonar.server.user.ws.EmailValidator.isValidIfPresent;
 import static org.sonar.server.ws.WsUtils.writeProtobuf;
@@ -85,6 +86,7 @@ public class CreateAction implements UsersWsAction {
 
     action.createParam(PARAM_LOGIN)
       .setRequired(true)
+      .setMinimumLength(LOGIN_MIN_LENGTH)
       .setMaximumLength(LOGIN_MAX_LENGTH)
       .setDescription("User login")
       .setExampleValue("myuser");
@@ -160,7 +162,7 @@ public class CreateAction implements UsersWsAction {
       .setActive(userDto.isActive())
       .setLocal(userDto.isLocal())
       .addAllScmAccounts(userDto.getScmAccountsAsList());
-    setNullable(emptyToNull(userDto.getEmail()), userBuilder::setEmail);
+    ofNullable(emptyToNull(userDto.getEmail())).ifPresent(userBuilder::setEmail);
     return CreateWsResponse.newBuilder().setUser(userBuilder).build();
   }
 

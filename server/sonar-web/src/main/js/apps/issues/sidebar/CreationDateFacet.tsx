@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,9 +19,8 @@
  */
 import * as React from 'react';
 import { max } from 'lodash';
-import { intlShape } from 'react-intl';
+import { injectIntl, InjectedIntlProps } from 'react-intl';
 import { Query } from '../utils';
-import { Component } from '../../../app/types';
 import FacetBox from '../../../components/facet/FacetBox';
 import FacetHeader from '../../../components/facet/FacetHeader';
 import FacetItem from '../../../components/facet/FacetItem';
@@ -36,7 +35,7 @@ import { formatMeasure } from '../../../helpers/measures';
 import DeferredSpinner from '../../../components/common/DeferredSpinner';
 
 interface Props {
-  component: Component | undefined;
+  component: T.Component | undefined;
   createdAfter: Date | undefined;
   createdAt: string;
   createdBefore: Date | undefined;
@@ -49,15 +48,11 @@ interface Props {
   stats: { [x: string]: number } | undefined;
 }
 
-export default class CreationDateFacet extends React.PureComponent<Props> {
+class CreationDateFacet extends React.PureComponent<Props & InjectedIntlProps> {
   property = 'createdAt';
 
   static defaultProps = {
     open: true
-  };
-
-  static contextTypes = {
-    intl: intlShape
   };
 
   hasValue = () =>
@@ -106,7 +101,7 @@ export default class CreationDateFacet extends React.PureComponent<Props> {
 
   getValues() {
     const { createdAfter, createdAt, createdBefore, createdInLast, sinceLeakPeriod } = this.props;
-    const { formatDate } = this.context.intl;
+    const { formatDate } = this.props.intl;
     const values = [];
     if (createdAfter) {
       values.push(formatDate(createdAfter, longFormatterOption));
@@ -127,7 +122,7 @@ export default class CreationDateFacet extends React.PureComponent<Props> {
       values.push(translate('issues.facet.createdAt.last_year'));
     }
     if (sinceLeakPeriod) {
-      values.push(translate('issues.new_code_period'));
+      values.push(translate('issues.new_code'));
     }
     return values;
   }
@@ -145,7 +140,7 @@ export default class CreationDateFacet extends React.PureComponent<Props> {
       return null;
     }
 
-    const { formatDate } = this.context.intl;
+    const { formatDate } = this.props.intl;
     const data = periods.map((start, index) => {
       const startDate = parseDate(start);
       let endDate;
@@ -235,7 +230,7 @@ export default class CreationDateFacet extends React.PureComponent<Props> {
             active={sinceLeakPeriod}
             name={translate('issues.new_code')}
             onClick={this.handleLeakPeriodClick}
-            tooltip={translate('issues.leak_period')}
+            tooltip={translate('issues.new_code_period')}
             value=""
           />
         ) : (
@@ -297,3 +292,5 @@ export default class CreationDateFacet extends React.PureComponent<Props> {
     );
   }
 }
+
+export default injectIntl(CreationDateFacet);

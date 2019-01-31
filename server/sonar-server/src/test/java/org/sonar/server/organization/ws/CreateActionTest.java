@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,6 +27,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.sonar.api.config.internal.MapSettings;
+import org.sonar.api.resources.Qualifiers;
+import org.sonar.api.resources.ResourceTypes;
 import org.sonar.api.server.ws.WebService;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.internal.TestSystem2;
@@ -36,6 +38,7 @@ import org.sonar.core.util.UuidFactoryFast;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.DbTester;
+import org.sonar.db.component.ResourceTypesRule;
 import org.sonar.db.organization.DefaultTemplates;
 import org.sonar.db.organization.OrganizationDto;
 import org.sonar.db.permission.template.PermissionTemplateDto;
@@ -47,11 +50,14 @@ import org.sonar.db.user.UserMembershipQuery;
 import org.sonar.server.es.EsTester;
 import org.sonar.server.exceptions.ForbiddenException;
 import org.sonar.server.exceptions.UnauthorizedException;
+import org.sonar.server.organization.OrganizationAlmBinding;
 import org.sonar.server.organization.OrganizationUpdater;
 import org.sonar.server.organization.OrganizationUpdaterImpl;
 import org.sonar.server.organization.OrganizationValidation;
 import org.sonar.server.organization.OrganizationValidationImpl;
 import org.sonar.server.organization.TestOrganizationFlags;
+import org.sonar.server.permission.PermissionService;
+import org.sonar.server.permission.PermissionServiceImpl;
 import org.sonar.server.qualityprofile.BuiltInQProfileRepository;
 import org.sonar.server.tester.UserSessionRule;
 import org.sonar.server.user.index.UserIndexDefinition;
@@ -67,9 +73,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.sonar.core.config.CorePropertyDefinitions.ORGANIZATIONS_ANYONE_CAN_CREATE;
-import static org.sonar.server.organization.ws.OrganizationsWsSupport.PARAM_KEY;
 import static org.sonar.server.organization.ws.OrganizationsWsSupport.PARAM_NAME;
 import static org.sonar.server.organization.ws.OrganizationsWsTestSupport.STRING_257_CHARS_LONG;
 import static org.sonar.server.organization.ws.OrganizationsWsTestSupport.STRING_65_CHARS_LONG;
@@ -97,15 +106,18 @@ public class CreateActionTest {
   private MapSettings settings = new MapSettings().setProperty(ORGANIZATIONS_ANYONE_CAN_CREATE, false);
   private OrganizationValidation organizationValidation = new OrganizationValidationImpl();
   private UserIndexer userIndexer = new UserIndexer(dbClient, es.client());
+  private ResourceTypes resourceTypes = new ResourceTypesRule().setRootQualifiers(Qualifiers.PROJECT);
+  private PermissionService permissionService = new PermissionServiceImpl(resourceTypes);
   private OrganizationUpdater organizationUpdater = new OrganizationUpdaterImpl(dbClient, system2, UuidFactoryFast.getInstance(), organizationValidation, settings.asConfig(),
     userIndexer,
-    mock(BuiltInQProfileRepository.class), new DefaultGroupCreatorImpl(dbClient));
+    mock(BuiltInQProfileRepository.class), new DefaultGroupCreatorImpl(dbClient), permissionService);
   private TestOrganizationFlags organizationFlags = TestOrganizationFlags.standalone().setEnabled(true);
+  private OrganizationAlmBinding organizationAlmBinding = mock(OrganizationAlmBinding.class);
 
   private WsActionTester wsTester = new WsActionTester(
     new CreateAction(settings.asConfig(), userSession, dbClient, new OrganizationsWsSupport(organizationValidation),
       organizationValidation,
-      organizationUpdater, organizationFlags));
+      organizationUpdater, organizationFlags, organizationAlmBinding));
 
   @Test
   public void create_organization() {
@@ -205,7 +217,7 @@ public class CreateActionTest {
     assertThat(defaultTemplate.getDescription()).isEqualTo("Default permission template of organization orgFoo");
     DefaultTemplates defaultTemplates = dbClient.organizationDao().getDefaultTemplates(dbSession, organization.getUuid()).get();
     assertThat(defaultTemplates.getProjectUuid()).isEqualTo(defaultTemplate.getUuid());
-    assertThat(defaultTemplates.getViewUuid()).isNull();
+    assertThat(defaultTemplates.getApplicationsUuid()).isNull();
     assertThat(dbClient.permissionTemplateDao().selectGroupPermissionsByTemplateId(dbSession, defaultTemplate.getId()))
       .extracting(PermissionTemplateGroupDto::getGroupId, PermissionTemplateGroupDto::getPermission)
       .containsOnly(
@@ -246,6 +258,47 @@ public class CreateActionTest {
   }
 
   @Test
+  public void bind_organization_when_installation_id_is_set() {
+    createUserAndLogInAsSystemAdministrator();
+    db.qualityGates().insertBuiltInQualityGate();
+
+    wsTester.newRequest()
+      .setParam(PARAM_NAME, "foo")
+      .setParam("installationId", "ABCD")
+      .execute();
+
+    verify(organizationAlmBinding).bindOrganization(any(DbSession.class), any(OrganizationDto.class), eq("ABCD"));
+  }
+
+  @Test
+  public void does_not_bind_organization_when_organizationAlmBinding_is_null() {
+    wsTester = new WsActionTester(
+      new CreateAction(settings.asConfig(), userSession, dbClient, new OrganizationsWsSupport(organizationValidation),
+        organizationValidation, organizationUpdater, organizationFlags, null));
+    createUserAndLogInAsSystemAdministrator();
+    db.qualityGates().insertBuiltInQualityGate();
+
+    wsTester.newRequest()
+      .setParam(PARAM_NAME, "foo")
+      .setParam("installationId", "ABCD")
+      .execute();
+
+    verifyZeroInteractions(organizationAlmBinding);
+  }
+
+  @Test
+  public void does_not_bind_organization_when_installation_id_is_not_set() {
+    createUserAndLogInAsSystemAdministrator();
+    db.qualityGates().insertBuiltInQualityGate();
+
+    wsTester.newRequest()
+      .setParam(PARAM_NAME, "foo")
+      .execute();
+
+    verifyZeroInteractions(organizationAlmBinding);
+  }
+
+  @Test
   public void request_succeeds_if_user_is_system_administrator_and_logged_in_users_cannot_create_organizations() {
     createUserAndLogInAsSystemAdministrator();
     db.qualityGates().insertBuiltInQualityGate();
@@ -278,16 +331,6 @@ public class CreateActionTest {
     db.qualityGates().insertBuiltInQualityGate();
 
     verifyResponseAndDb(executeRequest("ab"), "ab", "ab", NOW);
-  }
-
-  @Test
-  public void request_succeeds_if_name_is_64_char_long() {
-    createUserAndLogInAsSystemAdministrator();
-    db.qualityGates().insertBuiltInQualityGate();
-
-    String name = STRING_65_CHARS_LONG.substring(0, 64);
-
-    verifyResponseAndDb(executeRequest(name), name, name.substring(0, 32), NOW);
   }
 
   @Test
@@ -325,17 +368,6 @@ public class CreateActionTest {
 
     CreateWsResponse response = executeRequest("foo", "bar", "moo", "doo", "boo");
     verifyResponseAndDb(response, "foo", "bar", "moo", "doo", "boo", NOW);
-  }
-
-  @Test
-  public void request_succeeds_to_generate_key_from_name_more_then_32_chars_long() {
-    createUserAndLogInAsSystemAdministrator();
-    db.qualityGates().insertBuiltInQualityGate();
-
-    String name = STRING_65_CHARS_LONG.substring(0, 33);
-
-    CreateWsResponse response = executeRequest(name);
-    verifyResponseAndDb(response, name, name.substring(0, 32), NOW);
   }
 
   @Test
@@ -390,40 +422,6 @@ public class CreateActionTest {
   }
 
   @Test
-  public void request_fails_if_name_is_empty() {
-    createUserAndLogInAsSystemAdministrator();
-
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("Name must not be empty");
-
-    wsTester.newRequest()
-      .setParam(PARAM_NAME, "")
-      .execute();
-  }
-
-  @Test
-  public void request_fails_if_name_is_65_chars_long() {
-    createUserAndLogInAsSystemAdministrator();
-
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("'name' length (65) is longer than the maximum authorized (64)");
-
-    executeRequest(STRING_65_CHARS_LONG);
-  }
-
-  @Test
-  public void request_fails_if_key_is_33_chars_long() {
-    createUserAndLogInAsSystemAdministrator();
-
-    String key = STRING_65_CHARS_LONG.substring(0, 33);
-
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("'key' length (33) is longer than the maximum authorized (32)");
-
-    executeRequest("foo", key);
-  }
-
-  @Test
   public void requests_fails_if_key_contains_non_ascii_chars_but_dash() {
     createUserAndLogInAsSystemAdministrator();
 
@@ -464,19 +462,6 @@ public class CreateActionTest {
   }
 
   @Test
-  public void request_fails_if_key_is_empty() {
-    createUserAndLogInAsSystemAdministrator();
-
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("Key must not be empty");
-
-    wsTester.newRequest()
-      .setParam(PARAM_KEY, "")
-      .setParam(PARAM_NAME, "foo")
-      .execute();
-  }
-
-  @Test
   public void request_fails_if_key_is_specified_and_already_exists_in_DB() {
     createUserAndLogInAsSystemAdministrator();
     OrganizationDto org = db.organizations().insert(o -> o.setKey("the-key"));
@@ -490,9 +475,9 @@ public class CreateActionTest {
   @Test
   public void request_fails_if_key_computed_from_name_already_exists_in_DB() {
     createUserAndLogInAsSystemAdministrator();
-    String key = STRING_65_CHARS_LONG.substring(0, 32);
+    String key = "key";
     db.organizations().insert(o -> o.setKey(key));
-    String name = STRING_65_CHARS_LONG.substring(0, 64);
+    String name = "Key";
 
     expectedException.expect(IllegalArgumentException.class);
     expectedException.expectMessage("Key '" + key + "' generated from name '" + name + "' is already used. Specify one.");
@@ -582,15 +567,20 @@ public class CreateActionTest {
     assertThat(action.isInternal()).isTrue();
     assertThat(action.since()).isEqualTo("6.2");
     assertThat(action.handler()).isNotNull();
-    assertThat(action.params()).hasSize(5);
+    assertThat(action.params()).hasSize(6);
     assertThat(action.responseExample()).isEqualTo(getClass().getResource("create-example.json"));
+
     assertThat(action.param("name"))
       .matches(WebService.Param::isRequired)
       .matches(param -> "Foo Company".equals(param.exampleValue()))
+      .matches(param -> param.minimumLength().equals(1))
+      .matches(param -> param.maximumLength().equals(255))
       .matches(param -> param.description() != null);
     assertThat(action.param("key"))
       .matches(param -> !param.isRequired())
       .matches(param -> "foo-company".equals(param.exampleValue()))
+      .matches(param -> param.minimumLength().equals(1))
+      .matches(param -> param.maximumLength().equals(255))
       .matches(param -> param.description() != null);
     assertThat(action.param("description"))
       .matches(param -> !param.isRequired())
@@ -604,6 +594,9 @@ public class CreateActionTest {
       .matches(param -> !param.isRequired())
       .matches(param -> "https://www.foo.com/foo.png".equals(param.exampleValue()))
       .matches(param -> param.description() != null);
+    assertThat(action.param("installationId"))
+      .matches(param -> !param.isRequired())
+      .matches(param -> param.isInternal());
   }
 
   @Test

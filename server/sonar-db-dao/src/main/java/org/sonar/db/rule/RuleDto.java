@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -59,9 +59,6 @@ public class RuleDto {
   }
 
   public RuleKey getKey() {
-    if (definition.getKey() == null) {
-      definition.setKey(RuleKey.of(getRepositoryKey(), getRuleKey()));
-    }
     return definition.getKey();
   }
 
@@ -183,6 +180,60 @@ public class RuleDto {
 
   public RuleDto setIsExternal(boolean isExternal) {
     definition.setIsExternal(isExternal);
+    return this;
+  }
+
+  public boolean isAdHoc() {
+    return definition.isAdHoc();
+  }
+
+  public RuleDto setIsAdhoc(boolean isAdHoc) {
+    definition.setIsAdHoc(isAdHoc);
+    return this;
+  }
+
+  @CheckForNull
+  public String getAdHocName() {
+    return metadata.getAdHocName();
+  }
+
+  public RuleDto setAdHocName(@Nullable String adHocName) {
+    metadata.setAdHocName(adHocName);
+    return this;
+  }
+
+  @CheckForNull
+  public String getAdHocDescription() {
+    return metadata.getAdHocDescription();
+  }
+
+  public RuleDto setAdHocDescription(@Nullable String adHocDescription) {
+    metadata.setAdHocDescription(adHocDescription);
+    return this;
+  }
+
+  @CheckForNull
+  public String getAdHocSeverity() {
+    return metadata.getAdHocSeverity();
+  }
+
+  public RuleDto setAdHocSeverity(@Nullable String adHocSeverity) {
+    metadata.setAdHocSeverity(adHocSeverity);
+    return this;
+  }
+
+  @CheckForNull
+  public Integer getAdHocType() {
+    return metadata.getAdHocType();
+  }
+
+  public RuleDto setAdHocType(@Nullable Integer type) {
+    metadata.setAdHocType(type);
+    return this;
+  }
+
+  public RuleDto setAdHocType(@Nullable RuleType adHocType) {
+    metadata.setAdHocType(adHocType);
     return this;
   }
 

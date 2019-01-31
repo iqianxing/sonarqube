@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,7 +30,6 @@ import java.util.stream.Collectors;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.resources.Qualifiers;
 import org.sonar.api.resources.Scopes;
@@ -101,16 +100,16 @@ public class PersistComponentsStep implements ComputationStep {
       // safeguard, reset all rows to b-changed=false
       dbClient.componentDao().resetBChangedForRootComponentUuid(dbSession, projectUuid);
 
-      Map<String, ComponentDto> existingDtosByKeys = indexExistingDtosByKey(dbSession);
-      boolean isRootPrivate = isRootPrivate(treeRootHolder.getRoot(), existingDtosByKeys);
+      Map<String, ComponentDto> existingDtosByUuids = indexExistingDtosByUuids(dbSession);
+      boolean isRootPrivate = isRootPrivate(treeRootHolder.getRoot(), existingDtosByUuids);
       String mainBranchProjectUuid = loadProjectUuidOfMainBranch();
 
-      // Insert or update the components in database. They are removed from existingDtosByKeys
+      // Insert or update the components in database. They are removed from existingDtosByUuids
       // at the same time.
-      new PathAwareCrawler<>(new PersistComponentStepsVisitor(existingDtosByKeys, dbSession, mainBranchProjectUuid))
+      new PathAwareCrawler<>(new PersistComponentStepsVisitor(existingDtosByUuids, dbSession, mainBranchProjectUuid))
         .visit(treeRootHolder.getRoot());
 
-      disableRemainingComponents(dbSession, existingDtosByKeys.values());
+      disableRemainingComponents(dbSession, existingDtosByUuids.values());
       ensureConsistentVisibility(dbSession, projectUuid, isRootPrivate);
 
       dbSession.commit();
@@ -142,14 +141,13 @@ public class PersistComponentsStep implements ComputationStep {
     dbClient.componentDao().setPrivateForRootComponentUuid(dbSession, projectUuid, isRootPrivate);
   }
 
-  private static boolean isRootPrivate(Component root, Map<String, ComponentDto> existingDtosByKeys) {
-    String rootKey = root.getKey();
-    ComponentDto rootDto = existingDtosByKeys.get(rootKey);
+  private static boolean isRootPrivate(Component root, Map<String, ComponentDto> existingDtosByUuids) {
+    ComponentDto rootDto = existingDtosByUuids.get(root.getUuid());
     if (rootDto == null) {
       if (Component.Type.VIEW == root.getType()) {
         return false;
       }
-      throw new IllegalStateException(String.format("The project '%s' is not stored in the database, during a project analysis.", rootKey));
+      throw new IllegalStateException(String.format("The project '%s' is not stored in the database, during a project analysis.", root.getDbKey()));
     }
     return rootDto.isPrivate();
   }
@@ -158,20 +156,20 @@ public class PersistComponentsStep implements ComputationStep {
    * Returns a mutable map of the components currently persisted in database for the project, including
    * disabled components.
    */
-  private Map<String, ComponentDto> indexExistingDtosByKey(DbSession session) {
-    return dbClient.componentDao().selectAllComponentsFromProjectKey(session, treeRootHolder.getRoot().getKey())
+  private Map<String, ComponentDto> indexExistingDtosByUuids(DbSession session) {
+    return dbClient.componentDao().selectAllComponentsFromProjectKey(session, treeRootHolder.getRoot().getDbKey())
       .stream()
-      .collect(Collectors.toMap(ComponentDto::getDbKey, Function.identity()));
+      .collect(Collectors.toMap(ComponentDto::uuid, Function.identity()));
   }
 
   private class PersistComponentStepsVisitor extends PathAwareVisitorAdapter<ComponentDtoHolder> {
 
-    private final Map<String, ComponentDto> existingComponentDtosByKey;
+    private final Map<String, ComponentDto> existingComponentDtosByUuids;
     private final DbSession dbSession;
     @Nullable
     private final String mainBranchProjectUuid;
 
-    PersistComponentStepsVisitor(Map<String, ComponentDto> existingComponentDtosByKey, DbSession dbSession, @Nullable String mainBranchProjectUuid) {
+    PersistComponentStepsVisitor(Map<String, ComponentDto> existingComponentDtosByUuids, DbSession dbSession, @Nullable String mainBranchProjectUuid) {
       super(
         CrawlerDepthLimit.LEAVES,
         PRE_ORDER,
@@ -193,7 +191,7 @@ public class PersistComponentsStep implements ComputationStep {
             return null;
           }
         });
-      this.existingComponentDtosByKey = existingComponentDtosByKey;
+      this.existingComponentDtosByUuids = existingComponentDtosByUuids;
       this.dbSession = dbSession;
       this.mainBranchProjectUuid = mainBranchProjectUuid;
     }
@@ -202,12 +200,6 @@ public class PersistComponentsStep implements ComputationStep {
     public void visitProject(Component project, Path<ComponentDtoHolder> path) {
       ComponentDto dto = createForProject(project);
       path.current().setDto(persistAndPopulateCache(project, dto));
-    }
-
-    @Override
-    public void visitModule(Component module, Path<ComponentDtoHolder> path) {
-      ComponentDto dto = createForModule(module, path);
-      path.current().setDto(persistAndPopulateCache(module, dto));
     }
 
     @Override
@@ -247,7 +239,7 @@ public class PersistComponentsStep implements ComputationStep {
     }
 
     private ComponentDto persistComponent(ComponentDto componentDto) {
-      ComponentDto existingComponent = existingComponentDtosByKey.remove(componentDto.getDbKey());
+      ComponentDto existingComponent = existingComponentDtosByUuids.remove(componentDto.uuid());
       if (existingComponent == null) {
         dbClient.componentDao().insert(dbSession, componentDto);
         return componentDto;
@@ -259,6 +251,7 @@ public class PersistComponentsStep implements ComputationStep {
 
         // update the fields in memory in order the PathAwareVisitor.Path
         // to be up-to-date
+        existingComponent.setDbKey(updateDto.getBKey());
         existingComponent.setCopyComponentUuid(updateDto.getBCopyComponentUuid());
         existingComponent.setDescription(updateDto.getBDescription());
         existingComponent.setEnabled(updateDto.isBEnabled());
@@ -269,6 +262,8 @@ public class PersistComponentsStep implements ComputationStep {
         existingComponent.setModuleUuidPath(updateDto.getBModuleUuidPath());
         existingComponent.setName(updateDto.getBName());
         existingComponent.setPath(updateDto.getBPath());
+        // We don't have a b_scope. The applyBChangesForRootComponentUuid query is using a case ... when to infer scope from the qualifier
+        existingComponent.setScope(componentDto.scope());
         existingComponent.setQualifier(updateDto.getBQualifier());
       }
       return existingComponent;
@@ -295,29 +290,14 @@ public class PersistComponentsStep implements ComputationStep {
       return res;
     }
 
-    public ComponentDto createForModule(Component module, PathAwareVisitor.Path<ComponentDtoHolder> path) {
-      ComponentDto res = createBase(module);
-
-      res.setScope(Scopes.PROJECT);
-      res.setQualifier(Qualifiers.MODULE);
-      res.setName(module.getName());
-      res.setLongName(res.name());
-      res.setPath(module.getReportAttributes().getPath());
-      res.setDescription(module.getDescription());
-
-      setRootAndParentModule(res, path);
-
-      return res;
-    }
-
     public ComponentDto createForDirectory(Component directory, PathAwareVisitor.Path<ComponentDtoHolder> path) {
       ComponentDto res = createBase(directory);
 
       res.setScope(Scopes.DIRECTORY);
       res.setQualifier(Qualifiers.DIRECTORY);
-      res.setName(directory.getReportAttributes().getPath());
-      res.setLongName(directory.getReportAttributes().getPath());
-      res.setPath(directory.getReportAttributes().getPath());
+      res.setName(directory.getShortName());
+      res.setLongName(directory.getName());
+      res.setPath(directory.getName());
 
       setParentModuleProperties(res, path);
 
@@ -329,9 +309,9 @@ public class PersistComponentsStep implements ComputationStep {
 
       res.setScope(Scopes.FILE);
       res.setQualifier(getFileQualifier(file));
-      res.setName(FilenameUtils.getName(file.getReportAttributes().getPath()));
-      res.setLongName(file.getReportAttributes().getPath());
-      res.setPath(file.getReportAttributes().getPath());
+      res.setName(file.getShortName());
+      res.setLongName(file.getName());
+      res.setPath(file.getName());
       res.setLanguage(file.getFileAttributes().getLanguageKey());
 
       setParentModuleProperties(res, path);
@@ -386,14 +366,13 @@ public class PersistComponentsStep implements ComputationStep {
     }
 
     private ComponentDto createBase(Component component) {
-      String componentKey = component.getKey();
+      String componentKey = component.getDbKey();
       String componentUuid = component.getUuid();
 
       ComponentDto componentDto = new ComponentDto();
       componentDto.setOrganizationUuid(analysisMetadataHolder.getOrganization().getUuid());
       componentDto.setUuid(componentUuid);
       componentDto.setDbKey(componentKey);
-      componentDto.setDeprecatedKey(componentKey);
       componentDto.setMainBranchProjectUuid(mainBranchProjectUuid);
       componentDto.setEnabled(true);
       componentDto.setCreatedAt(new Date(system2.now()));
@@ -437,6 +416,7 @@ public class PersistComponentsStep implements ComputationStep {
   private static Optional<ComponentUpdateDto> compareForUpdate(ComponentDto existing, ComponentDto target) {
     boolean hasDifferences = !StringUtils.equals(existing.getCopyResourceUuid(), target.getCopyResourceUuid()) ||
       !StringUtils.equals(existing.description(), target.description()) ||
+      !StringUtils.equals(existing.getDbKey(), target.getDbKey()) ||
       !existing.isEnabled() ||
       !StringUtils.equals(existing.getUuidPath(), target.getUuidPath()) ||
       !StringUtils.equals(existing.language(), target.language()) ||
@@ -445,6 +425,7 @@ public class PersistComponentsStep implements ComputationStep {
       !StringUtils.equals(existing.moduleUuidPath(), target.moduleUuidPath()) ||
       !StringUtils.equals(existing.name(), target.name()) ||
       !StringUtils.equals(existing.path(), target.path()) ||
+      !StringUtils.equals(existing.scope(), target.scope()) ||
       !StringUtils.equals(existing.qualifier(), target.qualifier());
 
     ComponentUpdateDto update = null;
@@ -477,8 +458,7 @@ public class PersistComponentsStep implements ComputationStep {
 
     @Override
     public boolean apply(@Nonnull PathAwareVisitor.PathElement<ComponentDtoHolder> input) {
-      return input.getComponent().getType() == Component.Type.MODULE
-        || input.getComponent().getType() == Component.Type.PROJECT;
+      return input.getComponent().getType() == Component.Type.PROJECT;
     }
   }
 

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,25 +23,44 @@ import GenericAvatar from '../ui/GenericAvatar';
 import './OrganizationAvatar.css';
 
 interface Props {
-  organization: {
-    avatar?: string;
-    name: string;
-  };
+  className?: string;
+  organization: Pick<T.OrganizationBase, 'avatar' | 'name'>;
   small?: boolean;
 }
 
-export default function OrganizationAvatar({ organization, small }: Props) {
-  return (
-    <div
-      className={classNames('navbar-context-avatar', 'rounded', {
-        'is-empty': !organization.avatar,
-        'is-small': small
-      })}>
-      {organization.avatar ? (
-        <img alt={organization.name} className="rounded" src={organization.avatar} />
-      ) : (
-        <GenericAvatar name={organization.name} size={small ? 15 : 30} />
-      )}
-    </div>
-  );
+interface State {
+  imgLoadError: boolean;
+}
+
+export default class OrganizationAvatar extends React.PureComponent<Props, State> {
+  state = { imgLoadError: false };
+
+  handleImgError = () => {
+    this.setState({ imgLoadError: true });
+  };
+
+  render() {
+    const { className, organization, small } = this.props;
+    const { imgLoadError } = this.state;
+    return (
+      <div
+        className={classNames(
+          'navbar-context-avatar',
+          'rounded',
+          { 'no-border': !organization.avatar, 'is-small': small },
+          className
+        )}>
+        {organization.avatar && !imgLoadError ? (
+          <img
+            alt={organization.name}
+            className="rounded"
+            onError={this.handleImgError}
+            src={organization.avatar}
+          />
+        ) : (
+          <GenericAvatar name={organization.name} size={small ? 15 : 30} />
+        )}
+      </div>
+    );
+  }
 }

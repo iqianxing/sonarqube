@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,34 +19,29 @@
  */
 import * as React from 'react';
 import * as classNames from 'classnames';
-import * as PropTypes from 'prop-types';
+import { injectIntl, InjectedIntlProps } from 'react-intl';
 import DateFromNow from '../../../components/intl/DateFromNow';
 import DateFormatter, { longFormatterOption } from '../../../components/intl/DateFormatter';
 import DateTimeFormatter from '../../../components/intl/DateTimeFormatter';
 import Tooltip from '../../../components/controls/Tooltip';
-import { getPeriodLabel, getPeriodDate, Period, PeriodMode } from '../../../helpers/periods';
+import { getPeriodLabel, getPeriodDate } from '../../../helpers/periods';
 import { translate, translateWithParameters } from '../../../helpers/l10n';
 import { differenceInDays } from '../../../helpers/dates';
-import { ComponentMeasure } from '../../../app/types';
 
 interface Props {
   className?: string;
-  component: ComponentMeasure;
-  period: Period;
+  component: T.ComponentMeasure;
+  period: T.Period;
 }
 
-export default class LeakPeriodLegend extends React.PureComponent<Props> {
-  static contextTypes = {
-    intl: PropTypes.object.isRequired
-  };
-
+export class LeakPeriodLegend extends React.PureComponent<Props & InjectedIntlProps> {
   formatDate = (date: string) => {
-    return this.context.intl.formatDate(date, longFormatterOption);
+    return this.props.intl.formatDate(date, longFormatterOption);
   };
 
   render() {
     const { className, component, period } = this.props;
-    const leakClass = classNames('domain-measures-leak-header', className);
+    const leakClass = classNames('domain-measures-header leak-box', className);
     if (component.qualifier === 'APP') {
       return <div className={leakClass}>{translate('issues.new_code_period')}</div>;
     }
@@ -62,7 +57,7 @@ export default class LeakPeriodLegend extends React.PureComponent<Props> {
       </div>
     );
 
-    if (period.mode === PeriodMode.Days) {
+    if (period.mode === 'days') {
       return label;
     }
 
@@ -82,3 +77,5 @@ export default class LeakPeriodLegend extends React.PureComponent<Props> {
     return <Tooltip overlay={tooltip}>{label}</Tooltip>;
   }
 }
+
+export default injectIntl(LeakPeriodLegend);

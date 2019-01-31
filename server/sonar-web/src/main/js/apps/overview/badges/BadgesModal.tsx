@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,8 +20,7 @@
 import * as React from 'react';
 import BadgeButton from './BadgeButton';
 import BadgeParams from './BadgeParams';
-import { BadgeType, BadgeOptions, getBadgeUrl } from './utils';
-import { Metric, BranchLike } from '../../../app/types';
+import { BadgeType, BadgeOptions, getBadgeUrl, getBadgeSnippet } from './utils';
 import CodeSnippet from '../../../components/common/CodeSnippet';
 import Modal from '../../../components/controls/Modal';
 import { getBranchLikeQuery } from '../../../helpers/branches';
@@ -31,8 +30,8 @@ import { isSonarCloud } from '../../../helpers/system';
 import './styles.css';
 
 interface Props {
-  branchLike?: BranchLike;
-  metrics: { [key: string]: Metric };
+  branchLike?: T.BranchLike;
+  metrics: { [key: string]: T.Metric };
   project: string;
   qualifier: string;
 }
@@ -109,7 +108,10 @@ export default class BadgesModal extends React.PureComponent<Props, State> {
                 type={selectedType}
                 updateOptions={this.handleUpdateOptions}
               />
-              <CodeSnippet isOneLine={true} snippet={getBadgeUrl(selectedType, fullBadgeOptions)} />
+              <CodeSnippet
+                isOneLine={true}
+                snippet={getBadgeSnippet(selectedType, fullBadgeOptions)}
+              />
             </div>
             <footer className="modal-foot">
               <ResetButtonLink className="js-modal-close" onClick={this.handleClose}>

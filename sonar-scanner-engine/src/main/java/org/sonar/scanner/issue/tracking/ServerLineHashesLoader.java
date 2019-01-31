@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,9 +19,6 @@
  */
 package org.sonar.scanner.issue.tracking;
 
-import org.sonar.api.batch.ScannerSide;
-
-@ScannerSide
 public interface ServerLineHashesLoader {
 
   String[] getLineHashes(String fileKey);

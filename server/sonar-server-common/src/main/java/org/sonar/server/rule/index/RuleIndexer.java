@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -176,7 +176,7 @@ public class RuleIndexer implements ResilientIndexer {
 
     // the remaining items reference rows that don't exist in db. They must
     // be deleted from index.
-    docIds.forEach(docId -> bulkIndexer.addDeletion(INDEX_TYPE_RULE_EXTENSION, docId.getId(), docId.getId()));
+    docIds.forEach(docId -> bulkIndexer.addDeletion(INDEX_TYPE_RULE_EXTENSION, docId.getId(), String.valueOf(docId.getRuleId())));
 
     return bulkIndexer.stop();
   }

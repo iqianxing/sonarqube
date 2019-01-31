@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -33,31 +33,31 @@ import {
   getRatingTooltip
 } from '../../../helpers/measures';
 import { getLocalizedMetricName } from '../../../helpers/l10n';
-import { getPeriodDate, Period } from '../../../helpers/periods';
+import { getPeriodDate } from '../../../helpers/periods';
 import {
   getComponentDrilldownUrl,
   getComponentIssuesUrl,
   getMeasureHistoryUrl
 } from '../../../helpers/urls';
-import { Component, BranchLike, MeasureEnhanced } from '../../../app/types';
-import { History } from '../../../api/time-machine';
 import { getBranchLikeQuery } from '../../../helpers/branches';
 
 export interface EnhanceProps {
-  branchLike?: BranchLike;
-  component: Component;
-  measures: MeasureEnhanced[];
-  leakPeriod?: Period;
-  history?: History;
+  branchLike?: T.BranchLike;
+  component: T.Component;
+  measures: T.MeasureEnhanced[];
+  leakPeriod?: T.Period;
+  history?: {
+    [metric: string]: Array<{ date: Date; value?: string }>;
+  };
   historyStartDate?: Date;
 }
 
 export interface ComposedProps extends EnhanceProps {
-  getValue: (measure: MeasureEnhanced) => string | undefined;
+  getValue: (measure: T.MeasureEnhanced) => string | undefined;
   renderHeader: (domain: string, label: string) => React.ReactNode;
   renderMeasure: (metricKey: string) => React.ReactNode;
   renderRating: (metricKey: string) => React.ReactNode;
-  renderIssues: (metric: string, type: string) => React.ReactNode;
+  renderIssues: (metric: string, type: T.IssueType) => React.ReactNode;
   renderHistoryLink: (metricKey: string) => React.ReactNode;
   renderTimeline: (metricKey: string, range: string, children?: React.ReactNode) => React.ReactNode;
 }
@@ -66,7 +66,7 @@ export default function enhance(ComposedComponent: React.ComponentType<ComposedP
   return class extends React.PureComponent<EnhanceProps> {
     static displayName = `enhance(${ComposedComponent.displayName})}`;
 
-    getValue = (measure: MeasureEnhanced) => {
+    getValue = (measure: T.MeasureEnhanced) => {
       const { leakPeriod } = this.props;
       if (!measure) {
         return '0';

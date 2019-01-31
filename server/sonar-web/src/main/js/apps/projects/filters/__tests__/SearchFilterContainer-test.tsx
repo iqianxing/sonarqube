@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,9 +23,7 @@ import SearchFilterContainer from '../SearchFilterContainer';
 
 it('searches', () => {
   const onQueryChange = jest.fn();
-  const wrapper = shallow(<SearchFilterContainer onQueryChange={onQueryChange} query={{}} />, {
-    context: { router: { push: jest.fn() } }
-  });
+  const wrapper = shallow(<SearchFilterContainer onQueryChange={onQueryChange} query={{}} />);
   expect(wrapper).toMatchSnapshot();
   wrapper.find('SearchBox').prop<Function>('onChange')('foo');
   expect(onQueryChange).toBeCalledWith({ search: 'foo' });

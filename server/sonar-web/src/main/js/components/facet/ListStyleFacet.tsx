@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,6 +18,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
+import * as classNames from 'classnames';
 import { sortBy, without } from 'lodash';
 import FacetBox from './FacetBox';
 import FacetHeader from './FacetHeader';
@@ -25,22 +26,25 @@ import FacetItem from './FacetItem';
 import FacetItemsList from './FacetItemsList';
 import ListStyleFacetFooter from './ListStyleFacetFooter';
 import MultipleSelectionHint from './MultipleSelectionHint';
-import { translate } from '../../helpers/l10n';
+import { Alert } from '../ui/Alert';
 import DeferredSpinner from '../common/DeferredSpinner';
-import { Paging } from '../../app/types';
-import SearchBox from '../controls/SearchBox';
 import ListFooter from '../controls/ListFooter';
+import SearchBox from '../controls/SearchBox';
+import Tooltip from '../controls/Tooltip';
 import { formatMeasure } from '../../helpers/measures';
 import { queriesEqual, RawQuery } from '../../helpers/query';
+import { translate } from '../../helpers/l10n';
 
 interface SearchResponse<S> {
   maxResults?: boolean;
   results: S[];
-  paging?: Paging;
+  paging?: T.Paging;
 }
 
 export interface Props<S> {
   className?: string;
+  disabled?: boolean;
+  disabledHelper?: string;
   facetHeader: string;
   fetching: boolean;
   getFacetItemText: (item: string) => string;
@@ -71,7 +75,7 @@ interface State<S> {
   query: string;
   searching: boolean;
   searchMaxResults?: boolean;
-  searchPaging?: Paging;
+  searchPaging?: T.Paging;
   searchResults?: S[];
   searchResultsCounts: { [key: string]: number };
   showFullList: boolean;
@@ -297,9 +301,9 @@ export default class ListStyleFacet<S> extends React.Component<Props<S>, State<S
         />
         {mightHaveMoreResults &&
           this.state.showFullList && (
-            <div className="alert alert-warning spacer-top">
+            <Alert className="spacer-top" variant="warning">
               {translate('facet_might_have_more_results')}
-            </div>
+            </Alert>
           )}
       </>
     );
@@ -341,9 +345,9 @@ export default class ListStyleFacet<S> extends React.Component<Props<S>, State<S
           {searchResults.map(result => this.renderSearchResult(result))}
         </FacetItemsList>
         {searchMaxResults && (
-          <div className="alert alert-warning spacer-top">
+          <Alert className="spacer-top" variant="warning">
             {translate('facet_might_have_more_results')}
-          </div>
+          </Alert>
         )}
         {searchPaging && (
           <ListFooter
@@ -378,30 +382,39 @@ export default class ListStyleFacet<S> extends React.Component<Props<S>, State<S
   }
 
   render() {
-    const { stats = {} } = this.props;
+    const { disabled, stats = {} } = this.props;
     const { query, searching, searchResults } = this.state;
     const values = this.props.values.map(item => this.props.getFacetItemText(item));
     const loadingResults =
       query !== '' && searching && (searchResults === undefined || searchResults.length === 0);
     const showList = !query || loadingResults;
     return (
-      <FacetBox className={this.props.className} property={this.props.property}>
+      <FacetBox
+        className={classNames(this.props.className, {
+          'search-navigator-facet-box-forbidden': disabled
+        })}
+        property={this.props.property}>
         <FacetHeader
-          name={this.props.facetHeader}
+          name={
+            <Tooltip overlay={disabled ? this.props.disabledHelper : undefined}>
+              <span>{this.props.facetHeader}</span>
+            </Tooltip>
+          }
           onClear={this.handleClear}
-          onClick={this.handleHeaderClick}
-          open={this.props.open}
+          onClick={disabled ? undefined : this.handleHeaderClick}
+          open={this.props.open && !disabled}
           values={values}
         />
 
         <DeferredSpinner loading={this.props.fetching} />
-        {this.props.open && (
-          <>
-            {this.renderSearch()}
-            {showList ? this.renderList() : this.renderSearchResults()}
-            <MultipleSelectionHint options={Object.keys(stats).length} values={values.length} />
-          </>
-        )}
+        {this.props.open &&
+          !disabled && (
+            <>
+              {this.renderSearch()}
+              {showList ? this.renderList() : this.renderSearchResults()}
+              <MultipleSelectionHint options={Object.keys(stats).length} values={values.length} />
+            </>
+          )}
       </FacetBox>
     );
   }

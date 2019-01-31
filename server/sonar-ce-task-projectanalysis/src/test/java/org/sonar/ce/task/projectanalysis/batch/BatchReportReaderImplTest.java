@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
  */
 package org.sonar.ce.task.projectanalysis.batch;
 
+import com.google.common.collect.ImmutableList;
 import java.io.File;
 import java.io.IOException;
 import org.apache.commons.io.FileUtils;
@@ -46,10 +47,6 @@ public class BatchReportReaderImplTest {
   private static final ScannerReport.SyntaxHighlightingRule SYNTAX_HIGHLIGHTING_2 = ScannerReport.SyntaxHighlightingRule.newBuilder().build();
   private static final ScannerReport.LineCoverage COVERAGE_1 = ScannerReport.LineCoverage.newBuilder().build();
   private static final ScannerReport.LineCoverage COVERAGE_2 = ScannerReport.LineCoverage.newBuilder().build();
-  private static final ScannerReport.Test TEST_1 = ScannerReport.Test.newBuilder().setName("1").build();
-  private static final ScannerReport.Test TEST_2 = ScannerReport.Test.newBuilder().setName("2").build();
-  private static final ScannerReport.CoverageDetail COVERAGE_DETAIL_1 = ScannerReport.CoverageDetail.newBuilder().setTestName("1").build();
-  private static final ScannerReport.CoverageDetail COVERAGE_DETAIL_2 = ScannerReport.CoverageDetail.newBuilder().setTestName("2").build();
 
   @Rule
   public JUnitTempFolder tempFolder = new JUnitTempFolder();
@@ -288,30 +285,14 @@ public class BatchReportReaderImplTest {
   }
 
   @Test
-  public void readTests_returns_empty_CloseableIterator_when_file_does_not_exist() {
-    assertThat(underTest.readTests(COMPONENT_REF)).isEmpty();
-  }
+  public void verify_readAnalysisWarnings() {
+    ScannerReport.AnalysisWarning warning1 = ScannerReport.AnalysisWarning.newBuilder().setText("warning 1").build();
+    ScannerReport.AnalysisWarning warning2 = ScannerReport.AnalysisWarning.newBuilder().setText("warning 2").build();
+    ImmutableList<ScannerReport.AnalysisWarning> warnings = of(warning1, warning2);
+    writer.writeAnalysisWarnings(warnings);
 
-  @Test
-  public void verify_readTests() {
-    writer.writeTests(COMPONENT_REF, of(TEST_1, TEST_2));
-
-    CloseableIterator<ScannerReport.Test> res = underTest.readTests(COMPONENT_REF);
-    assertThat(res).containsExactly(TEST_1, TEST_2);
-    res.close();
-  }
-
-  @Test
-  public void readCoverageDetails_returns_empty_CloseableIterator_when_file_does_not_exist() {
-    assertThat(underTest.readCoverageDetails(COMPONENT_REF)).isEmpty();
-  }
-
-  @Test
-  public void verify_readCoverageDetails() {
-    writer.writeCoverageDetails(COMPONENT_REF, of(COVERAGE_DETAIL_1, COVERAGE_DETAIL_2));
-
-    CloseableIterator<ScannerReport.CoverageDetail> res = underTest.readCoverageDetails(COMPONENT_REF);
-    assertThat(res).containsExactly(COVERAGE_DETAIL_1, COVERAGE_DETAIL_2);
+    CloseableIterator<ScannerReport.AnalysisWarning> res = underTest.readAnalysisWarnings();
+    assertThat(res).containsExactlyElementsOf(warnings);
     res.close();
   }
 }

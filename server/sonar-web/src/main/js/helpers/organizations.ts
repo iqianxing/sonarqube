@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,16 +17,16 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-import { Organization, isLoggedIn, OrganizationSubscription, CurrentUser } from '../app/types';
+import { isLoggedIn } from './users';
 
-export function isPaidOrganization(organization: Organization | undefined): boolean {
-  return Boolean(organization && organization.subscription === OrganizationSubscription.Paid);
+export function isPaidOrganization(organization: T.Organization | undefined): boolean {
+  return Boolean(organization && organization.subscription === 'PAID');
 }
 
 export function hasPrivateAccess(
-  currentUser: CurrentUser,
-  organization: Organization | undefined,
-  userOrganizations: Organization[]
+  currentUser: T.CurrentUser,
+  organization: T.Organization | undefined,
+  userOrganizations: T.Organization[]
 ): boolean {
   return (
     !isPaidOrganization(organization) ||
@@ -35,15 +35,14 @@ export function hasPrivateAccess(
 }
 
 export function isCurrentUserMemberOf(
-  currentUser: CurrentUser,
-  organization: Organization | undefined,
-  userOrganizations: Organization[]
+  currentUser: T.CurrentUser,
+  organization: T.Organization | undefined,
+  userOrganizations: T.Organization[]
 ): boolean {
   return Boolean(
     organization &&
       isLoggedIn(currentUser) &&
-      (organization.canAdmin ||
-        organization.isAdmin ||
+      ((organization.actions && organization.actions.admin) ||
         userOrganizations.some(org => org.key === organization.key))
   );
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -33,7 +33,7 @@ import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.utils.log.LogTester;
 import org.sonar.scanner.mediumtest.ScannerMediumTester;
-import org.sonar.scanner.mediumtest.ScannerMediumTester.TaskBuilder;
+import org.sonar.scanner.mediumtest.ScannerMediumTester.AnalysisBuilder;
 import org.sonar.scanner.protocol.output.ScannerReport;
 import org.sonar.scanner.protocol.output.ScannerReport.Changesets.Changeset;
 import org.sonar.scanner.protocol.output.ScannerReport.Component;
@@ -69,16 +69,16 @@ public class ScmMediumTest {
     .addRules(new XooRulesDefinition())
     // active a rule just to be sure that xoo files are published
     .addActiveRule("xoo", "xoo:OneIssuePerFile", null, "One Issue Per File", null, null, null)
-    .addFileData("com.foo.project", CHANGED_CONTENT_SCM_ON_SERVER_XOO, new FileData(DigestUtils.md5Hex(SAMPLE_XOO_CONTENT), null))
-    .addFileData("com.foo.project", SAME_CONTENT_NO_SCM_ON_SERVER_XOO, new FileData(DigestUtils.md5Hex(SAMPLE_XOO_CONTENT), null))
-    .addFileData("com.foo.project", SAME_CONTENT_SCM_ON_SERVER_XOO, new FileData(DigestUtils.md5Hex(SAMPLE_XOO_CONTENT), "1.1"))
-    .addFileData("com.foo.project", NO_BLAME_SCM_ON_SERVER_XOO, new FileData(DigestUtils.md5Hex(SAMPLE_XOO_CONTENT), "1.1"));
+    .addFileData(CHANGED_CONTENT_SCM_ON_SERVER_XOO, new FileData(DigestUtils.md5Hex(SAMPLE_XOO_CONTENT), null))
+    .addFileData(SAME_CONTENT_NO_SCM_ON_SERVER_XOO, new FileData(DigestUtils.md5Hex(SAMPLE_XOO_CONTENT), null))
+    .addFileData(SAME_CONTENT_SCM_ON_SERVER_XOO, new FileData(DigestUtils.md5Hex(SAMPLE_XOO_CONTENT), "1.1"))
+    .addFileData(NO_BLAME_SCM_ON_SERVER_XOO, new FileData(DigestUtils.md5Hex(SAMPLE_XOO_CONTENT), "1.1"));
 
   @Test
   public void testScmMeasure() throws IOException, URISyntaxException {
     File baseDir = prepareProject();
 
-    tester.newTask()
+    tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
         .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
@@ -116,10 +116,9 @@ public class ScmMediumTest {
     ScannerReportReader reader = new ScannerReportReader(reportDir);
 
     Component project = reader.readComponent(reader.readMetadata().getRootComponentRef());
-    Component dir = reader.readComponent(project.getChildRef(0));
-    for (Integer fileRef : dir.getChildRefList()) {
+    for (Integer fileRef : project.getChildRefList()) {
       Component file = reader.readComponent(fileRef);
-      if (file.getPath().equals(path)) {
+      if (file.getProjectRelativePath().equals(path)) {
         return reader.readChangesets(file.getRef());
       }
     }
@@ -134,7 +133,7 @@ public class ScmMediumTest {
     // Clear file content
     FileUtils.write(new File(baseDir, "src/sample.xoo"), "");
 
-    tester.newTask()
+    tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
         .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
@@ -159,7 +158,7 @@ public class ScmMediumTest {
     File xooFileWithoutBlame = new File(baseDir, "src/sample_no_blame.xoo");
     FileUtils.write(xooFileWithoutBlame, "Sample xoo\ncontent\n3\n4\n5");
 
-    tester.newTask()
+    tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
         .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
@@ -212,7 +211,7 @@ public class ScmMediumTest {
       "1,foo,2013-01-04\n" +
         "1,bar,2013-01-04\n");
 
-    tester.newTask()
+    tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
         .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
@@ -253,7 +252,7 @@ public class ScmMediumTest {
       "1,foo,2013-01-04\n" +
         "1,bar,2013-01-04\n");
 
-    TaskBuilder taskBuilder = tester.newTask()
+    AnalysisBuilder analysisBuilder = tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
         .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
@@ -267,7 +266,7 @@ public class ScmMediumTest {
         .put("sonar.scm.forceReloadAll", "true")
         .build());
 
-    taskBuilder.execute();
+    analysisBuilder.execute();
 
     ScannerReport.Changesets file1Scm = getChangesets(baseDir, "src/sample.xoo");
     assertThat(file1Scm).isNotNull();
@@ -281,7 +280,7 @@ public class ScmMediumTest {
 
     File baseDir = prepareProject();
 
-    tester.newTask()
+    tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
         .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
@@ -304,7 +303,7 @@ public class ScmMediumTest {
     File baseDir = prepareProject();
     new File(baseDir, ".xoo").createNewFile();
 
-    tester.newTask()
+    tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
         .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
@@ -320,8 +319,8 @@ public class ScmMediumTest {
     assertThat(file1Scm).isNotNull();
   }
 
-  private String getNonAsciiAuthor() throws URISyntaxException {
-    return Files.contentOf(new File(this.getClass().getResource("/mediumtest/blameAuthor.txt").toURI()), StandardCharsets.UTF_8);
+  private String getNonAsciiAuthor() {
+    return Files.contentOf(new File("test-resources/mediumtest/blameAuthor.txt"), StandardCharsets.UTF_8);
 
   }
 
@@ -350,7 +349,7 @@ public class ScmMediumTest {
 
     File baseDir = prepareProject();
 
-    tester.newTask()
+    tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
         .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())

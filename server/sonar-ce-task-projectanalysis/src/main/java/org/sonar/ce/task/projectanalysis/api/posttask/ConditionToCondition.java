@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,8 +23,6 @@ import com.google.common.base.Function;
 import java.util.Map;
 import javax.annotation.Nonnull;
 import org.sonar.api.ce.posttask.QualityGate;
-import org.sonar.ce.task.projectanalysis.qualitygate.Condition;
-import org.sonar.ce.task.projectanalysis.qualitygate.ConditionStatus;
 import org.sonar.ce.task.projectanalysis.qualitygate.Condition;
 import org.sonar.ce.task.projectanalysis.qualitygate.ConditionStatus;
 
@@ -54,8 +52,6 @@ class ConditionToCondition implements Function<Condition, QualityGate.Condition>
       .setMetricKey(metricKey)
       .setOperator(convert(input.getOperator()))
       .setErrorThreshold(input.getErrorThreshold())
-      .setWarningThreshold(input.getWarningThreshold())
-      .setOnLeakPeriod(input.hasPeriod())
       .setValue(conditionStatus.getValue())
       .build();
   }
@@ -66,8 +62,6 @@ class ConditionToCondition implements Function<Condition, QualityGate.Condition>
         return QualityGate.EvaluationStatus.NO_VALUE;
       case OK:
         return QualityGate.EvaluationStatus.OK;
-      case WARN:
-        return QualityGate.EvaluationStatus.WARN;
       case ERROR:
         return QualityGate.EvaluationStatus.ERROR;
       default:
@@ -79,10 +73,6 @@ class ConditionToCondition implements Function<Condition, QualityGate.Condition>
 
   private static QualityGate.Operator convert(Condition.Operator operator) {
     switch (operator) {
-      case EQUALS:
-        return QualityGate.Operator.EQUALS;
-      case NOT_EQUALS:
-        return QualityGate.Operator.NOT_EQUALS;
       case GREATER_THAN:
         return QualityGate.Operator.GREATER_THAN;
       case LESS_THAN:

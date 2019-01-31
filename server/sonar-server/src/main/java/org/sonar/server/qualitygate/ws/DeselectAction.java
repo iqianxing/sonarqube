@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -106,7 +106,7 @@ public class DeselectAction implements QualityGatesWsAction {
 
     try {
       long dbId = Long.parseLong(projectId);
-      return Optional.ofNullable(dbClient.componentDao().selectById(dbSession, dbId).orNull());
+      return Optional.ofNullable(dbClient.componentDao().selectById(dbSession, dbId).orElse(null));
     } catch (NumberFormatException e) {
       return Optional.empty();
     }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,14 +26,13 @@ import TaskDate from './TaskDate';
 import TaskId from './TaskId';
 import TaskStatus from './TaskStatus';
 import TaskSubmitter from './TaskSubmitter';
-import { Task as ITask } from '../types';
 
 interface Props {
-  component?: {};
-  onCancelTask: (task: ITask) => void;
-  onFilterTask: (task: ITask) => void;
-  task: ITask;
-  previousTask?: ITask;
+  component?: unknown;
+  onCancelTask: (task: T.Task) => Promise<void>;
+  onFilterTask: (task: T.Task) => void;
+  task: T.Task;
+  previousTask?: T.Task;
 }
 
 export default function Task(props: Props) {

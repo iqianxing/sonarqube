@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,6 +27,7 @@ import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
 import org.apache.commons.lang.BooleanUtils;
 import org.sonar.api.measures.Metric;
+import org.sonar.api.server.ws.Change;
 import org.sonar.api.server.ws.Request;
 import org.sonar.api.server.ws.Response;
 import org.sonar.api.server.ws.WebService;
@@ -92,6 +93,7 @@ public class AppAction implements ComponentsWsAction {
         "Requires the following permission: 'Browse'.")
       .setResponseExample(getClass().getResource("app-example.json"))
       .setSince("4.4")
+      .setChangelog(new Change("7.6", String.format("The use of module keys in parameter '%s' is deprecated", PARAM_COMPONENT)))
       .setInternal(true)
       .setHandler(this);
 
@@ -165,13 +167,13 @@ public class AppAction implements ComponentsWsAction {
     json.prop("longName", component.longName());
     json.prop("q", component.qualifier());
 
-    ComponentDto parentProject = retrieveRootIfNotCurrentComponent(component, session);
+    ComponentDto parentModule = retrieveParentModuleIfNotCurrentComponent(component, session);
     ComponentDto project = dbClient.componentDao().selectOrFailByUuid(session, component.projectUuid());
 
-    // Do not display parent project if parent project and project are the same
-    boolean displayParentProject = parentProject != null && !parentProject.uuid().equals(project.uuid());
-    json.prop("subProject", displayParentProject ? parentProject.getKey() : null);
-    json.prop("subProjectName", displayParentProject ? parentProject.longName() : null);
+    // Do not display parent module if parent module and project are the same
+    boolean displayParentModule = parentModule != null && !parentModule.uuid().equals(project.uuid());
+    json.prop("subProject", displayParentModule ? parentModule.getKey() : null);
+    json.prop("subProjectName", displayParentModule ? parentModule.longName() : null);
     json.prop("project", project.getKey());
     json.prop("projectName", project.longName());
     String branch = project.getBranch();
@@ -209,11 +211,12 @@ public class AppAction implements ComponentsWsAction {
   }
 
   @CheckForNull
-  private ComponentDto retrieveRootIfNotCurrentComponent(ComponentDto componentDto, DbSession session) {
-    if (componentDto.uuid().equals(componentDto.getRootUuid())) {
+  private ComponentDto retrieveParentModuleIfNotCurrentComponent(ComponentDto componentDto, DbSession session) {
+    final String moduleUuid = componentDto.moduleUuid();
+    if (moduleUuid == null || componentDto.uuid().equals(moduleUuid)) {
       return null;
     }
-    return dbClient.componentDao().selectOrFailByUuid(session, componentDto.getRootUuid());
+    return dbClient.componentDao().selectOrFailByUuid(session, moduleUuid);
   }
 
   @CheckForNull

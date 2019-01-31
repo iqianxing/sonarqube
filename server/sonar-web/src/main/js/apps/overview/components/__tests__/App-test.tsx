@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,9 +18,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import { mount, shallow } from 'enzyme';
-import App from '../App';
-import { BranchType, LongLivingBranch } from '../../../../app/types';
+import { shallow } from 'enzyme';
+import { App } from '../App';
 import { isSonarCloud } from '../../../../helpers/system';
 
 jest.mock('../../../../helpers/system', () => ({ isSonarCloud: jest.fn() }));
@@ -50,51 +49,20 @@ it('should render OverviewApp', () => {
 
 it('should render EmptyOverview', () => {
   expect(
-    getWrapper({ component: { key: 'foo' } })
-      .find('EmptyOverview')
+    getWrapper({ component: { key: 'foo' } as T.Component })
+      .find('Connect(EmptyOverview)')
       .exists()
   ).toBeTruthy();
-});
-
-it('should render SonarCloudEmptyOverview', () => {
-  (isSonarCloud as jest.Mock<any>).mockReturnValue(true);
-  expect(
-    getWrapper({ component: { key: 'foo' } })
-      .find('Connect(SonarCloudEmptyOverview)')
-      .exists()
-  ).toBeTruthy();
-});
-
-it('redirects on Code page for files', () => {
-  const branch: LongLivingBranch = { isMain: false, name: 'b', type: BranchType.LONG };
-  const newComponent = {
-    ...component,
-    breadcrumbs: [
-      { key: 'project', name: 'Project', qualifier: 'TRK' },
-      { key: 'foo', name: 'Foo', qualifier: 'DIR' }
-    ],
-    qualifier: 'FIL'
-  };
-  const replace = jest.fn();
-  mount(
-    <App
-      branchLike={branch}
-      branchLikes={[branch]}
-      component={newComponent}
-      onComponentChange={jest.fn()}
-    />,
-    {
-      context: { router: { replace } }
-    }
-  );
-  expect(replace).toBeCalledWith({
-    pathname: '/code',
-    query: { branch: 'b', id: 'project', selected: 'foo' }
-  });
 });
 
 function getWrapper(props = {}) {
   return shallow(
-    <App branchLikes={[]} component={component} onComponentChange={jest.fn()} {...props} />
+    <App
+      branchLikes={[]}
+      component={component}
+      onComponentChange={jest.fn()}
+      router={{ replace: jest.fn() }}
+      {...props}
+    />
   );
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,16 +20,15 @@
 import * as React from 'react';
 import RemoveExtendedDescriptionModal from './RemoveExtendedDescriptionModal';
 import { updateRule } from '../../../api/rules';
-import { RuleDetails } from '../../../app/types';
 import MarkdownTips from '../../../components/common/MarkdownTips';
 import { Button, ResetButtonLink } from '../../../components/ui/buttons';
 import { translate, translateWithParameters } from '../../../helpers/l10n';
 
 interface Props {
   canWrite: boolean | undefined;
-  onChange: (newRuleDetails: RuleDetails) => void;
+  onChange: (newRuleDetails: T.RuleDetails) => void;
   organization: string | undefined;
-  ruleDetails: RuleDetails;
+  ruleDetails: T.RuleDetails;
 }
 
 interface State {
@@ -83,9 +82,7 @@ export default class RuleDetailsDescription extends React.PureComponent<Props, S
 
     updateRule({
       key: this.props.ruleDetails.key,
-      /* eslint-disable camelcase */
       markdown_note: text,
-      /* eslint-enable camelcase*/
       organization: this.props.organization
     }).then(
       ruleDetails => {

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,10 +19,9 @@
  */
 import * as React from 'react';
 import { shallow } from 'enzyme';
-import LeakPeriodLegend from '../LeakPeriodLegend';
-import { PeriodMode, Period } from '../../../../helpers/periods';
+import { InjectedIntlProps } from 'react-intl';
+import { LeakPeriodLegend } from '../LeakPeriodLegend';
 import { differenceInDays } from '../../../../helpers/dates';
-import { ComponentMeasure } from '../../../../app/types';
 
 jest.mock('../../../../helpers/dates', () => {
   const dates = require.requireActual('../../../../helpers/dates');
@@ -42,17 +41,17 @@ const APP = {
   qualifier: 'APP'
 };
 
-const PERIOD = {
+const PERIOD: T.Period = {
   date: '2017-05-16T13:50:02+0200',
   index: 1,
-  mode: PeriodMode.PreviousVersion,
+  mode: 'previous_version',
   parameter: '6,4'
 };
 
-const PERIOD_DAYS = {
+const PERIOD_DAYS: T.Period = {
   date: '2017-05-16T13:50:02+0200',
   index: 1,
-  mode: PeriodMode.Days,
+  mode: 'days',
   parameter: '18'
 };
 
@@ -70,10 +69,12 @@ it('should render a more precise date', () => {
   expect(getWrapper(PROJECT, PERIOD)).toMatchSnapshot();
 });
 
-function getWrapper(component: ComponentMeasure, period: Period) {
-  return shallow(<LeakPeriodLegend component={component} period={period} />, {
-    context: {
-      intl: { formatDate: (date: string) => 'formatted.' + date }
-    }
-  });
+function getWrapper(component: T.ComponentMeasure, period: T.Period) {
+  return shallow(
+    <LeakPeriodLegend
+      component={component}
+      intl={{ formatDate: (x: any) => x } as InjectedIntlProps['intl']}
+      period={period}
+    />
+  );
 }

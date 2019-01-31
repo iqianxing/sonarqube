@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,14 +30,12 @@ import org.sonar.ce.task.step.ComputationStep;
 import org.sonar.ce.task.step.TestComputationStepContext;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.guava.api.Assertions.assertThat;
 import static org.sonar.api.measures.CoreMetrics.NCLOC;
 import static org.sonar.api.measures.CoreMetrics.NCLOC_KEY;
 import static org.sonar.api.measures.CoreMetrics.NCLOC_LANGUAGE_DISTRIBUTION;
 import static org.sonar.api.measures.CoreMetrics.NCLOC_LANGUAGE_DISTRIBUTION_KEY;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.DIRECTORY;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.FILE;
-import static org.sonar.ce.task.projectanalysis.component.Component.Type.MODULE;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.PROJECT;
 import static org.sonar.ce.task.projectanalysis.component.ReportComponent.builder;
 import static org.sonar.ce.task.projectanalysis.measure.Measure.newMeasureBuilder;
@@ -48,8 +46,6 @@ public class ReportLanguageDistributionMeasuresStepTest {
   private static final String JAVA_LANGUAGE = "java";
 
   private static final int ROOT_REF = 1;
-  private static final int MODULE_REF = 12;
-  private static final int SUB_MODULE_REF = 123;
   private static final int DIRECTORY_REF = 1234;
   private static final int FILE_1_REF = 12341;
   private static final int FILE_2_REF = 12342;
@@ -74,18 +70,12 @@ public class ReportLanguageDistributionMeasuresStepTest {
     treeRootHolder.setRoot(
       builder(PROJECT, ROOT_REF)
         .addChildren(
-          builder(MODULE, MODULE_REF)
+          builder(DIRECTORY, DIRECTORY_REF)
             .addChildren(
-              builder(MODULE, SUB_MODULE_REF)
-                .addChildren(
-                  builder(DIRECTORY, DIRECTORY_REF)
-                    .addChildren(
-                      builder(FILE, FILE_1_REF).setFileAttributes(new FileAttributes(false, XOO_LANGUAGE, 1)).build(),
-                      builder(FILE, FILE_2_REF).setFileAttributes(new FileAttributes(false, XOO_LANGUAGE, 1)).build(),
-                      builder(FILE, FILE_3_REF).setFileAttributes(new FileAttributes(false, JAVA_LANGUAGE, 1)).build(),
-                      builder(FILE, FILE_4_REF).setFileAttributes(new FileAttributes(false, null, 1)).build())
-                    .build())
-                .build())
+              builder(FILE, FILE_1_REF).setFileAttributes(new FileAttributes(false, XOO_LANGUAGE, 1)).build(),
+              builder(FILE, FILE_2_REF).setFileAttributes(new FileAttributes(false, XOO_LANGUAGE, 1)).build(),
+              builder(FILE, FILE_3_REF).setFileAttributes(new FileAttributes(false, JAVA_LANGUAGE, 1)).build(),
+              builder(FILE, FILE_4_REF).setFileAttributes(new FileAttributes(false, null, 1)).build())
             .build())
         .build());
   }
@@ -105,8 +95,6 @@ public class ReportLanguageDistributionMeasuresStepTest {
     assertThat(measureRepository.getAddedRawMeasure(FILE_4_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY).get().getStringValue()).isEqualTo("<null>=2");
 
     assertThat(measureRepository.getAddedRawMeasure(DIRECTORY_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY).get().getStringValue()).isEqualTo("<null>=2;java=6;xoo=18");
-    assertThat(measureRepository.getAddedRawMeasure(SUB_MODULE_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY).get().getStringValue()).isEqualTo("<null>=2;java=6;xoo=18");
-    assertThat(measureRepository.getAddedRawMeasure(MODULE_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY).get().getStringValue()).isEqualTo("<null>=2;java=6;xoo=18");
     assertThat(measureRepository.getAddedRawMeasure(ROOT_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY).get().getStringValue()).isEqualTo("<null>=2;java=6;xoo=18");
   }
 
@@ -114,15 +102,13 @@ public class ReportLanguageDistributionMeasuresStepTest {
   public void do_not_compute_ncloc_language_distribution_when_no_ncloc() {
     underTest.execute(new TestComputationStepContext());
 
-    assertThat(measureRepository.getAddedRawMeasure(FILE_1_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY)).isAbsent();
-    assertThat(measureRepository.getAddedRawMeasure(FILE_2_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY)).isAbsent();
-    assertThat(measureRepository.getAddedRawMeasure(FILE_3_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY)).isAbsent();
-    assertThat(measureRepository.getAddedRawMeasure(FILE_4_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY)).isAbsent();
+    assertThat(measureRepository.getAddedRawMeasure(FILE_1_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY)).isNotPresent();
+    assertThat(measureRepository.getAddedRawMeasure(FILE_2_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY)).isNotPresent();
+    assertThat(measureRepository.getAddedRawMeasure(FILE_3_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY)).isNotPresent();
+    assertThat(measureRepository.getAddedRawMeasure(FILE_4_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY)).isNotPresent();
 
-    assertThat(measureRepository.getAddedRawMeasure(DIRECTORY_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY)).isAbsent();
-    assertThat(measureRepository.getAddedRawMeasure(SUB_MODULE_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY)).isAbsent();
-    assertThat(measureRepository.getAddedRawMeasure(MODULE_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY)).isAbsent();
-    assertThat(measureRepository.getAddedRawMeasure(ROOT_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY)).isAbsent();
+    assertThat(measureRepository.getAddedRawMeasure(DIRECTORY_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY)).isNotPresent();
+    assertThat(measureRepository.getAddedRawMeasure(ROOT_REF, NCLOC_LANGUAGE_DISTRIBUTION_KEY)).isNotPresent();
   }
 
 }

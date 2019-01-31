@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,16 +25,14 @@ import org.sonar.api.batch.fs.internal.InputModuleHierarchy;
 import org.sonar.scanner.scan.filesystem.InputComponentStore;
 
 /**
- * Indexes all modules into {@link DefaultComponentTree}, {@link DefaultInputModuleHierarchy) and {@link InputComponentStore}, using the 
+ * Indexes all modules into {@link DefaultComponentTree}, {@link DefaultInputModuleHierarchy) and {@link InputComponentStore}, using the
  * project definitions provided by the {@link ImmutableProjectReactor}.
  */
 public class ModuleIndexer implements Startable {
-  private final DefaultComponentTree componentTree;
   private final InputModuleHierarchy moduleHierarchy;
   private final InputComponentStore componentStore;
 
-  public ModuleIndexer(DefaultComponentTree componentTree, InputComponentStore componentStore, InputModuleHierarchy moduleHierarchy) {
-    this.componentTree = componentTree;
+  public ModuleIndexer(InputComponentStore componentStore, InputModuleHierarchy moduleHierarchy) {
     this.componentStore = componentStore;
     this.moduleHierarchy = moduleHierarchy;
   }
@@ -42,12 +40,12 @@ public class ModuleIndexer implements Startable {
   @Override
   public void start() {
     DefaultInputModule root = moduleHierarchy.root();
+    componentStore.put(root);
     indexChildren(root);
   }
 
   private void indexChildren(DefaultInputModule parent) {
     for (DefaultInputModule module : moduleHierarchy.children(parent)) {
-      componentTree.index(module, parent);
       componentStore.put(module);
       indexChildren(module);
     }

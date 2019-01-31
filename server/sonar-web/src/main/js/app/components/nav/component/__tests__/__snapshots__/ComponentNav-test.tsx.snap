@@ -43,9 +43,10 @@ exports[`renders 1`] = `
           "qualifier": "TRK",
         }
       }
+      warnings={Array []}
     />
   </div>
-  <ComponentNavMenu
+  <Connect(withAppState(ComponentNavMenu))
     component={
       Object {
         "breadcrumbs": Array [

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,21 +22,20 @@ import { connect } from 'react-redux';
 import { Link } from 'react-router';
 import OrganizationNavigationExtensions from './OrganizationNavigationExtensions';
 import OrganizationNavigationAdministration from './OrganizationNavigationAdministration';
-import { Organization, CurrentUser } from '../../../app/types';
 import NavBarTabs from '../../../components/nav/NavBarTabs';
 import { translate } from '../../../helpers/l10n';
 import { getQualityGatesUrl } from '../../../helpers/urls';
 import { hasPrivateAccess, isCurrentUserMemberOf } from '../../../helpers/organizations';
-import { getCurrentUser, getMyOrganizations } from '../../../store/rootReducer';
+import { getCurrentUser, getMyOrganizations, Store } from '../../../store/rootReducer';
 
 interface StateToProps {
-  currentUser: CurrentUser;
-  userOrganizations: Organization[];
+  currentUser: T.CurrentUser;
+  userOrganizations: T.Organization[];
 }
 
 interface OwnProps {
   location: { pathname: string };
-  organization: Organization;
+  organization: T.Organization;
 }
 
 type Props = OwnProps & StateToProps;
@@ -48,6 +47,7 @@ export function OrganizationNavigationMenu({
   userOrganizations
 }: Props) {
   const hasPrivateRights = hasPrivateAccess(currentUser, organization, userOrganizations);
+  const { actions = {} } = organization;
   return (
     <NavBarTabs className="navbar-context-tabs">
       <li>
@@ -92,16 +92,16 @@ export function OrganizationNavigationMenu({
         </li>
       )}
       <OrganizationNavigationExtensions location={location} organization={organization} />
-      {organization.canAdmin && (
+      {actions.admin && (
         <OrganizationNavigationAdministration location={location} organization={organization} />
       )}
     </NavBarTabs>
   );
 }
 
-const mapStateToProps = (state: any) => ({
+const mapStateToProps = (state: Store) => ({
   currentUser: getCurrentUser(state),
   userOrganizations: getMyOrganizations(state)
 });
 
-export default connect<StateToProps, {}, OwnProps>(mapStateToProps)(OrganizationNavigationMenu);
+export default connect(mapStateToProps)(OrganizationNavigationMenu);

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,15 +18,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import { getJSON } from '../helpers/request';
-import { AppState, BranchParameters } from '../app/types';
 import throwGlobalError from '../app/utils/throwGlobalError';
 
-export function getGlobalNavigation(): Promise<AppState> {
+export function getGlobalNavigation(): Promise<T.AppState> {
   return getJSON('/api/navigation/global');
 }
 
 export function getComponentNavigation(
-  data: { componentKey: string } & BranchParameters
+  data: { component: string } & T.BranchParameters
 ): Promise<any> {
   return getJSON('/api/navigation/component', data).catch(throwGlobalError);
 }

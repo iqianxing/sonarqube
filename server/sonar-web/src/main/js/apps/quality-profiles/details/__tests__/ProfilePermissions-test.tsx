@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,7 +31,7 @@ jest.mock('../../../../api/quality-profiles', () => ({
 const searchUsers = require('../../../../api/quality-profiles').searchUsers as jest.Mock<any>;
 const searchGroups = require('../../../../api/quality-profiles').searchGroups as jest.Mock<any>;
 
-const profile = { name: 'Sonar way', language: 'js' };
+const profile = { key: 'sonar-way', name: 'Sonar way', language: 'js' };
 
 beforeEach(() => {
   searchUsers.mockClear();

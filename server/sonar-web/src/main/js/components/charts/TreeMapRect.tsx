@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,6 +23,7 @@ import * as classNames from 'classnames';
 import { scaleLinear } from 'd3-scale';
 import LinkIcon from '../icons-components/LinkIcon';
 import Tooltip, { Placement } from '../controls/Tooltip';
+import { Location } from '../../helpers/urls';
 
 const SIZE_SCALE = scaleLinear()
   .domain([3, 15])

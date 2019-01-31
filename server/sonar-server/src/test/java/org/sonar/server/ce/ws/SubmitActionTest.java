@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -51,12 +51,15 @@ import static org.mockito.Mockito.when;
 
 public class SubmitActionTest {
 
+  private static final String PROJECT_UUID = "PROJECT_1";
+  private static final CeTask.Component COMPONENT = new CeTask.Component(PROJECT_UUID, "KEY_1", "NAME_1");
   private static final CeTask A_CE_TASK = new CeTask.Builder()
     .setOrganizationUuid("org1")
     .setUuid("TASK_1")
     .setType(CeTaskTypes.REPORT)
-    .setComponentUuid("PROJECT_1")
-    .setSubmitterUuid("robert")
+    .setComponent(COMPONENT)
+    .setMainComponent(COMPONENT)
+    .setSubmitter(new CeTask.User("UUID_1", "LOGIN_1"))
     .build();
 
   @Captor
@@ -89,7 +92,7 @@ public class SubmitActionTest {
       anyMap(), any());
 
     assertThat(submitResponse.getTaskId()).isEqualTo("TASK_1");
-    assertThat(submitResponse.getProjectId()).isEqualTo("PROJECT_1");
+    assertThat(submitResponse.getProjectId()).isEqualTo(PROJECT_UUID);
   }
 
   @Test
@@ -132,7 +135,7 @@ public class SubmitActionTest {
       anyMap(), any());
 
     assertThat(submitResponse.getTaskId()).isEqualTo("TASK_1");
-    assertThat(submitResponse.getProjectId()).isEqualTo("PROJECT_1");
+    assertThat(submitResponse.getProjectId()).isEqualTo(PROJECT_UUID);
   }
 
   @Test

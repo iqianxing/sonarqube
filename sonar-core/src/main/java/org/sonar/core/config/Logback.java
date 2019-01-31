@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,14 +31,12 @@ import java.util.Map;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.slf4j.LoggerFactory;
-import org.sonar.api.batch.ScannerSide;
 
 /**
  * Configure Logback
  *
  * @since 2.12
  */
-@ScannerSide
 public class Logback {
 
   private Logback() {

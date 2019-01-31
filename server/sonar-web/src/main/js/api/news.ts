@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,7 +17,6 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-/* eslint-disable camelcase */
 import { getCorsJSON } from '../helpers/request';
 
 interface PrismicRef {
@@ -31,10 +30,55 @@ export interface PrismicNews {
   uid: string;
 }
 
+interface PrismicResponse {
+  page: number;
+  results: PrismicResult[];
+  results_per_page: number;
+  total_results_size: number;
+}
+
+interface PrismicResult {
+  data: {
+    notification: string;
+    publication_date: string;
+    body: PrismicResultFeature[];
+  };
+}
+
+interface PrismicResultFeature {
+  items: Array<{
+    category: {
+      data: {
+        color: string;
+        name: string;
+      };
+    };
+  }>;
+  primary: {
+    description: string;
+    read_more_link: {
+      url?: string;
+    };
+  };
+}
+
+export interface PrismicFeatureNews {
+  notification: string;
+  publicationDate: string;
+  features: Array<{
+    categories: Array<{
+      color: string;
+      name: string;
+    }>;
+    description: string;
+    readMore?: string;
+  }>;
+}
+
 const PRISMIC_API_URL = 'https://sonarsource.cdn.prismic.io/api/v2';
 
 export function fetchPrismicRefs() {
-  return getCorsJSON(PRISMIC_API_URL).then((response: { refs: Array<PrismicRef> }) => {
+  return getCorsJSON(PRISMIC_API_URL).then((response: { refs: PrismicRef[] }) => {
     const master = response && response.refs.find(ref => ref.id === 'master');
     if (!master) {
       return Promise.reject('No master ref found');
@@ -59,5 +103,37 @@ export function fetchPrismicNews(data: {
     pageSize: data.ps || 1,
     q,
     ref: data.ref
-  }).then(({ results }: { results: Array<PrismicNews> }) => results);
+  }).then(({ results }: { results: PrismicNews[] }) => results);
+}
+
+export function fetchPrismicFeatureNews(data: {
+  accessToken: string;
+  p?: number;
+  ps?: number;
+  ref: string;
+}): Promise<{ news: PrismicFeatureNews[]; paging: T.Paging }> {
+  return getCorsJSON(PRISMIC_API_URL + '/documents/search', {
+    access_token: data.accessToken,
+    fetchLinks: 'sc_category.color,sc_category.name',
+    orderings: '[my.sc_product_news.publication_date desc]',
+    page: data.p || 1,
+    pageSize: data.ps || 1,
+    q: ['[[at(document.type, "sc_product_news")]]'],
+    ref: data.ref
+  }).then(({ page, results, results_per_page, total_results_size }: PrismicResponse) => ({
+    news: results.map(result => ({
+      notification: result.data.notification,
+      publicationDate: result.data.publication_date,
+      features: result.data.body.map(feature => ({
+        categories: feature.items.map(item => item.category.data).filter(Boolean),
+        description: feature.primary.description,
+        readMore: feature.primary.read_more_link.url
+      }))
+    })),
+    paging: {
+      pageIndex: page,
+      pageSize: results_per_page,
+      total: total_results_size
+    }
+  }));
 }

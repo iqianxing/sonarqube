@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -97,6 +97,7 @@ public class LoadReportAnalysisMetadataHolderStep implements ComputationStep {
     analysisMetadata.setAnalysisDate(reportMetadata.getAnalysisDate());
     analysisMetadata.setRootComponentRef(reportMetadata.getRootComponentRef());
     analysisMetadata.setCrossProjectDuplicationEnabled(reportMetadata.getCrossProjectDuplicationActivated());
+    analysisMetadata.setScmRevisionId(reportMetadata.getScmRevisionId());
   }
 
   /**
@@ -104,28 +105,38 @@ public class LoadReportAnalysisMetadataHolderStep implements ComputationStep {
    */
   private Runnable loadProject(ScannerReport.Metadata reportMetadata, Organization organization) {
     String reportProjectKey = projectKeyFromReport(reportMetadata);
-    String componentKey = ceTask.getComponentKey();
-    if (componentKey == null) {
-      throw MessageException.of(format(
+    CeTask.Component mainComponent = mandatoryComponent(ceTask.getMainComponent());
+    String mainComponentKey = mainComponent.getKey()
+      .orElseThrow(() -> MessageException.of(format(
+        "Compute Engine task main component key is null. Project with UUID %s must have been deleted since report was uploaded. Can not proceed.",
+        mainComponent.getUuid())));
+    CeTask.Component component = mandatoryComponent(ceTask.getComponent());
+    String componentKey = component.getKey()
+      .orElseThrow(() -> MessageException.of(format(
         "Compute Engine task component key is null. Project with UUID %s must have been deleted since report was uploaded. Can not proceed.",
-        ceTask.getComponentUuid()));
-    }
+        component.getUuid())));
     ComponentDto dto = toProject(reportProjectKey);
-    analysisMetadata.setProject(new Project(dto.uuid(), dto.getDbKey(), dto.name(), dto.description()));
+
+    analysisMetadata.setProject(Project.from(dto));
     return () -> {
-      if (!componentKey.equals(reportProjectKey)) {
+      if (!mainComponentKey.equals(reportProjectKey)) {
         throw MessageException.of(format(
           "ProjectKey in report (%s) is not consistent with projectKey under which the report has been submitted (%s)",
           reportProjectKey,
-          componentKey));
+          mainComponentKey));
       }
       if (!dto.getOrganizationUuid().equals(organization.getUuid())) {
         throw MessageException.of(format("Project is not in the expected organization: %s", organization.getKey()));
       }
-      if (dto.getMainBranchProjectUuid() != null) {
-        throw MessageException.of("Project should not reference a branch");
+      if (componentKey.equals(mainComponentKey) && dto.getMainBranchProjectUuid() != null) {
+        throw MessageException.of("Component should not reference a branch");
       }
     };
+  }
+
+  private static CeTask.Component mandatoryComponent(Optional<CeTask.Component> mainComponent) {
+    return mainComponent
+      .orElseThrow(() -> new IllegalStateException("component missing on ce task"));
   }
 
   private Organization loadOrganization(ScannerReport.Metadata reportMetadata) {
@@ -216,7 +227,7 @@ public class LoadReportAnalysisMetadataHolderStep implements ComputationStep {
 
   private ComponentDto toProject(String projectKey) {
     try (DbSession dbSession = dbClient.openSession(false)) {
-      com.google.common.base.Optional<ComponentDto> opt = dbClient.componentDao().selectByKey(dbSession, projectKey);
+      Optional<ComponentDto> opt = dbClient.componentDao().selectByKey(dbSession, projectKey);
       checkState(opt.isPresent(), "Project with key '%s' can't be found", projectKey);
       return opt.get();
     }

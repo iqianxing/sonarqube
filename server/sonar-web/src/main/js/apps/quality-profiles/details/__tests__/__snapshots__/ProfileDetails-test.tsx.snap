@@ -9,8 +9,6 @@ exports[`renders with edit permission 1`] = `
       className="quality-profile-grid-left"
     >
       <ProfileRules
-        exporters={Array []}
-        onRequestFail={[MockFunction]}
         organization="org"
         profile={
           Object {
@@ -19,12 +17,9 @@ exports[`renders with edit permission 1`] = `
             },
           }
         }
-        profiles={Array []}
-        updateProfiles={[MockFunction]}
       />
       <ProfileExporters
         exporters={Array []}
-        onRequestFail={[MockFunction]}
         organization="org"
         profile={
           Object {
@@ -33,8 +28,6 @@ exports[`renders with edit permission 1`] = `
             },
           }
         }
-        profiles={Array []}
-        updateProfiles={[MockFunction]}
       />
       <ProfilePermissions
         organization="org"
@@ -51,8 +44,6 @@ exports[`renders with edit permission 1`] = `
       className="quality-profile-grid-right"
     >
       <ProfileInheritance
-        exporters={Array []}
-        onRequestFail={[MockFunction]}
         organization="org"
         profile={
           Object {
@@ -65,8 +56,6 @@ exports[`renders with edit permission 1`] = `
         updateProfiles={[MockFunction]}
       />
       <ProfileProjects
-        exporters={Array []}
-        onRequestFail={[MockFunction]}
         organization="org"
         profile={
           Object {
@@ -75,8 +64,6 @@ exports[`renders with edit permission 1`] = `
             },
           }
         }
-        profiles={Array []}
-        updateProfiles={[MockFunction]}
       />
     </div>
   </div>
@@ -92,40 +79,27 @@ exports[`renders without permissions 1`] = `
       className="quality-profile-grid-left"
     >
       <ProfileRules
-        exporters={Array []}
-        onRequestFail={[MockFunction]}
         organization="org"
         profile={Object {}}
-        profiles={Array []}
-        updateProfiles={[MockFunction]}
       />
       <ProfileExporters
         exporters={Array []}
-        onRequestFail={[MockFunction]}
         organization="org"
         profile={Object {}}
-        profiles={Array []}
-        updateProfiles={[MockFunction]}
       />
     </div>
     <div
       className="quality-profile-grid-right"
     >
       <ProfileInheritance
-        exporters={Array []}
-        onRequestFail={[MockFunction]}
         organization="org"
         profile={Object {}}
         profiles={Array []}
         updateProfiles={[MockFunction]}
       />
       <ProfileProjects
-        exporters={Array []}
-        onRequestFail={[MockFunction]}
         organization="org"
         profile={Object {}}
-        profiles={Array []}
-        updateProfiles={[MockFunction]}
       />
     </div>
   </div>

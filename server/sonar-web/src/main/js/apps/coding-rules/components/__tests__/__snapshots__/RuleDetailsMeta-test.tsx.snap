@@ -88,20 +88,18 @@ exports[`should display right meta info 1`] = `
         />
       </li>
     </Tooltip>
-    <React.Fragment>
-      <Tooltip
-        overlay="coding_rules.scope.title"
+    <Tooltip
+      overlay="coding_rules.scope.title"
+    >
+      <li
+        className="coding-rules-detail-property"
       >
-        <li
-          className="coding-rules-detail-property"
-        >
-          <RuleScopeIcon
-            className="little-spacer-right"
-          />
-          coding_rules.scope.MAIN
-        </li>
-      </Tooltip>
-    </React.Fragment>
+        <RuleScopeIcon
+          className="little-spacer-right"
+        />
+        coding_rules.scope.MAIN
+      </li>
+    </Tooltip>
     <li
       className="coding-rules-detail-property"
       data-meta="tags"
@@ -118,9 +116,7 @@ exports[`should display right meta info 1`] = `
         }
         overlayPlacement="bottom-left"
       >
-        <Button
-          className="button-link"
-        >
+        <ButtonLink>
           <TagsList
             allowUpdate={true}
             tags={
@@ -129,7 +125,7 @@ exports[`should display right meta info 1`] = `
               ]
             }
           />
-        </Button>
+        </ButtonLink>
       </Dropdown>
     </li>
     <li
@@ -145,7 +141,6 @@ exports[`should display right meta info 1`] = `
         date="2013-07-26T09:40:51+0200"
       />
     </li>
-    <React.Fragment />
   </ul>
 </div>
 `;
@@ -163,7 +158,7 @@ exports[`should display right meta info 2`] = `
       <span
         className="note text-middle"
       >
-        external_xoo:OneExternalIssuePerLine
+        xoo:OneExternalIssuePerLine
       </span>
     </div>
     <h3
@@ -190,7 +185,7 @@ exports[`should display right meta info 3`] = `
       <span
         className="note text-middle"
       >
-        external_xoo:OneExternalIssueWithDetailsPerLine
+        xoo:OneExternalIssueWithDetailsPerLine
       </span>
     </div>
     <h3
@@ -251,9 +246,7 @@ exports[`should display right meta info 3`] = `
         }
         overlayPlacement="bottom-left"
       >
-        <Button
-          className="button-link"
-        >
+        <ButtonLink>
           <TagsList
             allowUpdate={true}
             tags={
@@ -262,7 +255,7 @@ exports[`should display right meta info 3`] = `
               ]
             }
           />
-        </Button>
+        </ButtonLink>
       </Dropdown>
     </li>
     <Tooltip
@@ -299,9 +292,7 @@ exports[`should edit tags 1`] = `
     }
     overlayPlacement="bottom-left"
   >
-    <Button
-      className="button-link"
-    >
+    <ButtonLink>
       <TagsList
         allowUpdate={true}
         tags={
@@ -310,7 +301,7 @@ exports[`should edit tags 1`] = `
           ]
         }
       />
-    </Button>
+    </ButtonLink>
   </Dropdown>
 </li>
 `;

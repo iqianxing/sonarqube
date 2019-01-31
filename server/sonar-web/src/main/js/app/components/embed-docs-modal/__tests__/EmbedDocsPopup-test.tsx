@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,63 +20,8 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import EmbedDocsPopup from '../EmbedDocsPopup';
-import { isSonarCloud } from '../../../../helpers/system';
 
-jest.mock('../../../../helpers/system', () => ({ isSonarCloud: jest.fn().mockReturnValue(false) }));
-
-const suggestions = [{ link: '#', text: 'foo' }, { link: '#', text: 'bar' }];
-
-it('should display suggestion links', () => {
-  const context = {};
-  const wrapper = shallow(
-    <EmbedDocsPopup
-      currentUser={{ isLoggedIn: true }}
-      onClose={jest.fn()}
-      suggestions={suggestions}
-    />,
-    {
-      context
-    }
-  );
-  wrapper.update();
-  expect(wrapper).toMatchSnapshot();
-});
-
-it('should display analyze new project link when user has permission', () => {
-  const wrapper = shallow(
-    <EmbedDocsPopup
-      currentUser={{ isLoggedIn: true, permissions: { global: ['provisioning'] } }}
-      onClose={jest.fn()}
-      suggestions={suggestions}
-    />
-  );
-  expect(wrapper.find('[data-test="analyze-new-project"]').exists()).toBe(true);
-});
-
-it('should not display analyze new project link when user does not have permission', () => {
-  const wrapper = shallow(
-    <EmbedDocsPopup
-      currentUser={{ isLoggedIn: true }}
-      onClose={jest.fn()}
-      suggestions={suggestions}
-    />
-  );
-  expect(wrapper.find('[data-test="analyze-new-project"]').exists()).toBe(false);
-});
-
-it('should display correct links for SonarCloud', () => {
-  (isSonarCloud as jest.Mock<any>).mockReturnValueOnce(true);
-  const context = {};
-  const wrapper = shallow(
-    <EmbedDocsPopup
-      currentUser={{ isLoggedIn: true }}
-      onClose={jest.fn()}
-      suggestions={suggestions}
-    />,
-    {
-      context
-    }
-  );
-  wrapper.update();
+it('should render', () => {
+  const wrapper = shallow(<EmbedDocsPopup onClose={jest.fn()} />);
   expect(wrapper).toMatchSnapshot();
 });

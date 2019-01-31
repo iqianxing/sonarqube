@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,28 +18,44 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
+import { Helmet } from 'react-helmet';
 import { Link } from 'react-router';
-import SonarCloudPage from './SonarCloudPage';
+import { Location } from 'history';
+import SQPageContainer from './components/SQPageContainer';
 import Select from '../../../components/controls/Select';
-import { isLoggedIn, Organization } from '../../../app/types';
+import { Alert } from '../../../components/ui/Alert';
+import { isLoggedIn } from '../../../helpers/users';
 import './style.css';
 
 const CATEGORIES = [
   { label: 'Commercial', value: 'commercial' },
-  { label: 'Product', value: 'product' },
-  { label: 'Operations / Service / Infrastructure', value: 'operations' }
+  { label: 'Confidential Request', value: 'confidential_request' }
 ];
+
+interface Props {
+  location: Location;
+}
 
 interface State {
   category: string;
   organization: string;
+  question: string;
   subject: string;
 }
 
-export default class Contact extends React.PureComponent<{}, State> {
-  state: State = { category: '', organization: '', subject: '' };
+export default class Contact extends React.PureComponent<Props, State> {
+  constructor(props: Props) {
+    super(props);
+    const { query } = props.location;
+    this.state = {
+      category: query.category || '',
+      organization: query.organization || '',
+      question: query.question || '',
+      subject: query.subject || ''
+    };
+  }
 
-  getOrganizations = (organizations?: Organization[]) => {
+  getOrganizations = (organizations?: T.Organization[]) => {
     return (organizations || []).map(org => ({
       label: org.name,
       value: org.key
@@ -58,13 +74,23 @@ export default class Contact extends React.PureComponent<{}, State> {
     this.setState({ subject: event.currentTarget.value });
   };
 
+  handleQuestionChange = (event: React.ChangeEvent<HTMLTextAreaElement>) => {
+    this.setState({ question: event.currentTarget.value });
+  };
+
   render() {
     return (
-      <SonarCloudPage>
+      <SQPageContainer>
         {({ currentUser, userOrganizations }) => (
           <div className="page page-limited sc-page sc-contact-page">
+            <Helmet title="Contact Us | SonarCloud">
+              <meta
+                content="If you are looking for help with SonarCloud, our Support forum is the best place to get help."
+                name="description"
+              />
+            </Helmet>
             <h1 className="sc-page-title">Contact us</h1>
-            <p className="alert alert-warning alert-big display-inline-block">
+            <Alert display="inline" variant="warning">
               If you are looking for help with SonarCloud, our{' '}
               <a
                 href="https://community.sonarsource.com/c/help/sc"
@@ -73,11 +99,11 @@ export default class Contact extends React.PureComponent<{}, State> {
                 <strong>Support forum</strong>
               </a>{' '}
               is the best place to get help.
-            </p>
+            </Alert>
             <br />
-            <p className="alert alert-warning alert-big display-inline-block">
-              Please contact us only if you couldn&apos;t solve your problem with the forum help.
-            </p>
+            <Alert display="inline" variant="warning">
+              Use this contact form for commercial or confidential requests only.
+            </Alert>
             {!isLoggedIn(currentUser) && (
               <p>
                 You can{' '}
@@ -164,9 +190,11 @@ export default class Contact extends React.PureComponent<{}, State> {
                   className="form-control"
                   id="contact-question"
                   name="question"
+                  onChange={this.handleQuestionChange}
                   placeholder="Please describe precisely what is your issue..."
                   required={true}
                   rows={8}
+                  value={this.state.question}
                 />
               </div>
               <div className="form-group">
@@ -183,7 +211,7 @@ export default class Contact extends React.PureComponent<{}, State> {
             </form>
           </div>
         )}
-      </SonarCloudPage>
+      </SQPageContainer>
     );
   }
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,9 +21,9 @@ import * as React from 'react';
 import { shallow } from 'enzyme';
 import { click } from '../../../../helpers/testUtils';
 import LineIssuesIndicator from '../LineIssuesIndicator';
-import { Issue, IssueType } from '../../../../app/types';
 
-const issueBase: Issue = {
+const issueBase: T.Issue = {
+  actions: [],
   component: '',
   componentLongName: '',
   componentQualifier: '',
@@ -43,7 +43,8 @@ const issueBase: Issue = {
   secondaryLocations: [],
   severity: '',
   status: '',
-  type: IssueType.Bug
+  transitions: [],
+  type: 'BUG'
 };
 
 it('render highest severity', () => {
@@ -66,7 +67,7 @@ it('render highest severity', () => {
 
 it('no issues', () => {
   const line = { line: 3 };
-  const issues: Issue[] = [];
+  const issues: T.Issue[] = [];
   const onClick = jest.fn();
   const wrapper = shallow(<LineIssuesIndicator issues={issues} line={line} onClick={onClick} />);
   expect(wrapper).toMatchSnapshot();

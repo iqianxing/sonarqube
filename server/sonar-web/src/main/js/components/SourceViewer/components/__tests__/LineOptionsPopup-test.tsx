@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,16 +20,19 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import LineOptionsPopup from '../LineOptionsPopup';
-import { BranchType, ShortLivingBranch } from '../../../../app/types';
+
+jest.mock('../../SourceViewerContext', () => ({
+  SourceViewerContext: {
+    Consumer: (props: any) =>
+      props.children({
+        branchLike: { isMain: false, name: 'feature', type: 'SHORT' },
+        file: { project: 'prj', key: 'foo' }
+      })
+  }
+}));
 
 it('should render', () => {
   const line = { line: 3 };
-  const branch: ShortLivingBranch = {
-    isMain: false,
-    mergeBranch: 'master',
-    name: 'feature',
-    type: BranchType.SHORT
-  };
-  const wrapper = shallow(<LineOptionsPopup branchLike={branch} componentKey="foo" line={line} />);
+  const wrapper = shallow(<LineOptionsPopup line={line} />).dive();
   expect(wrapper).toMatchSnapshot();
 });

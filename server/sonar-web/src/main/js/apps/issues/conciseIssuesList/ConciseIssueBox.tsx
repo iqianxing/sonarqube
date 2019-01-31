@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,12 +21,11 @@ import * as React from 'react';
 import * as classNames from 'classnames';
 import ConciseIssueLocations from './ConciseIssueLocations';
 import ConciseIssueLocationsNavigator from './ConciseIssueLocationsNavigator';
-import { Issue } from '../../../app/types';
 import SeverityHelper from '../../../components/shared/SeverityHelper';
 import TypeHelper from '../../../components/shared/TypeHelper';
 
 interface Props {
-  issue: Issue;
+  issue: T.Issue;
   onClick: (issueKey: string) => void;
   onFlowSelect: (index: number) => void;
   onLocationSelect: (index: number) => void;

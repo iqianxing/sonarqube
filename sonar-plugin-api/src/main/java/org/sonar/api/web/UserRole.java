@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,6 +23,10 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.Set;
 
 /**
  * @since 1.11
@@ -30,6 +34,11 @@ import java.lang.annotation.Target;
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)
 public @interface UserRole {
+  /**
+   * Permissions which are implicitly available for any user, any group and to group "AnyOne" on public components.
+   * @since 7.5
+   */
+  Set<String> PUBLIC_PERMISSIONS = Collections.unmodifiableSet(new HashSet<>(Arrays.asList(UserRole.USER, UserRole.CODEVIEWER)));
 
   /**
    * @deprecated use the constant USER since 1.12.
@@ -46,6 +55,11 @@ public @interface UserRole {
    * @since 7.3
    */
   String SECURITYHOTSPOT_ADMIN = "securityhotspotadmin";
+
+  /**
+   * @since 7.5
+   */
+  String SCAN = "scan";
 
   String[] value() default {};
 

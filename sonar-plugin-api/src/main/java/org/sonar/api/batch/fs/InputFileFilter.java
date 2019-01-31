@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,12 +20,13 @@
 package org.sonar.api.batch.fs;
 
 import org.sonar.api.ExtensionPoint;
-import org.sonar.api.batch.ScannerSide;
+import org.sonar.api.scanner.ScannerSide;
 import org.sonarsource.api.sonarlint.SonarLintSide;
 
 /**
  * Extension point to exclude some files from inspection
  * @since 4.2
+ * @since 7.6 evaluated at project level
  */
 @ScannerSide
 @SonarLintSide

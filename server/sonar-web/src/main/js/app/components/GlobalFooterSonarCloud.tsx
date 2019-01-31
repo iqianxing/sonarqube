@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -57,10 +57,10 @@ export default function GlobalFooterSonarCloud() {
           </Link>
         </li>
         <li className="page-footer-menu-item">
-          <Link to="/documentation/privacy">{translate('footer.privacy')}</Link>
+          <Link to="/documentation/privacy/">{translate('footer.privacy')}</Link>
         </li>
         <li className="page-footer-menu-item">
-          <Link to="/documentation/security">{translate('footer.security')}</Link>
+          <Link to="/documentation/security/">{translate('footer.security')}</Link>
         </li>
         <li className="page-footer-menu-item">
           <a

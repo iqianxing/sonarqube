@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,9 +22,8 @@ import { RuleDescriptor } from './context';
 import WorkspaceHeader, { Props as WorkspaceHeaderProps } from './WorkspaceHeader';
 import WorkspaceRuleDetails from './WorkspaceRuleDetails';
 import WorkspaceRuleTitle from './WorkspaceRuleTitle';
-import { Omit } from '../../app/types';
 
-export interface Props extends Omit<WorkspaceHeaderProps, 'children' | 'onClose'> {
+export interface Props extends T.Omit<WorkspaceHeaderProps, 'children' | 'onClose'> {
   rule: RuleDescriptor;
   height: number;
   onClose: (componentKey: string) => void;

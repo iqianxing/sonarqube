@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,14 +20,14 @@
 package org.sonar.ce.task.projectanalysis.step;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Collectors;
 import org.sonar.api.utils.MessageException;
 import org.sonar.ce.task.projectanalysis.analysis.AnalysisMetadataHolder;
-import org.sonar.ce.task.projectanalysis.batch.BatchReportReader;
 import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.ce.task.projectanalysis.component.ComponentVisitor;
 import org.sonar.ce.task.projectanalysis.component.CrawlerDepthLimit;
@@ -35,14 +35,15 @@ import org.sonar.ce.task.projectanalysis.component.DepthTraversalTypeAwareCrawle
 import org.sonar.ce.task.projectanalysis.component.TreeRootHolder;
 import org.sonar.ce.task.projectanalysis.component.TypeAwareVisitorAdapter;
 import org.sonar.ce.task.step.ComputationStep;
-import org.sonar.core.component.ComponentKeys;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
+import org.sonar.db.component.BranchDto;
+import org.sonar.db.component.BranchType;
 import org.sonar.db.component.ComponentDao;
 import org.sonar.db.component.ComponentDto;
 import org.sonar.db.component.SnapshotDto;
 
-import static com.google.common.collect.FluentIterable.from;
+import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static org.sonar.api.utils.DateUtils.formatDateTime;
 
@@ -53,6 +54,7 @@ import static org.sonar.api.utils.DateUtils.formatDateTime;
  * <li>module key already exists in another project (same module key cannot exists in different projects)</li>
  * <li>module key is already used as a project key</li>
  * <li>date of the analysis is before last analysis</li>
+ * <li>short living branch or PR targets a branch that still contains modules</li>
  * </ol>
  */
 public class ValidateProjectStep implements ComputationStep {
@@ -60,14 +62,11 @@ public class ValidateProjectStep implements ComputationStep {
   private static final Joiner MESSAGES_JOINER = Joiner.on("\n  o ");
 
   private final DbClient dbClient;
-  private final BatchReportReader reportReader;
   private final TreeRootHolder treeRootHolder;
   private final AnalysisMetadataHolder analysisMetadataHolder;
 
-  public ValidateProjectStep(DbClient dbClient, BatchReportReader reportReader, TreeRootHolder treeRootHolder,
-    AnalysisMetadataHolder analysisMetadataHolder) {
+  public ValidateProjectStep(DbClient dbClient, TreeRootHolder treeRootHolder, AnalysisMetadataHolder analysisMetadataHolder) {
     this.dbClient = dbClient;
-    this.reportReader = reportReader;
     this.treeRootHolder = treeRootHolder;
     this.analysisMetadataHolder = analysisMetadataHolder;
   }
@@ -75,15 +74,31 @@ public class ValidateProjectStep implements ComputationStep {
   @Override
   public void execute(ComputationStep.Context context) {
     try (DbSession dbSession = dbClient.openSession(false)) {
+      validateTargetBranch(dbSession);
       Component root = treeRootHolder.getRoot();
-      List<ComponentDto> baseModules = dbClient.componentDao().selectEnabledModulesFromProjectKey(dbSession, root.getKey());
-      Map<String, ComponentDto> baseModulesByKey = from(baseModules).uniqueIndex(ComponentDto::getDbKey);
+      List<ComponentDto> baseModules = dbClient.componentDao().selectEnabledModulesFromProjectKey(dbSession, root.getDbKey());
+      Map<String, ComponentDto> baseModulesByKey = baseModules.stream().collect(Collectors.toMap(ComponentDto::getDbKey, x -> x));
       ValidateProjectsVisitor visitor = new ValidateProjectsVisitor(dbSession, dbClient.componentDao(), baseModulesByKey);
       new DepthTraversalTypeAwareCrawler(visitor).visit(root);
 
       if (!visitor.validationMessages.isEmpty()) {
         throw MessageException.of("Validation of project failed:\n  o " + MESSAGES_JOINER.join(visitor.validationMessages));
       }
+    }
+  }
+
+  private void validateTargetBranch(DbSession session) {
+    if (!analysisMetadataHolder.isShortLivingBranch() && !analysisMetadataHolder.isPullRequest()) {
+      return;
+    }
+    String mergeBranchUuid = analysisMetadataHolder.getBranch().getMergeBranchUuid().get();
+    int moduleCount = dbClient.componentDao().countEnabledModulesByProjectUuid(session, mergeBranchUuid);
+    if (moduleCount > 0) {
+      Optional<BranchDto> opt = dbClient.branchDao().selectByUuid(session, mergeBranchUuid);
+      checkState(opt.isPresent(), "Merge branch '%s' does not exist", mergeBranchUuid);
+      String type = analysisMetadataHolder.getBranch().getType() == BranchType.PULL_REQUEST ? "pull request" : "short-lived branch";
+      throw MessageException.of(String.format(
+        "Due to an upgrade, you need first to re-analyze the target branch '%s' before analyzing this %s.", opt.get().getKey(), type));
     }
   }
 
@@ -98,73 +113,30 @@ public class ValidateProjectStep implements ComputationStep {
     private final Map<String, ComponentDto> baseModulesByKey;
     private final List<String> validationMessages = new ArrayList<>();
 
-    private Component rawProject;
-
     public ValidateProjectsVisitor(DbSession session, ComponentDao componentDao, Map<String, ComponentDto> baseModulesByKey) {
-      super(CrawlerDepthLimit.MODULE, ComponentVisitor.Order.PRE_ORDER);
+      super(CrawlerDepthLimit.PROJECT, ComponentVisitor.Order.PRE_ORDER);
       this.session = session;
       this.componentDao = componentDao;
-
       this.baseModulesByKey = baseModulesByKey;
     }
 
     @Override
     public void visitProject(Component rawProject) {
-      this.rawProject = rawProject;
-      String rawProjectKey = rawProject.getKey();
-
+      String rawProjectKey = rawProject.getDbKey();
       Optional<ComponentDto> baseProject = loadBaseComponent(rawProjectKey);
       validateAnalysisDate(baseProject);
     }
 
     private void validateAnalysisDate(Optional<ComponentDto> baseProject) {
       if (baseProject.isPresent()) {
-        java.util.Optional<SnapshotDto> snapshotDto = dbClient.snapshotDao().selectLastAnalysisByRootComponentUuid(session, baseProject.get().uuid());
+        Optional<SnapshotDto> snapshotDto = dbClient.snapshotDao().selectLastAnalysisByRootComponentUuid(session, baseProject.get().uuid());
         long currentAnalysisDate = analysisMetadataHolder.getAnalysisDate();
         Long lastAnalysisDate = snapshotDto.map(SnapshotDto::getCreatedAt).orElse(null);
         if (lastAnalysisDate != null && currentAnalysisDate <= lastAnalysisDate) {
           validationMessages.add(format("Date of analysis cannot be older than the date of the last known analysis on this project. Value: \"%s\". " +
-            "Latest analysis: \"%s\". It's only possible to rebuild the past in a chronological order.",
+              "Latest analysis: \"%s\". It's only possible to rebuild the past in a chronological order.",
             formatDateTime(new Date(currentAnalysisDate)), formatDateTime(new Date(lastAnalysisDate))));
         }
-      }
-    }
-
-    @Override
-    public void visitModule(Component rawModule) {
-      String rawProjectKey = rawProject.getKey();
-      String rawModuleKey = rawModule.getKey();
-      validateBatchKey(rawModule);
-
-      Optional<ComponentDto> baseModule = loadBaseComponent(rawModuleKey);
-      if (!baseModule.isPresent()) {
-        return;
-      }
-      validateModuleIsNotAlreadyUsedAsProject(baseModule.get(), rawProjectKey, rawModuleKey);
-      validateModuleKeyIsNotAlreadyUsedInAnotherProject(baseModule.get(), rawModuleKey);
-    }
-
-    private void validateModuleIsNotAlreadyUsedAsProject(ComponentDto baseModule, String rawProjectKey, String rawModuleKey) {
-      if (baseModule.projectUuid().equals(baseModule.uuid())) {
-        // module is actually a project
-        validationMessages.add(format("The project \"%s\" is already defined in SonarQube but not as a module of project \"%s\". "
-          + "If you really want to stop directly analysing project \"%s\", please first delete it from SonarQube and then relaunch the analysis of project \"%s\".",
-          rawModuleKey, rawProjectKey, rawModuleKey, rawProjectKey));
-      }
-    }
-
-    private void validateModuleKeyIsNotAlreadyUsedInAnotherProject(ComponentDto baseModule, String rawModuleKey) {
-      if (!baseModule.projectUuid().equals(baseModule.uuid()) && !baseModule.projectUuid().equals(rawProject.getUuid())) {
-        ComponentDto projectModule = componentDao.selectOrFailByUuid(session, baseModule.projectUuid());
-        validationMessages.add(format("Module \"%s\" is already part of project \"%s\"", rawModuleKey, projectModule.getDbKey()));
-      }
-    }
-
-    private void validateBatchKey(Component rawComponent) {
-      String batchKey = reportReader.readComponent(rawComponent.getReportAttributes().getRef()).getKey();
-      if (!ComponentKeys.isValidModuleKey(batchKey)) {
-        validationMessages.add(format("\"%s\" is not a valid project or module key. "
-          + "Allowed characters are alphanumeric, '-', '_', '.' and ':', with at least one non-digit.", batchKey));
       }
     }
 

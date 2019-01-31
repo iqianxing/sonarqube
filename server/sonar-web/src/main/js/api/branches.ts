@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,14 +18,13 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import { getJSON, post } from '../helpers/request';
-import { Branch, PullRequest } from '../app/types';
 import throwGlobalError from '../app/utils/throwGlobalError';
 
-export function getBranches(project: string): Promise<Branch[]> {
+export function getBranches(project: string): Promise<T.Branch[]> {
   return getJSON('/api/project_branches/list', { project }).then(r => r.branches, throwGlobalError);
 }
 
-export function getPullRequests(project: string): Promise<PullRequest[]> {
+export function getPullRequests(project: string): Promise<T.PullRequest[]> {
   return getJSON('/api/project_pull_requests/list', { project }).then(
     r => r.pullRequests,
     throwGlobalError

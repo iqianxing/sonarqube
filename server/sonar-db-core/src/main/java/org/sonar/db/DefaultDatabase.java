@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,14 +21,15 @@ package org.sonar.db;
 
 import ch.qos.logback.classic.Level;
 import com.google.common.annotations.VisibleForTesting;
+import com.google.common.collect.ImmutableMap;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import javax.sql.DataSource;
-import org.apache.commons.dbcp.BasicDataSource;
-import org.apache.commons.dbcp.BasicDataSourceFactory;
+import org.apache.commons.dbcp2.BasicDataSource;
+import org.apache.commons.dbcp2.BasicDataSourceFactory;
 import org.apache.commons.dbutils.DbUtils;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.config.Settings;
@@ -41,6 +42,7 @@ import org.sonar.db.profiling.ProfiledConnectionInterceptor;
 import org.sonar.db.profiling.ProfiledDataSource;
 import org.sonar.process.logging.LogbackHelper;
 
+import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static org.sonar.process.ProcessProperties.Property.JDBC_URL;
 
@@ -55,6 +57,14 @@ public class DefaultDatabase implements Database {
   private static final String SONAR_JDBC = "sonar.jdbc.";
   private static final String SONAR_JDBC_DIALECT = "sonar.jdbc.dialect";
   private static final String SONAR_JDBC_DRIVER = "sonar.jdbc.driverClassName";
+  private static final String SONAR_JDBC_MAX_ACTIVE = "sonar.jdbc.maxActive";
+  private static final String DBCP_JDBC_MAX_ACTIVE = "maxTotal";
+  private static final String SONAR_JDBC_MAX_WAIT = "sonar.jdbc.maxWait";
+  private static final String DBCP_JDBC_MAX_WAIT = "maxWaitMillis";
+  private static final Map<String, String> SONAR_JDBC_TO_DBCP_PROPERTY_MAPPINGS = ImmutableMap.of(
+    SONAR_JDBC_MAX_ACTIVE, DBCP_JDBC_MAX_ACTIVE,
+    SONAR_JDBC_MAX_WAIT, DBCP_JDBC_MAX_WAIT
+  );
 
   private final LogbackHelper logbackHelper;
   private final Settings settings;
@@ -93,7 +103,7 @@ public class DefaultDatabase implements Database {
   private void initDataSource() throws Exception {
     // but it's correctly caught by start()
     LOG.info("Create JDBC data source for {}", properties.getProperty(JDBC_URL.getKey()), DEFAULT_URL);
-    BasicDataSource basicDataSource = (BasicDataSource) BasicDataSourceFactory.createDataSource(extractCommonsDbcpProperties(properties));
+    BasicDataSource basicDataSource = BasicDataSourceFactory.createDataSource(extractCommonsDbcpProperties(properties));
     datasource = new ProfiledDataSource(basicDataSource, NullConnectionInterceptor.INSTANCE);
     datasource.setConnectionInitSqls(dialect.getConnectionInitStatements());
     datasource.setValidationQuery(dialect.getValidationQuery());
@@ -104,6 +114,7 @@ public class DefaultDatabase implements Database {
     Connection connection = null;
     try {
       connection = datasource.getConnection();
+      dialect.init(connection.getMetaData());
     } catch (SQLException e) {
       throw new IllegalStateException("Can not connect to database. Please check connectivity and settings (see the properties prefixed by 'sonar.jdbc.').", e);
     } finally {
@@ -163,10 +174,15 @@ public class DefaultDatabase implements Database {
   @VisibleForTesting
   static Properties extractCommonsDbcpProperties(Properties properties) {
     Properties result = new Properties();
+    result.setProperty("accessToUnderlyingConnectionAllowed", "true");
     for (Map.Entry<Object, Object> entry : properties.entrySet()) {
       String key = (String) entry.getKey();
       if (StringUtils.startsWith(key, SONAR_JDBC)) {
-        result.setProperty(StringUtils.removeStart(key, SONAR_JDBC), (String) entry.getValue());
+        String resolvedKey = toDbcpPropertyKey(key);
+        String existingValue = (String) result.setProperty(resolvedKey, (String) entry.getValue());
+        checkState(existingValue == null || existingValue.equals(entry.getValue()),
+          "Duplicate property declaration for resolved jdbc key '%s': conflicting values are '%s' and '%s'", resolvedKey, existingValue, entry.getValue());
+        result.setProperty(toDbcpPropertyKey(key), (String) entry.getValue());
       }
     }
     return result;
@@ -176,6 +192,14 @@ public class DefaultDatabase implements Database {
     if (props.getProperty(key) == null) {
       props.setProperty(key, defaultValue);
     }
+  }
+
+  private static String toDbcpPropertyKey(String key) {
+    if (SONAR_JDBC_TO_DBCP_PROPERTY_MAPPINGS.containsKey(key)) {
+      return SONAR_JDBC_TO_DBCP_PROPERTY_MAPPINGS.get(key);
+    }
+
+    return StringUtils.removeStart(key, SONAR_JDBC);
   }
 
   @Override

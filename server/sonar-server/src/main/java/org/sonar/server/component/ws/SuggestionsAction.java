@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -85,7 +85,7 @@ public class SuggestionsAction implements ComponentsWsAction {
   private static final int MAXIMUM_RECENTLY_BROWSED = 50;
 
   private static final int EXTENDED_LIMIT = 20;
-  private static final Set<String> QUALIFIERS_FOR_WHICH_TO_RETURN_PROJECT = Stream.of(Qualifiers.MODULE, Qualifiers.FILE, Qualifiers.UNIT_TEST_FILE).collect(Collectors.toSet());
+  private static final Set<String> QUALIFIERS_FOR_WHICH_TO_RETURN_PROJECT = Stream.of(Qualifiers.FILE, Qualifiers.UNIT_TEST_FILE).collect(Collectors.toSet());
 
   private final ComponentIndex index;
   private final FavoriteFinder favoriteFinder;
@@ -118,7 +118,9 @@ public class SuggestionsAction implements ComponentsWsAction {
       .setInternal(true)
       .setHandler(this)
       .setResponseExample(Resources.getResource(this.getClass(), "suggestions-example.json"))
-      .setChangelog(new Change("6.4", "Parameter 's' is optional"));
+      .setChangelog(
+        new Change("7.6", String.format("The use of 'BRC' as value for parameter '%s' is deprecated", PARAM_MORE)),
+        new Change("6.4", "Parameter 's' is optional"));
 
     action.createParam(PARAM_QUERY)
       .setRequired(false)
@@ -255,7 +257,10 @@ public class SuggestionsAction implements ComponentsWsAction {
   }
 
   private List<String> getQualifiers(@Nullable String more) {
-    Set<String> availableQualifiers = resourceTypes.getAll().stream().map(ResourceType::getQualifier).collect(MoreCollectors.toSet());
+    Set<String> availableQualifiers = resourceTypes.getAll().stream()
+      .map(ResourceType::getQualifier)
+      .filter(q -> !q.equals(Qualifiers.MODULE))
+      .collect(MoreCollectors.toSet());
     if (more == null) {
       return stream(SuggestionCategory.values())
         .map(SuggestionCategory::getQualifier)
@@ -264,9 +269,7 @@ public class SuggestionsAction implements ComponentsWsAction {
     }
 
     String qualifier = SuggestionCategory.getByName(more).getQualifier();
-    return availableQualifiers.contains(qualifier) ?
-      singletonList(qualifier)
-      : emptyList();
+    return availableQualifiers.contains(qualifier) ? singletonList(qualifier) : emptyList();
   }
 
   private SuggestionsWsResponse.Builder buildResponse(Set<String> recentlyBrowsedKeys, Set<String> favoriteUuids, ComponentIndexResults componentsPerQualifiers,
@@ -336,7 +339,9 @@ public class SuggestionsAction implements ComponentsWsAction {
   private static Suggestion toSuggestion(ComponentHit hit, Set<String> recentlyBrowsedKeys, Set<String> favoriteUuids, Map<String, ComponentDto> componentsByUuids,
     Map<String, OrganizationDto> organizationByUuids, Map<String, ComponentDto> projectsByUuids) {
     ComponentDto result = componentsByUuids.get(hit.getUuid());
-    if (result == null) {
+    if (result == null
+      // SONAR-11419 this has happened in production while code does not really allow it. An inconsistency in DB may be the cause.
+      || (QUALIFIERS_FOR_WHICH_TO_RETURN_PROJECT.contains(result.qualifier()) && projectsByUuids.get(result.projectUuid()) == null)) {
       return null;
     }
     String organizationKey = organizationByUuids.get(result.getOrganizationUuid()).getKey();

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,17 +19,17 @@
  */
 import * as React from 'react';
 import { changePassword } from '../../../api/users';
-import { User } from '../../../app/types';
 import addGlobalSuccessMessage from '../../../app/utils/addGlobalSuccessMessage';
 import throwGlobalError from '../../../app/utils/throwGlobalError';
 import Modal from '../../../components/controls/Modal';
 import { SubmitButton, ResetButtonLink } from '../../../components/ui/buttons';
 import { translate } from '../../../helpers/l10n';
 import { parseError } from '../../../helpers/request';
+import { Alert } from '../../../components/ui/Alert';
 
 interface Props {
   isCurrentUser: boolean;
-  user: User;
+  user: T.User;
   onClose: () => void;
 }
 
@@ -107,7 +107,7 @@ export default class PasswordForm extends React.PureComponent<Props, State> {
             <h2>{header}</h2>
           </header>
           <div className="modal-body">
-            {error && <p className="alert alert-danger">{error}</p>}
+            {error && <Alert variant="error">{error}</Alert>}
             {this.props.isCurrentUser && (
               <div className="modal-field">
                 <label htmlFor="old-user-password">

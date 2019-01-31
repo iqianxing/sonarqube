@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,12 +19,12 @@
  */
 package org.sonar.server.issue.ws;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.io.Resources;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -50,8 +50,8 @@ import org.sonarqube.ws.Issues.ChangelogWsResponse.Changelog;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.emptyToNull;
+import static java.util.Optional.ofNullable;
 import static org.sonar.api.utils.DateUtils.formatDateTime;
-import static org.sonar.core.util.Protobuf.setNullable;
 import static org.sonar.core.util.Uuids.UUID_EXAMPLE_01;
 import static org.sonar.server.issue.IssueFieldsSetter.FILE;
 import static org.sonar.server.issue.IssueFieldsSetter.TECHNICAL_DEBT;
@@ -128,7 +128,7 @@ public class ChangelogAction implements IssuesWsAction {
       if (user != null) {
         changelogBuilder.setUser(user.getLogin());
         changelogBuilder.setUserName(user.getName());
-        setNullable(emptyToNull(user.getEmail()), email -> changelogBuilder.setAvatar(avatarFactory.create(user)));
+        ofNullable(emptyToNull(user.getEmail())).ifPresent(email -> changelogBuilder.setAvatar(avatarFactory.create(user)));
       }
       change.diffs().entrySet().stream()
         .map(toWsDiff(results))
@@ -142,14 +142,16 @@ public class ChangelogAction implements IssuesWsAction {
       FieldDiffs.Diff value = diff.getValue();
       Changelog.Diff.Builder diffBuilder = Changelog.Diff.newBuilder();
       String key = diff.getKey();
+      String oldValue = value.oldValue() != null ? value.oldValue().toString() : null;
+      String newValue = value.newValue() != null ? value.newValue().toString() : null;
       if (key.equals(FILE)) {
         diffBuilder.setKey(key);
-        setNullable(results.getFileLongName(emptyToNull(value.newValue().toString())), diffBuilder::setNewValue);
-        setNullable(results.getFileLongName(emptyToNull(value.oldValue().toString())), diffBuilder::setOldValue);
+        ofNullable(results.getFileLongName(emptyToNull(newValue))).ifPresent(diffBuilder::setNewValue);
+        ofNullable(results.getFileLongName(emptyToNull(oldValue))).ifPresent(diffBuilder::setOldValue);
       } else {
         diffBuilder.setKey(key.equals(TECHNICAL_DEBT) ? EFFORT_CHANGELOG_KEY : key);
-        setNullable(emptyToNull(value.newValue().toString()), diffBuilder::setNewValue);
-        setNullable(emptyToNull(value.oldValue().toString()), diffBuilder::setOldValue);
+        ofNullable(emptyToNull(newValue)).ifPresent(diffBuilder::setNewValue);
+        ofNullable(emptyToNull(oldValue)).ifPresent(diffBuilder::setOldValue);
       }
       return diffBuilder.build();
     };
@@ -177,7 +179,7 @@ public class ChangelogAction implements IssuesWsAction {
     private boolean isMember(DbSession dbSession, IssueDto issue) {
       Optional<ComponentDto> project = dbClient.componentDao().selectByUuid(dbSession, issue.getProjectUuid());
       checkState(project.isPresent(), "Cannot find the project with uuid %s from issue.id %s", issue.getProjectUuid(), issue.getId());
-      java.util.Optional<OrganizationDto> organization = dbClient.organizationDao().selectByUuid(dbSession, project.get().getOrganizationUuid());
+      Optional<OrganizationDto> organization = dbClient.organizationDao().selectByUuid(dbSession, project.get().getOrganizationUuid());
       checkState(organization.isPresent(), "Cannot find the organization with uuid %s from issue.id %s", project.get().getOrganizationUuid(), issue.getId());
       return userSession.hasMembership(organization.get());
     }

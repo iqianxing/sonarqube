@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,89 +18,187 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
-import CreateOrganizationForm from '../../../../apps/account/organizations/CreateOrganizationForm';
-import PlusIcon from '../../../../components/icons-components/PlusIcon';
+import { Link, withRouter, WithRouterProps } from 'react-router';
+import CreateFormShim from '../../../../apps/portfolio/components/CreateFormShim';
 import Dropdown from '../../../../components/controls/Dropdown';
+import PlusIcon from '../../../../components/icons-components/PlusIcon';
+import { getExtensionStart } from '../../extensions/utils';
+import { getComponentNavigation } from '../../../../api/nav';
 import { translate } from '../../../../helpers/l10n';
+import { isSonarCloud } from '../../../../helpers/system';
+import { getPortfolioAdminUrl, getPortfolioUrl } from '../../../../helpers/urls';
+import { hasGlobalPermission } from '../../../../helpers/users';
+import { OnboardingContextShape } from '../../OnboardingContext';
 
 interface Props {
-  openProjectOnboarding: () => void;
+  appState: Pick<T.AppState, 'qualifiers'>;
+  currentUser: T.LoggedInUser;
+  openProjectOnboarding: OnboardingContextShape;
 }
 
 interface State {
-  createOrganization: boolean;
+  createPortfolio: boolean;
+  governanceReady: boolean;
 }
 
-export default class GlobalNavPlus extends React.PureComponent<Props, State> {
-  static contextTypes = {
-    router: PropTypes.object
-  };
+export class GlobalNavPlus extends React.PureComponent<Props & WithRouterProps, State> {
+  mounted = false;
+  state: State = { createPortfolio: false, governanceReady: false };
 
-  constructor(props: Props) {
-    super(props);
-    this.state = { createOrganization: false };
+  componentDidMount() {
+    this.mounted = true;
+    if (this.props.appState.qualifiers.includes('VW')) {
+      getExtensionStart('governance/console').then(
+        () => {
+          if (this.mounted) {
+            this.setState({ governanceReady: true });
+          }
+        },
+        () => {}
+      );
+    }
   }
 
-  handleNewProjectClick = (event: React.SyntheticEvent<HTMLAnchorElement>) => {
+  componentWillUnmount() {
+    this.mounted = false;
+  }
+
+  handleNewProjectClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     this.props.openProjectOnboarding();
   };
 
-  openCreateOrganizationForm = () => this.setState({ createOrganization: true });
+  openCreatePortfolioForm = () => {
+    this.setState({ createPortfolio: true });
+  };
 
-  closeCreateOrganizationForm = () => this.setState({ createOrganization: false });
+  closeCreatePortfolioForm = () => {
+    this.setState({ createPortfolio: false });
+  };
 
-  handleNewOrganizationClick = (event: React.SyntheticEvent<HTMLAnchorElement>) => {
+  handleNewPortfolioClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
     event.currentTarget.blur();
-    this.openCreateOrganizationForm();
+    this.openCreatePortfolioForm();
   };
 
-  handleCreateOrganization = ({ key }: { key: string }) => {
-    this.closeCreateOrganizationForm();
-    this.context.router.push(`/organizations/${key}`);
+  handleCreatePortfolio = ({ key, qualifier }: { key: string; qualifier: string }) => {
+    return getComponentNavigation({ component: key }).then(data => {
+      if (
+        data.configuration &&
+        data.configuration.extensions &&
+        data.configuration.extensions.find(
+          (item: { key: string; name: string }) => item.key === 'governance/console'
+        )
+      ) {
+        this.props.router.push(getPortfolioAdminUrl(key, qualifier));
+      } else {
+        this.props.router.push(getPortfolioUrl(key));
+      }
+      this.closeCreatePortfolioForm();
+    });
   };
+
+  renderCreateProject(canCreateProject: boolean) {
+    if (!canCreateProject) {
+      return null;
+    }
+    return (
+      <li>
+        <a className="js-new-project" href="#" onClick={this.handleNewProjectClick}>
+          {isSonarCloud()
+            ? translate('provisioning.analyze_new_project')
+            : translate('my_account.create_new.TRK')}
+        </a>
+      </li>
+    );
+  }
+
+  renderCreateOrganization(canCreateOrg: boolean) {
+    if (!canCreateOrg) {
+      return null;
+    }
+
+    return (
+      <li>
+        <Link className="js-new-organization" to="/create-organization">
+          {translate('my_account.create_new_organization')}
+        </Link>
+      </li>
+    );
+  }
+
+  renderCreatePortfolio(showGovernanceEntry: boolean, defaultQualifier?: string) {
+    const governanceInstalled = this.props.appState.qualifiers.includes('VW');
+    if (!governanceInstalled || !showGovernanceEntry) {
+      return null;
+    }
+
+    return (
+      <li>
+        <a className="js-new-portfolio" href="#" onClick={this.handleNewPortfolioClick}>
+          {defaultQualifier
+            ? translate('my_account.create_new', defaultQualifier)
+            : translate('my_account.create_new_portfolio_application')}
+        </a>
+      </li>
+    );
+  }
 
   render() {
-    return (
-      <Dropdown
-        overlay={
-          <ul className="menu">
-            <li>
-              <a className="js-new-project" href="#" onClick={this.handleNewProjectClick}>
-                {translate('provisioning.create_new_project')}
-              </a>
-            </li>
-            <li className="divider" />
-            <li>
-              <a className="js-new-organization" href="#" onClick={this.handleNewOrganizationClick}>
-                {translate('my_account.create_new_organization')}
-              </a>
-            </li>
-          </ul>
-        }
-        tagName="li">
-        {({ onToggleClick, open }) => (
-          <>
-            <a
-              aria-expanded={open}
-              aria-haspopup="true"
-              className="navbar-plus"
-              href="#"
-              onClick={onToggleClick}>
-              <PlusIcon />
-            </a>
+    const { currentUser } = this.props;
+    const canCreateApplication = hasGlobalPermission(currentUser, 'applicationcreator');
+    const canCreateOrg = isSonarCloud();
+    const canCreatePortfolio = hasGlobalPermission(currentUser, 'portfoliocreator');
+    const canCreateProject = isSonarCloud() || hasGlobalPermission(currentUser, 'provisioning');
 
-            {this.state.createOrganization && (
-              <CreateOrganizationForm
-                onClose={this.closeCreateOrganizationForm}
-                onCreate={this.handleCreateOrganization}
-              />
-            )}
-          </>
-        )}
-      </Dropdown>
+    if (!canCreateProject && !canCreateApplication && !canCreatePortfolio && !canCreateOrg) {
+      return null;
+    }
+
+    let defaultQualifier: string | undefined;
+    if (!canCreateApplication) {
+      defaultQualifier = 'VW';
+    } else if (!canCreatePortfolio) {
+      defaultQualifier = 'APP';
+    }
+
+    return (
+      <>
+        <Dropdown
+          overlay={
+            <ul className="menu">
+              {this.renderCreateProject(canCreateProject)}
+              {this.renderCreateOrganization(canCreateOrg)}
+              {this.renderCreatePortfolio(
+                canCreateApplication || canCreatePortfolio,
+                defaultQualifier
+              )}
+            </ul>
+          }
+          tagName="li">
+          <a
+            className="navbar-icon navbar-plus"
+            href="#"
+            title={
+              isSonarCloud()
+                ? translate('my_account.create_new_project_or_organization')
+                : translate('my_account.create_new_project_portfolio_or_application')
+            }>
+            <PlusIcon />
+          </a>
+        </Dropdown>
+        {this.state.governanceReady &&
+          this.state.createPortfolio && (
+            <CreateFormShim
+              defaultQualifier={defaultQualifier}
+              onClose={this.closeCreatePortfolioForm}
+              onCreate={this.handleCreatePortfolio}
+            />
+          )}
+      </>
     );
   }
 }
+
+export default withRouter(GlobalNavPlus);

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -36,7 +36,7 @@ public class GlobalAnalysisMode {
   protected boolean issues;
   protected boolean mediumTestMode;
 
-  public GlobalAnalysisMode(GlobalProperties props) {
+  public GlobalAnalysisMode(ScannerProperties props) {
     String mode = props.property(CoreProperties.ANALYSIS_MODE);
     validate(mode);
     issues = CoreProperties.ANALYSIS_MODE_ISSUES.equals(mode) || CoreProperties.ANALYSIS_MODE_PREVIEW.equals(mode);
@@ -47,8 +47,6 @@ public class GlobalAnalysisMode {
     } else if (issues) {
       LOG.info("Issues mode");
       LOG.warn("The use of the issues mode (sonar.analysis.mode=issues) is deprecated. This mode will be dropped in the future.");
-    } else {
-      LOG.info("Publish mode");
     }
     if (mediumTestMode) {
       LOG.info("Medium test mode");

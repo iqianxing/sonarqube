@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,10 +30,11 @@ interface Props {
 }
 
 export default function Level(props: Props) {
-  const formatted = formatMeasure(props.level, 'LEVEL', null);
+  const formatted = formatMeasure(props.level, 'LEVEL');
   const className = classNames(props.className, 'level', 'level-' + props.level, {
     'level-small': props.small,
     'level-muted': props.muted
   });
+
   return <span className={className}>{formatted}</span>;
 }

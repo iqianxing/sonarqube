@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,9 +21,10 @@ package org.sonar.scanner.rule;
 
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.picocontainer.injectors.ProviderAdapter;
 import org.sonar.api.batch.rule.ActiveRules;
 import org.sonar.api.batch.rule.internal.ActiveRulesBuilder;
@@ -42,7 +43,7 @@ public class ActiveRulesProvider extends ProviderAdapter {
   private static final String LOG_MSG = "Load active rules";
   private ActiveRules singleton = null;
 
-  public ActiveRules provide(ActiveRulesLoader loader, ModuleQProfiles qProfiles) {
+  public ActiveRules provide(ActiveRulesLoader loader, QualityProfiles qProfiles) {
     if (singleton == null) {
       Profiler profiler = Profiler.create(LOG).startInfo(LOG_MSG);
       singleton = load(loader, qProfiles);
@@ -51,46 +52,45 @@ public class ActiveRulesProvider extends ProviderAdapter {
     return singleton;
   }
 
-  private static ActiveRules load(ActiveRulesLoader loader, ModuleQProfiles qProfiles) {
+  private static ActiveRules load(ActiveRulesLoader loader, QualityProfiles qProfiles) {
 
     Collection<String> qProfileKeys = getKeys(qProfiles);
-    Map<RuleKey, LoadedActiveRule> loadedRulesByKey = new HashMap<>();
-
-    for (String qProfileKey : qProfileKeys) {
-      Collection<LoadedActiveRule> qProfileRules;
-      qProfileRules = load(loader, qProfileKey);
-
-      for (LoadedActiveRule r : qProfileRules) {
-        if (!loadedRulesByKey.containsKey(r.getRuleKey())) {
-          loadedRulesByKey.put(r.getRuleKey(), r);
-        }
-      }
-    }
-
-    return transform(loadedRulesByKey.values());
-  }
-
-  private static ActiveRules transform(Collection<LoadedActiveRule> loadedRules) {
+    Set<RuleKey> loadedRulesKey = new HashSet<>();
     ActiveRulesBuilder builder = new ActiveRulesBuilder();
 
-    for (LoadedActiveRule activeRule : loadedRules) {
-      NewActiveRule newActiveRule = builder.create(activeRule.getRuleKey());
-      newActiveRule.setName(activeRule.getName());
-      newActiveRule.setSeverity(activeRule.getSeverity());
-      newActiveRule.setCreatedAt(activeRule.getCreatedAt());
-      newActiveRule.setLanguage(activeRule.getLanguage());
-      newActiveRule.setInternalKey(activeRule.getInternalKey());
-      newActiveRule.setTemplateRuleKey(activeRule.getTemplateRuleKey());
+    for (String qProfileKey : qProfileKeys) {
+      Collection<LoadedActiveRule> qProfileRules = load(loader, qProfileKey);
 
-      // load parameters
-      if (activeRule.getParams() != null) {
-        for (Map.Entry<String, String> params : activeRule.getParams().entrySet()) {
-          newActiveRule.setParam(params.getKey(), params.getValue());
+      for (LoadedActiveRule r : qProfileRules) {
+        if (!loadedRulesKey.contains(r.getRuleKey())) {
+          loadedRulesKey.add(r.getRuleKey());
+          builder.addRule(transform(r, qProfileKey));
         }
       }
-
-      newActiveRule.activate();
     }
+
+    return builder.build();
+  }
+
+  private static NewActiveRule transform(LoadedActiveRule activeRule, String qProfileKey) {
+    NewActiveRule.Builder builder = new NewActiveRule.Builder();
+    builder
+      .setRuleKey(activeRule.getRuleKey())
+      .setName(activeRule.getName())
+      .setSeverity(activeRule.getSeverity())
+      .setCreatedAt(activeRule.getCreatedAt())
+      .setUpdatedAt(activeRule.getUpdatedAt())
+      .setLanguage(activeRule.getLanguage())
+      .setInternalKey(activeRule.getInternalKey())
+      .setTemplateRuleKey(activeRule.getTemplateRuleKey())
+      .setQProfileKey(qProfileKey);
+    // load parameters
+    if (activeRule.getParams() != null) {
+      for (Map.Entry<String, String> params : activeRule.getParams().entrySet()) {
+        builder.setParam(params.getKey(), params.getValue());
+      }
+    }
+
     return builder.build();
   }
 
@@ -98,7 +98,7 @@ public class ActiveRulesProvider extends ProviderAdapter {
     return loader.load(qProfileKey);
   }
 
-  private static Collection<String> getKeys(ModuleQProfiles qProfiles) {
+  private static Collection<String> getKeys(QualityProfiles qProfiles) {
     List<String> keys = new ArrayList<>(qProfiles.findAll().size());
 
     for (QProfile qp : qProfiles.findAll()) {

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,34 +19,47 @@
  */
 package org.sonar.server.permission.ws;
 
-import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.sonar.api.resources.Qualifiers;
 import org.sonar.api.server.ws.WebService;
-import org.sonar.db.DbClient;
+import org.sonar.db.DbTester;
+import org.sonar.db.component.ResourceTypesRule;
+import org.sonar.server.component.ComponentFinder;
 import org.sonar.server.issue.ws.AvatarResolverImpl;
+import org.sonar.server.organization.TestDefaultOrganizationProvider;
+import org.sonar.server.permission.PermissionService;
+import org.sonar.server.permission.PermissionServiceImpl;
 import org.sonar.server.permission.ws.template.TemplateGroupsAction;
 import org.sonar.server.permission.ws.template.TemplateUsersAction;
-import org.sonar.server.user.UserSession;
+import org.sonar.server.tester.UserSessionRule;
+import org.sonar.server.usergroups.DefaultGroupFinder;
+import org.sonar.server.usergroups.ws.GroupWsSupport;
 import org.sonar.server.ws.WsTester;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_PERMISSION;
 
 public class PermissionsWsTest {
 
-  WsTester ws;
+  @Rule
+  public DbTester db = DbTester.create();
+  @Rule
+  public UserSessionRule userSession = UserSessionRule.standalone();
 
-  @Before
-  public void setUp() {
-    DbClient dbClient = mock(DbClient.class);
-    UserSession userSession = mock(UserSession.class);
-    PermissionWsSupport permissionWsSupport = mock(PermissionWsSupport.class);
+  private TestDefaultOrganizationProvider defaultOrganizationProvider = TestDefaultOrganizationProvider.from(db);
+  private final ResourceTypesRule resourceTypes = new ResourceTypesRule().setRootQualifiers(Qualifiers.PROJECT);
+  private final GroupWsSupport groupWsSupport = new GroupWsSupport(db.getDbClient(), defaultOrganizationProvider, new DefaultGroupFinder(db.getDbClient()));
+  private final PermissionWsSupport wsSupport = new PermissionWsSupport(db.getDbClient(), new ComponentFinder(db.getDbClient(), resourceTypes), groupWsSupport);
 
-    ws = new WsTester(new PermissionsWs(
-      new TemplateUsersAction(dbClient, userSession, permissionWsSupport, new AvatarResolverImpl()),
-      new TemplateGroupsAction(dbClient, userSession, permissionWsSupport)));
-  }
+  private PermissionService permissionService = new PermissionServiceImpl(resourceTypes);
+  private WsParameters wsParameters = new WsParameters(permissionService);
+  private RequestValidator requestValidator = new RequestValidator(permissionService);
+
+
+  private WsTester underTest = new WsTester(new PermissionsWs(
+    new TemplateUsersAction(db.getDbClient(), userSession, wsSupport, new AvatarResolverImpl(), wsParameters, requestValidator),
+    new TemplateGroupsAction(db.getDbClient(), userSession, wsSupport, wsParameters, requestValidator)));
 
   @Test
   public void define_controller() {
@@ -79,6 +92,6 @@ public class PermissionsWsTest {
   }
 
   private WebService.Controller controller() {
-    return ws.controller("api/permissions");
+    return underTest.controller("api/permissions");
   }
 }

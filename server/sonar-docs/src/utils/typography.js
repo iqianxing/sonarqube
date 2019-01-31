@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,17 +17,17 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-import Typography from 'typography';
+import Typography, { rhythm, scale } from 'typography';
 
 const fontFamily = 'Roboto';
 
 const typography = new Typography({
   bodyFontFamily: [fontFamily, 'serif'],
   headerFontFamily: [fontFamily, 'serif'],
-  baseFontSize: '18px',
-  bodyWeight: '300',
-  headerWeight: '300',
-  googleFonts: [{ name: fontFamily, styles: ['300,700'] }],
+  baseFontSize: '15px',
+  bodyWeight: '400',
+  headerWeight: '400',
+  googleFonts: [{ name: fontFamily, styles: ['400,500,700'] }],
   overrideStyles: () => ({
     a: {
       color: '#439ccd'
@@ -35,4 +35,4 @@ const typography = new Typography({
   })
 });
 
-export default typography;
+export { rhythm, scale, typography as default };

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,12 +19,11 @@
  */
 import * as React from 'react';
 import ApplyTemplate from './ApplyTemplate';
-import { Component } from '../../../../app/types';
 import { Button } from '../../../../components/ui/buttons';
 import { translate } from '../../../../helpers/l10n';
 
 interface Props {
-  component: Component;
+  component: T.Component;
   loadHolders: () => void;
   loading: boolean;
 }
@@ -68,7 +67,7 @@ export default class PageHeader extends React.PureComponent<Props, State> {
     const visibilityDescription =
       component.qualifier === 'TRK' && component.visibility
         ? translate('visibility', component.visibility, 'description', component.qualifier)
-        : null;
+        : undefined;
 
     return (
       <header className="page-header">
@@ -95,7 +94,7 @@ export default class PageHeader extends React.PureComponent<Props, State> {
 
         <div className="page-description">
           <p>{description}</p>
-          {visibilityDescription != null && <p>{visibilityDescription}</p>}
+          {visibilityDescription && <p>{visibilityDescription}</p>}
         </div>
       </header>
     );

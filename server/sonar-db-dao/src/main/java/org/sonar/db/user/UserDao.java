@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,7 +34,6 @@ import org.sonar.api.utils.System2;
 import org.sonar.core.util.UuidFactory;
 import org.sonar.db.Dao;
 import org.sonar.db.DbSession;
-import org.sonar.db.KeyLongValue;
 import org.sonar.db.component.ComponentDto;
 import org.sonar.db.organization.OrganizationDto;
 
@@ -117,37 +116,6 @@ public class UserDao implements Dao {
     return mapper(dbSession).countRootUsersButLogin(login);
   }
 
-  /**
-   * Includes deactivated users
-   */
-  public long countTotalUsers(DbSession dbSession) {
-    return mapper(dbSession).countTotalUsers();
-  }
-
-  public long countTeamUsers(DbSession dbSession) {
-    return mapper(dbSession).countTeamUsers();
-  }
-
-  public long countPersonalUsers(DbSession dbSession) {
-    return mapper(dbSession).countPersonalUsers();
-  }
-
-  public long countPersonalUsersWithZeroProjects(DbSession dbSession) {
-    return mapper(dbSession).countPersonalUsersWithZeroProjects();
-  }
-
-  public long countNewUsersSince(DbSession dbSession, long since) {
-    return mapper(dbSession).countNewUsersSince(since);
-  }
-
-  public long countActiveUsers(DbSession dbSession) {
-    return mapper(dbSession).countActiveUsers();
-  }
-
-  public List<KeyLongValue> countUsersByIdentityProviders(DbSession dbSession) {
-    return mapper(dbSession).countUsersByIdentityProviders();
-  }
-
   public UserDto insert(DbSession session, UserDto dto) {
     long now = system2.now();
     mapper(session).insert(dto.setUuid(uuidFactory.create()).setCreatedAt(now).setUpdatedAt(now));
@@ -203,6 +171,15 @@ public class UserDao implements Dao {
   @CheckForNull
   public UserDto selectByExternalIdAndIdentityProvider(DbSession dbSession, String externalId, String externalIdentityProvider) {
     return mapper(dbSession).selectByExternalIdAndIdentityProvider(externalId, externalIdentityProvider);
+  }
+
+  @CheckForNull
+  public UserDto selectByExternalLoginAndIdentityProvider(DbSession dbSession, String externalLogin, String externalIdentityProvider) {
+    return mapper(dbSession).selectByExternalLoginAndIdentityProvider(externalLogin, externalIdentityProvider);
+  }
+
+  public List<UserDto> selectByExternalIdentityProvider(DbSession dbSession, String externalIdentityProvider) {
+    return mapper(dbSession).selectByExternalIdentityProvider(externalIdentityProvider);
   }
 
   public void scrollByUuids(DbSession dbSession, Collection<String> uuids, Consumer<UserDto> consumer) {

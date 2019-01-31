@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,9 +20,11 @@
 package org.sonar.scanner.rule;
 
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.List;
+import org.assertj.core.groups.Tuple;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mock;
@@ -64,7 +66,7 @@ public class ActiveRulesProviderTest {
     when(loader.load(eq("qp2"))).thenReturn(qp2Rules);
     when(loader.load(eq("qp3"))).thenReturn(qp3Rules);
 
-    ModuleQProfiles profiles = mockProfiles("qp1", "qp2", "qp3");
+    QualityProfiles profiles = mockProfiles("qp1", "qp2", "qp3");
     ActiveRules activeRules = provider.provide(loader, profiles);
 
     assertThat(activeRules.findAll()).hasSize(3);
@@ -77,7 +79,28 @@ public class ActiveRulesProviderTest {
     verifyNoMoreInteractions(loader);
   }
 
-  private static ModuleQProfiles mockProfiles(String... keys) {
+  @Test
+  public void testParamsAreTransformed() {
+    LoadedActiveRule r1 = mockRule("rule1");
+    LoadedActiveRule r2 = mockRule("rule2");
+    r2.setParams(ImmutableMap.of("foo1", "bar1", "foo2", "bar2"));
+
+    List<LoadedActiveRule> qpRules = ImmutableList.of(r1, r2);
+    when(loader.load(eq("qp"))).thenReturn(qpRules);
+
+    QualityProfiles profiles = mockProfiles("qp");
+    ActiveRules activeRules = provider.provide(loader, profiles);
+
+    assertThat(activeRules.findAll()).hasSize(2);
+    assertThat(activeRules.findAll()).extracting("ruleKey", "params").containsOnly(
+      Tuple.tuple(RuleKey.of("rule1", "rule1"), ImmutableMap.of()),
+      Tuple.tuple(RuleKey.of("rule2", "rule2"), ImmutableMap.of("foo1", "bar1", "foo2", "bar2")));
+
+    verify(loader).load(eq("qp"));
+    verifyNoMoreInteractions(loader);
+  }
+
+  private static QualityProfiles mockProfiles(String... keys) {
     List<QualityProfile> profiles = new LinkedList<>();
 
     for (String k : keys) {
@@ -85,7 +108,7 @@ public class ActiveRulesProviderTest {
       profiles.add(p);
     }
 
-    return new ModuleQProfiles(profiles);
+    return new QualityProfiles(profiles);
   }
 
   private static LoadedActiveRule mockRule(String name) {

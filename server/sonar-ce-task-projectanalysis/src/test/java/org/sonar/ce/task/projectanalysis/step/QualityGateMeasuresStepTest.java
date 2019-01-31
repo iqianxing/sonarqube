@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,10 +19,10 @@
  */
 package org.sonar.ce.task.projectanalysis.step;
 
-import com.google.common.base.Optional;
 import java.util.Collections;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import javax.annotation.Nullable;
 import org.assertj.core.api.AbstractAssert;
 import org.junit.Before;
@@ -58,10 +58,9 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.sonar.api.measures.CoreMetrics.ALERT_STATUS_KEY;
-import static org.sonar.ce.task.projectanalysis.measure.Measure.newMeasureBuilder;
 import static org.sonar.ce.task.projectanalysis.measure.Measure.Level.ERROR;
 import static org.sonar.ce.task.projectanalysis.measure.Measure.Level.OK;
-import static org.sonar.ce.task.projectanalysis.measure.Measure.Level.WARN;
+import static org.sonar.ce.task.projectanalysis.measure.Measure.newMeasureBuilder;
 import static org.sonar.ce.task.projectanalysis.measure.MeasureAssert.assertThat;
 
 public class QualityGateMeasuresStepTest {
@@ -118,7 +117,7 @@ public class QualityGateMeasuresStepTest {
 
   @Test
   public void no_measure_if_tree_has_no_project() {
-    ReportComponent notAProjectComponent = ReportComponent.builder(Component.Type.MODULE, 1).build();
+    ReportComponent notAProjectComponent = ReportComponent.builder(Component.Type.DIRECTORY, 1).build();
 
     treeRootHolder.setRoot(notAProjectComponent);
 
@@ -150,7 +149,7 @@ public class QualityGateMeasuresStepTest {
 
   @Test
   public void new_measures_are_created_even_if_there_is_no_rawMeasure_for_metric_of_condition() {
-    Condition equals2Condition = createEqualsCondition(INT_METRIC_1, "2", null);
+    Condition equals2Condition = createLessThanCondition(INT_METRIC_1, "2");
     qualityGateHolder.setQualityGate(new QualityGate(SOME_QG_ID, SOME_QG_NAME, of(equals2Condition)));
 
     underTest.execute(new TestComputationStepContext());
@@ -172,8 +171,8 @@ public class QualityGateMeasuresStepTest {
 
   @Test
   public void rawMeasure_is_updated_if_present_and_new_measures_are_created_if_project_has_measure_for_metric_of_condition() {
-    int rawValue = 1;
-    Condition equals2Condition = createEqualsCondition(INT_METRIC_1, "2", null);
+    int rawValue = 3;
+    Condition equals2Condition = createLessThanCondition(INT_METRIC_1, "2");
     Measure rawMeasure = newMeasureBuilder().create(rawValue, null);
 
     qualityGateHolder.setQualityGate(new QualityGate(SOME_QG_ID, SOME_QG_NAME, of(equals2Condition)));
@@ -200,12 +199,12 @@ public class QualityGateMeasuresStepTest {
 
   @Test
   public void new_measures_have_ERROR_level_if_at_least_one_updated_measure_has_ERROR_level() {
-    int rawValue = 1;
-    Condition equals1ErrorCondition = createEqualsCondition(INT_METRIC_1, "1", null);
-    Condition equals1WarningCondition = createEqualsCondition(INT_METRIC_2, null, "1");
+    int rawValue = 3;
+    Condition equalsOneErrorCondition = createLessThanCondition(INT_METRIC_1, "4");
+    Condition equalsOneOkCondition = createLessThanCondition(INT_METRIC_2, "2");
     Measure rawMeasure = newMeasureBuilder().create(rawValue, null);
 
-    qualityGateHolder.setQualityGate(new QualityGate(SOME_QG_ID, SOME_QG_NAME, of(equals1ErrorCondition, equals1WarningCondition)));
+    qualityGateHolder.setQualityGate(new QualityGate(SOME_QG_ID, SOME_QG_NAME, of(equalsOneErrorCondition, equalsOneOkCondition)));
     measureRepository.addRawMeasure(PROJECT_REF, INT_METRIC_1_KEY, rawMeasure);
     measureRepository.addRawMeasure(PROJECT_REF, INT_METRIC_2_KEY, rawMeasure);
 
@@ -216,69 +215,31 @@ public class QualityGateMeasuresStepTest {
 
     assertThat(rawMeasure1.get())
       .hasQualityGateLevel(ERROR)
-      .hasQualityGateText(dumbResultTextAnswer(equals1ErrorCondition, ERROR, rawValue));
+      .hasQualityGateText(dumbResultTextAnswer(equalsOneErrorCondition, ERROR, rawValue));
     assertThat(rawMeasure2.get())
-      .hasQualityGateLevel(WARN)
-      .hasQualityGateText(dumbResultTextAnswer(equals1WarningCondition, WARN, rawValue));
+      .hasQualityGateLevel(OK)
+      .hasQualityGateText(dumbResultTextAnswer(equalsOneOkCondition, OK, rawValue));
     assertThat(getAlertStatusMeasure())
       .hasQualityGateLevel(ERROR)
-      .hasQualityGateText(dumbResultTextAnswer(equals1ErrorCondition, ERROR, rawValue) + ", "
-        + dumbResultTextAnswer(equals1WarningCondition, WARN, rawValue));
+      .hasQualityGateText(dumbResultTextAnswer(equalsOneErrorCondition, ERROR, rawValue) + ", "
+        + dumbResultTextAnswer(equalsOneOkCondition, OK, rawValue));
     assertThat(getQGDetailsMeasure())
       .hasValue(new QualityGateDetailsData(ERROR, of(
-        new EvaluatedCondition(equals1ErrorCondition, ERROR, rawValue),
-        new EvaluatedCondition(equals1WarningCondition, WARN, rawValue)), false).toJson());
+        new EvaluatedCondition(equalsOneErrorCondition, ERROR, rawValue),
+        new EvaluatedCondition(equalsOneOkCondition, OK, rawValue)), false).toJson());
 
     QualityGateStatusHolderAssertions.assertThat(qualityGateStatusHolder)
       .hasStatus(QualityGateStatus.ERROR)
       .hasConditionCount(2)
-      .hasCondition(equals1ErrorCondition, ConditionStatus.EvaluationStatus.ERROR, String.valueOf(rawValue))
-      .hasCondition(equals1WarningCondition, ConditionStatus.EvaluationStatus.WARN, String.valueOf(rawValue));
-  }
-
-  @Test
-  public void new_measures_have_WARNING_level_if_no_updated_measure_has_ERROR_level() {
-    int rawValue = 1;
-    Condition equals2Condition = createEqualsCondition(INT_METRIC_1, "2", null);
-    Condition equals1WarningCondition = createEqualsCondition(INT_METRIC_2, null, "1");
-    Measure rawMeasure = newMeasureBuilder().create(rawValue, null);
-
-    qualityGateHolder.setQualityGate(new QualityGate(SOME_QG_ID, SOME_QG_NAME, of(equals2Condition, equals1WarningCondition)));
-    measureRepository.addRawMeasure(PROJECT_REF, INT_METRIC_1_KEY, rawMeasure);
-    measureRepository.addRawMeasure(PROJECT_REF, INT_METRIC_2_KEY, rawMeasure);
-
-    underTest.execute(new TestComputationStepContext());
-
-    Optional<Measure> rawMeasure1 = measureRepository.getAddedRawMeasure(PROJECT_REF, INT_METRIC_1_KEY);
-    Optional<Measure> rawMeasure2 = measureRepository.getAddedRawMeasure(PROJECT_REF, INT_METRIC_2_KEY);
-
-    assertThat(rawMeasure1.get())
-      .hasQualityGateLevel(OK)
-      .hasQualityGateText(dumbResultTextAnswer(equals2Condition, OK, rawValue));
-    assertThat(rawMeasure2.get())
-      .hasQualityGateLevel(WARN)
-      .hasQualityGateText(dumbResultTextAnswer(equals1WarningCondition, WARN, rawValue));
-    assertThat(getAlertStatusMeasure())
-      .hasQualityGateLevel(WARN)
-      .hasQualityGateText(dumbResultTextAnswer(equals2Condition, OK, rawValue) + ", "
-        + dumbResultTextAnswer(equals1WarningCondition, WARN, rawValue));
-    assertThat(getQGDetailsMeasure())
-      .hasValue(new QualityGateDetailsData(WARN, of(
-        new EvaluatedCondition(equals2Condition, OK, rawValue),
-        new EvaluatedCondition(equals1WarningCondition, WARN, rawValue)), false).toJson());
-
-    QualityGateStatusHolderAssertions.assertThat(qualityGateStatusHolder)
-      .hasStatus(QualityGateStatus.WARN)
-      .hasConditionCount(2)
-      .hasCondition(equals2Condition, ConditionStatus.EvaluationStatus.OK, String.valueOf(rawValue))
-      .hasCondition(equals1WarningCondition, ConditionStatus.EvaluationStatus.WARN, String.valueOf(rawValue));
+      .hasCondition(equalsOneErrorCondition, ConditionStatus.EvaluationStatus.ERROR, String.valueOf(rawValue))
+      .hasCondition(equalsOneOkCondition, ConditionStatus.EvaluationStatus.OK, String.valueOf(rawValue));
   }
 
   @Test
   public void new_measure_has_ERROR_level_of_all_conditions_for_a_specific_metric_if_its_the_worst() {
-    int rawValue = 1;
-    Condition fixedCondition = createEqualsCondition(INT_METRIC_1, "1", null);
-    Condition periodCondition = createEqualsCondition(INT_METRIC_1, null, "2", true);
+    int rawValue = 3;
+    Condition fixedCondition = createLessThanCondition(INT_METRIC_1, "4");
+    Condition periodCondition = createLessThanCondition(INT_METRIC_1, "2");
 
     qualityGateHolder.setQualityGate(new QualityGate(SOME_QG_ID, SOME_QG_NAME, of(fixedCondition, periodCondition)));
     Measure measure = newMeasureBuilder().create(rawValue, null);
@@ -293,30 +254,10 @@ public class QualityGateMeasuresStepTest {
   }
 
   @Test
-  public void new_measure_has_WARN_level_of_all_conditions_for_a_specific_metric_if_its_the_worst() {
-    int rawValue = 2;
-    Condition fixedCondition = createEqualsCondition(INT_METRIC_1, "1", null);
-    Condition periodCondition = createEqualsCondition(INT_METRIC_1, null, "2", true);
-
-    qualityGateHolder.setQualityGate(new QualityGate(SOME_QG_ID, SOME_QG_NAME, of(fixedCondition, periodCondition)));
-    Measure measure = newMeasureBuilder()
-      .setVariation(rawValue)
-      .create(rawValue, null);
-    measureRepository.addRawMeasure(PROJECT_REF, INT_METRIC_1_KEY, measure);
-
-    underTest.execute(new TestComputationStepContext());
-
-    Optional<Measure> rawMeasure1 = measureRepository.getAddedRawMeasure(PROJECT_REF, INT_METRIC_1_KEY);
-    assertThat(rawMeasure1.get())
-      .hasQualityGateLevel(WARN)
-      .hasQualityGateText(dumbResultTextAnswer(periodCondition, WARN, rawValue));
-  }
-
-  @Test
   public void new_measure_has_condition_on_leak_period_when_all_conditions_on_specific_metric_has_same_QG_level() {
-    int rawValue = 1;
-    Condition fixedCondition = createEqualsCondition(INT_METRIC_1, "1", null);
-    Condition periodCondition = createEqualsCondition(INT_METRIC_1, "1", null, true);
+    int rawValue = 0;
+    Condition fixedCondition = createLessThanCondition(INT_METRIC_1, "1");
+    Condition periodCondition = createLessThanCondition(INT_METRIC_1, "1");
 
     qualityGateHolder.setQualityGate(new QualityGate(SOME_QG_ID, SOME_QG_NAME, of(fixedCondition, periodCondition)));
     Measure measure = newMeasureBuilder()
@@ -340,12 +281,8 @@ public class QualityGateMeasuresStepTest {
     return measureRepository.getAddedRawMeasure(PROJECT_REF, CoreMetrics.QUALITY_GATE_DETAILS_KEY);
   }
 
-  private static Condition createEqualsCondition(Metric metric, @Nullable String errorThreshold, @Nullable String warningThreshold) {
-    return new Condition(metric, Condition.Operator.EQUALS.getDbValue(), errorThreshold, warningThreshold, false);
-  }
-
-  private static Condition createEqualsCondition(Metric metric, @Nullable String errorThreshold, @Nullable String warningThreshold, boolean hasPeriod) {
-    return new Condition(metric, Condition.Operator.EQUALS.getDbValue(), errorThreshold, warningThreshold, hasPeriod);
+  private static Condition createLessThanCondition(Metric metric, String errorThreshold) {
+    return new Condition(metric, Condition.Operator.LESS_THAN.getDbValue(), errorThreshold);
   }
 
   private static MetricImpl createIntMetric(int index) {

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,12 +19,8 @@
  */
 package org.sonar.ce.task.projectanalysis.qualitymodel;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 import org.sonar.api.measures.CoreMetrics;
-import org.sonar.ce.task.projectanalysis.component.Component;
-import org.sonar.ce.task.projectanalysis.component.PathAwareVisitorAdapter;
-import org.sonar.ce.task.projectanalysis.metric.Metric;
-import org.sonar.ce.task.projectanalysis.metric.MetricRepository;
 import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.ce.task.projectanalysis.component.CrawlerDepthLimit;
 import org.sonar.ce.task.projectanalysis.component.PathAwareVisitorAdapter;
@@ -41,7 +37,6 @@ import static org.sonar.api.measures.CoreMetrics.NCLOC_KEY;
 import static org.sonar.api.measures.CoreMetrics.SQALE_DEBT_RATIO_KEY;
 import static org.sonar.api.measures.CoreMetrics.SQALE_RATING_KEY;
 import static org.sonar.api.measures.CoreMetrics.TECHNICAL_DEBT_KEY;
-import static org.sonar.ce.task.projectanalysis.component.ComponentVisitor.Order.POST_ORDER;
 import static org.sonar.ce.task.projectanalysis.measure.Measure.newMeasureBuilder;
 
 /**
@@ -90,11 +85,6 @@ public class MaintainabilityMeasuresVisitor extends PathAwareVisitorAdapter<Main
   }
 
   @Override
-  public void visitModule(Component module, Path<Counter> path) {
-    computeAndSaveMeasures(module, path);
-  }
-
-  @Override
   public void visitFile(Component file, Path<Counter> path) {
     path.current().addDevCosts(computeDevelopmentCost(file));
     computeAndSaveMeasures(file, path);
@@ -102,7 +92,7 @@ public class MaintainabilityMeasuresVisitor extends PathAwareVisitorAdapter<Main
 
   private long computeDevelopmentCost(Component file) {
     Optional<Measure> measure = measureRepository.getRawMeasure(file, nclocMetric);
-    long ncloc = measure.isPresent() ? measure.get().getIntValue() : 0;
+    long ncloc = measure.map(Measure::getIntValue).orElse(0);
     return ncloc * ratingSettings.getDevCost(file.getFileAttributes().getLanguageKey());
   }
 

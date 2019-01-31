@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 import * as React from 'react';
 import SettingForm from './SettingForm';
 import { translate } from '../../../helpers/l10n';
-import { getValues, SettingValue } from '../../../api/settings';
+import { getValues } from '../../../api/settings';
 import Modal from '../../../components/controls/Modal';
 
 interface Props {
@@ -31,7 +31,7 @@ interface Props {
 
 interface State {
   loading: boolean;
-  setting?: SettingValue;
+  setting?: T.SettingValue;
   submitting: boolean;
   value?: string;
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,7 +27,6 @@ it('renders without permissions', () => {
     shallow(
       <ProfileDetails
         exporters={[]}
-        onRequestFail={jest.fn()}
         organization="org"
         profile={{} as Profile}
         profiles={[]}
@@ -42,7 +41,6 @@ it('renders with edit permission', () => {
     shallow(
       <ProfileDetails
         exporters={[]}
-        onRequestFail={jest.fn()}
         organization="org"
         profile={{ actions: { edit: true } } as Profile}
         profiles={[]}

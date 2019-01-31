@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,11 +22,14 @@ package org.sonar.server.organization;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
+import java.util.function.Consumer;
 import org.apache.commons.lang.RandomStringUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.sonar.api.config.internal.MapSettings;
+import org.sonar.api.resources.Qualifiers;
+import org.sonar.api.resources.ResourceTypes;
 import org.sonar.api.utils.System2;
 import org.sonar.api.utils.internal.TestSystem2;
 import org.sonar.api.web.UserRole;
@@ -37,6 +40,7 @@ import org.sonar.core.util.UuidFactory;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.DbTester;
+import org.sonar.db.component.ResourceTypesRule;
 import org.sonar.db.organization.DefaultTemplates;
 import org.sonar.db.organization.OrganizationDto;
 import org.sonar.db.organization.OrganizationDto.Subscription;
@@ -52,6 +56,8 @@ import org.sonar.db.user.UserMembershipDto;
 import org.sonar.db.user.UserMembershipQuery;
 import org.sonar.server.es.EsTester;
 import org.sonar.server.es.SearchOptions;
+import org.sonar.server.permission.PermissionService;
+import org.sonar.server.permission.PermissionServiceImpl;
 import org.sonar.server.qualityprofile.BuiltInQProfile;
 import org.sonar.server.qualityprofile.BuiltInQProfileRepositoryRule;
 import org.sonar.server.qualityprofile.QProfileName;
@@ -73,7 +79,6 @@ public class OrganizationUpdaterImplTest {
   private static final long A_DATE = 12893434L;
   private static final String A_LOGIN = "a-login";
   private static final String SLUG_OF_A_LOGIN = "slug-of-a-login";
-  private static final String STRING_64_CHARS = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa";
   private static final String A_NAME = "a name";
 
   private OrganizationUpdater.NewOrganization FULL_POPULATED_NEW_ORGANIZATION = newOrganizationBuilder()
@@ -85,6 +90,9 @@ public class OrganizationUpdaterImplTest {
     .build();
 
   private System2 system2 = new TestSystem2().setNow(A_DATE);
+
+  private static Consumer<OrganizationDto> EMPTY_ORGANIZATION_CONSUMER = o -> {
+  };
 
   @Rule
   public DbTester db = DbTester.create(system2);
@@ -105,8 +113,12 @@ public class OrganizationUpdaterImplTest {
   private UserIndexer userIndexer = new UserIndexer(dbClient, es.client());
   private UserIndex userIndex = new UserIndex(es.client(), system2);
   private DefaultGroupCreator defaultGroupCreator = new DefaultGroupCreatorImpl(dbClient);
+
+  private ResourceTypes resourceTypes = new ResourceTypesRule().setRootQualifiers(Qualifiers.PROJECT);
+  private PermissionService permissionService = new PermissionServiceImpl(resourceTypes);
+
   private OrganizationUpdaterImpl underTest = new OrganizationUpdaterImpl(dbClient, system2, uuidFactory, organizationValidation, settings.asConfig(), userIndexer,
-    builtInQProfileRepositoryRule, defaultGroupCreator);
+    builtInQProfileRepositoryRule, defaultGroupCreator, permissionService);
 
   @Test
   public void create_creates_unguarded_organization_with_properties_from_NewOrganization_arg() throws OrganizationUpdater.KeyConflictException {
@@ -114,7 +126,7 @@ public class OrganizationUpdaterImplTest {
     UserDto user = db.users().insertUser();
     db.qualityGates().insertBuiltInQualityGate();
 
-    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION);
+    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION, EMPTY_ORGANIZATION_CONSUMER);
 
     OrganizationDto organization = dbClient.organizationDao().selectByKey(dbSession, FULL_POPULATED_NEW_ORGANIZATION.getKey()).get();
     assertThat(organization.getUuid()).isNotEmpty();
@@ -135,7 +147,7 @@ public class OrganizationUpdaterImplTest {
     builtInQProfileRepositoryRule.initialize();
     db.qualityGates().insertBuiltInQualityGate();
 
-    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION);
+    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION, EMPTY_ORGANIZATION_CONSUMER);
 
     verifyGroupOwners(user, FULL_POPULATED_NEW_ORGANIZATION.getKey(), FULL_POPULATED_NEW_ORGANIZATION.getName());
   }
@@ -146,7 +158,7 @@ public class OrganizationUpdaterImplTest {
     builtInQProfileRepositoryRule.initialize();
     db.qualityGates().insertBuiltInQualityGate();
 
-    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION);
+    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION, EMPTY_ORGANIZATION_CONSUMER);
 
     verifyMembersGroup(user, FULL_POPULATED_NEW_ORGANIZATION.getKey());
   }
@@ -160,7 +172,7 @@ public class OrganizationUpdaterImplTest {
     underTest.create(dbSession, user, newOrganizationBuilder()
       .setKey("key")
       .setName("name")
-      .build());
+      .build(), EMPTY_ORGANIZATION_CONSUMER);
 
     OrganizationDto organization = dbClient.organizationDao().selectByKey(dbSession, "key").get();
     assertThat(organization.getKey()).isEqualTo("key");
@@ -177,7 +189,7 @@ public class OrganizationUpdaterImplTest {
     UserDto user = db.users().insertUser();
     db.qualityGates().insertBuiltInQualityGate();
 
-    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION);
+    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION, EMPTY_ORGANIZATION_CONSUMER);
 
     OrganizationDto organization = dbClient.organizationDao().selectByKey(dbSession, FULL_POPULATED_NEW_ORGANIZATION.getKey()).get();
     GroupDto ownersGroup = dbClient.groupDao().selectByName(dbSession, organization.getUuid(), "Owners").get();
@@ -187,11 +199,12 @@ public class OrganizationUpdaterImplTest {
     assertThat(defaultTemplate.getDescription()).isEqualTo("Default permission template of organization " + FULL_POPULATED_NEW_ORGANIZATION.getName());
     DefaultTemplates defaultTemplates = dbClient.organizationDao().getDefaultTemplates(dbSession, organization.getUuid()).get();
     assertThat(defaultTemplates.getProjectUuid()).isEqualTo(defaultTemplate.getUuid());
-    assertThat(defaultTemplates.getViewUuid()).isNull();
+    assertThat(defaultTemplates.getApplicationsUuid()).isNull();
     assertThat(dbClient.permissionTemplateDao().selectGroupPermissionsByTemplateId(dbSession, defaultTemplate.getId()))
       .extracting(PermissionTemplateGroupDto::getGroupId, PermissionTemplateGroupDto::getPermission)
       .containsOnly(
-        tuple(ownersGroup.getId(), UserRole.ADMIN), tuple(ownersGroup.getId(), UserRole.ISSUE_ADMIN), tuple(ownersGroup.getId(), UserRole.SECURITYHOTSPOT_ADMIN), tuple(ownersGroup.getId(), GlobalPermissions.SCAN_EXECUTION),
+        tuple(ownersGroup.getId(), UserRole.ADMIN), tuple(ownersGroup.getId(), UserRole.ISSUE_ADMIN), tuple(ownersGroup.getId(), UserRole.SECURITYHOTSPOT_ADMIN),
+        tuple(ownersGroup.getId(), GlobalPermissions.SCAN_EXECUTION),
         tuple(defaultGroupId, UserRole.USER), tuple(defaultGroupId, UserRole.CODEVIEWER));
   }
 
@@ -201,7 +214,7 @@ public class OrganizationUpdaterImplTest {
     builtInQProfileRepositoryRule.initialize();
     db.qualityGates().insertBuiltInQualityGate();
 
-    OrganizationDto result = underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION);
+    OrganizationDto result = underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION, EMPTY_ORGANIZATION_CONSUMER);
 
     assertThat(dbClient.organizationMemberDao().select(dbSession, result.getUuid(), user.getId())).isPresent();
     assertThat(userIndex.search(UserQuery.builder().setOrganizationUuid(result.getUuid()).setTextQuery(user.getLogin()).build(), new SearchOptions()).getTotal()).isEqualTo(1L);
@@ -217,7 +230,7 @@ public class OrganizationUpdaterImplTest {
     UserDto user = db.users().insertUser();
     db.qualityGates().insertBuiltInQualityGate();
 
-    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION);
+    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION, EMPTY_ORGANIZATION_CONSUMER);
 
     OrganizationDto organization = dbClient.organizationDao().selectByKey(dbSession, FULL_POPULATED_NEW_ORGANIZATION.getKey()).get();
     List<QProfileDto> profiles = dbClient.qualityProfileDao().selectOrderedByOrganizationUuid(dbSession, organization);
@@ -243,10 +256,25 @@ public class OrganizationUpdaterImplTest {
     builtInQProfileRepositoryRule.initialize();
     UserDto user = db.users().insertUser();
 
-    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION);
+    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION, o -> {
+    });
 
     OrganizationDto organization = dbClient.organizationDao().selectByKey(dbSession, FULL_POPULATED_NEW_ORGANIZATION.getKey()).get();
     assertThat(dbClient.qualityGateDao().selectDefault(dbSession, organization).getUuid()).isEqualTo(builtInQualityGate.getUuid());
+  }
+
+  @Test
+  public void create_calls_consumer() throws OrganizationUpdater.KeyConflictException {
+    UserDto user = db.users().insertUser();
+    builtInQProfileRepositoryRule.initialize();
+    db.qualityGates().insertBuiltInQualityGate();
+    Boolean[] isConsumerCalled = new Boolean[]{false};
+
+    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION, o -> {
+      isConsumerCalled[0] = true;
+    });
+
+    assertThat(isConsumerCalled[0]).isEqualTo(true);
   }
 
   @Test
@@ -256,7 +284,7 @@ public class OrganizationUpdaterImplTest {
     expectedException.expect(NullPointerException.class);
     expectedException.expectMessage("newOrganization can't be null");
 
-    underTest.create(dbSession, user, null);
+    underTest.create(dbSession, user, null, EMPTY_ORGANIZATION_CONSUMER);
   }
 
   @Test
@@ -298,7 +326,7 @@ public class OrganizationUpdaterImplTest {
 
   private void createThrowsExceptionThrownByOrganizationValidation(UserDto user) throws OrganizationUpdater.KeyConflictException {
     try {
-      underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION);
+      underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION, EMPTY_ORGANIZATION_CONSUMER);
       fail(exceptionThrownByOrganizationValidation + " should have been thrown");
     } catch (IllegalArgumentException e) {
       assertThat(e).isSameAs(exceptionThrownByOrganizationValidation);
@@ -313,7 +341,7 @@ public class OrganizationUpdaterImplTest {
     expectedException.expect(OrganizationUpdater.KeyConflictException.class);
     expectedException.expectMessage("Organization key '" + FULL_POPULATED_NEW_ORGANIZATION.getKey() + "' is already used");
 
-    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION);
+    underTest.create(dbSession, user, FULL_POPULATED_NEW_ORGANIZATION, EMPTY_ORGANIZATION_CONSUMER);
   }
 
   @Test
@@ -400,7 +428,7 @@ public class OrganizationUpdaterImplTest {
     assertThat(defaultTemplate.getDescription()).isEqualTo("Default permission template of organization " + A_NAME);
     DefaultTemplates defaultTemplates = dbClient.organizationDao().getDefaultTemplates(dbSession, organization.getUuid()).get();
     assertThat(defaultTemplates.getProjectUuid()).isEqualTo(defaultTemplate.getUuid());
-    assertThat(defaultTemplates.getViewUuid()).isNull();
+    assertThat(defaultTemplates.getApplicationsUuid()).isNull();
     assertThat(dbClient.permissionTemplateDao().selectGroupPermissionsByTemplateId(dbSession, defaultTemplate.getId()))
       .extracting(PermissionTemplateGroupDto::getGroupId, PermissionTemplateGroupDto::getPermission)
       .containsOnly(
@@ -423,54 +451,6 @@ public class OrganizationUpdaterImplTest {
 
     OrganizationDto organization = dbClient.organizationDao().selectByKey(dbSession, SLUG_OF_A_LOGIN).get();
     assertThat(dbClient.organizationMemberDao().select(dbSession, organization.getUuid(), user.getId())).isPresent();
-  }
-
-  @Test
-  public void createForUser_does_not_fail_if_name_is_too_long_for_an_organization_name() {
-    String nameTooLong = STRING_64_CHARS + "b";
-    UserDto user = db.users().insertUser(dto -> dto.setName(nameTooLong).setLogin(A_LOGIN));
-    when(organizationValidation.generateKeyFrom(A_LOGIN)).thenReturn(SLUG_OF_A_LOGIN);
-    enableCreatePersonalOrg(true);
-    builtInQProfileRepositoryRule.initialize();
-    db.qualityGates().insertBuiltInQualityGate();
-
-    underTest.createForUser(dbSession, user);
-
-    OrganizationDto organization = dbClient.organizationDao().selectByKey(dbSession, SLUG_OF_A_LOGIN).get();
-    assertThat(organization.getName()).isEqualTo(STRING_64_CHARS);
-    assertThat(organization.getDescription()).isEqualTo(nameTooLong + "'s personal organization");
-  }
-
-  @Test
-  public void createForUser_does_not_fail_if_name_is_empty_and_login_is_too_long_for_an_organization_name() {
-    String login = STRING_64_CHARS + "b";
-    UserDto user = db.users().insertUser(dto -> dto.setName("").setLogin(login));
-    when(organizationValidation.generateKeyFrom(login)).thenReturn(SLUG_OF_A_LOGIN);
-    enableCreatePersonalOrg(true);
-    builtInQProfileRepositoryRule.initialize();
-    db.qualityGates().insertBuiltInQualityGate();
-
-    underTest.createForUser(dbSession, user);
-
-    OrganizationDto organization = dbClient.organizationDao().selectByKey(dbSession, SLUG_OF_A_LOGIN).get();
-    assertThat(organization.getName()).isEqualTo(STRING_64_CHARS);
-    assertThat(organization.getDescription()).isEqualTo(login + "'s personal organization");
-  }
-
-  @Test
-  public void createForUser_does_not_fail_if_name_is_null_and_login_is_too_long_for_an_organization_name() {
-    String login = STRING_64_CHARS + "b";
-    UserDto user = db.users().insertUser(dto -> dto.setName(null).setLogin(login));
-    when(organizationValidation.generateKeyFrom(login)).thenReturn(SLUG_OF_A_LOGIN);
-    enableCreatePersonalOrg(true);
-    builtInQProfileRepositoryRule.initialize();
-    db.qualityGates().insertBuiltInQualityGate();
-
-    underTest.createForUser(dbSession, user);
-
-    OrganizationDto organization = dbClient.organizationDao().selectByKey(dbSession, SLUG_OF_A_LOGIN).get();
-    assertThat(organization.getName()).isEqualTo(STRING_64_CHARS);
-    assertThat(organization.getDescription()).isEqualTo(login + "'s personal organization");
   }
 
   @Test
@@ -535,7 +515,6 @@ public class OrganizationUpdaterImplTest {
     assertThat(db.countRowsOfTable("perm_templates_users")).isEqualTo(0);
     assertThat(db.countRowsOfTable("perm_templates_groups")).isEqualTo(0);
   }
-
 
   @Test
   public void update_personal_organization() {

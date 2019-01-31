@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,13 +20,13 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
 import AppContainer from './components/AppContainer';
-import { CurrentUser, isLoggedIn } from '../../app/types';
 import { RawQuery } from '../../helpers/query';
-import { getCurrentUser } from '../../store/rootReducer';
+import { getCurrentUser, Store } from '../../store/rootReducer';
 import { isSonarCloud } from '../../helpers/system';
+import { isLoggedIn } from '../../helpers/users';
 
 interface StateProps {
-  currentUser: CurrentUser;
+  currentUser: T.CurrentUser;
 }
 
 interface Props extends StateProps {
@@ -38,8 +38,8 @@ function IssuesPage({ currentUser, location }: Props) {
   return <AppContainer location={location} myIssues={myIssues} />;
 }
 
-const stateToProps = (state: any) => ({
+const stateToProps = (state: Store) => ({
   currentUser: getCurrentUser(state)
 });
 
-export default connect<StateProps>(stateToProps)(IssuesPage);
+export default connect(stateToProps)(IssuesPage);

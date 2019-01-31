@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -33,10 +33,7 @@ class ConditionImpl implements QualityGate.Condition {
   private final QualityGate.EvaluationStatus status;
   private final String metricKey;
   private final QualityGate.Operator operator;
-  @CheckForNull
   private final String errorThreshold;
-  @CheckForNull
-  private final String warningThreshold;
   private final boolean onLeakPeriod;
   @CheckForNull
   private final String value;
@@ -45,22 +42,15 @@ class ConditionImpl implements QualityGate.Condition {
     requireNonNull(builder.status, "status can not be null");
     requireNonNull(builder.metricKey, "metricKey can not be null");
     requireNonNull(builder.operator, "operator can not be null");
-    verifyThresholds(builder);
+    requireNonNull(builder.errorThreshold, "errorThreshold can not be null");
     verifyValue(builder);
 
     this.status = builder.status;
     this.metricKey = builder.metricKey;
     this.operator = builder.operator;
     this.errorThreshold = builder.errorThreshold;
-    this.warningThreshold = builder.warningThreshold;
-    this.onLeakPeriod = builder.onLeakPeriod;
+    this.onLeakPeriod = builder.metricKey.startsWith("new_");
     this.value = builder.value;
-  }
-
-  private static void verifyThresholds(Builder builder) {
-    checkArgument(
-      builder.errorThreshold != null || builder.warningThreshold != null,
-      "At least one of errorThreshold and warningThreshold must be non null");
   }
 
   private static void verifyValue(Builder builder) {
@@ -78,11 +68,7 @@ class ConditionImpl implements QualityGate.Condition {
   public static class Builder {
     private String metricKey;
     private QualityGate.Operator operator;
-    @CheckForNull
     private String errorThreshold;
-    @CheckForNull
-    private String warningThreshold;
-    private boolean onLeakPeriod;
     @CheckForNull
     private String value;
     private QualityGate.EvaluationStatus status;
@@ -106,13 +92,19 @@ class ConditionImpl implements QualityGate.Condition {
       return this;
     }
 
+    /**
+     * @deprecated in 7.6. This method has no longer any effect.
+     */
+    @Deprecated
     public Builder setWarningThreshold(String warningThreshold) {
-      this.warningThreshold = warningThreshold;
       return this;
     }
 
+    /**
+     * @deprecated in 7.6. This method has no longer any effect.
+     */
+    @Deprecated
     public Builder setOnLeakPeriod(boolean onLeakPeriod) {
-      this.onLeakPeriod = onLeakPeriod;
       return this;
     }
 
@@ -151,11 +143,16 @@ class ConditionImpl implements QualityGate.Condition {
     return errorThreshold;
   }
 
+  @Deprecated
   @Override
   public String getWarningThreshold() {
-    return warningThreshold;
+    return null;
   }
 
+  /**
+   * @deprecated in 7.6. Conditions "on leak period" were removed. Use "New X" conditions instead.
+   */
+  @Deprecated
   @Override
   public boolean isOnLeakPeriod() {
     return onLeakPeriod;
@@ -175,8 +172,6 @@ class ConditionImpl implements QualityGate.Condition {
       ", metricKey='" + metricKey + '\'' +
       ", operator=" + operator +
       ", errorThreshold='" + errorThreshold + '\'' +
-      ", warningThreshold='" + warningThreshold + '\'' +
-      ", onLeakPeriod=" + onLeakPeriod +
       ", value='" + value + '\'' +
       '}';
   }

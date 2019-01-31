@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -40,6 +40,8 @@ public interface PurgeMapper {
 
   void deleteAnalysisEvents(@Param("analysisUuids") List<String> analysisUuids);
 
+  void deleteAnalysisEventComponentChanges(@Param("analysisUuids") List<String> analysisUuids);
+
   void deleteAnalysisMeasures(@Param("analysisUuids") List<String> analysisUuids);
 
   void fullDeleteComponentMeasures(@Param("componentUuids") List<String> componentUuids);
@@ -70,6 +72,8 @@ public interface PurgeMapper {
 
   void deleteEventsByComponentUuid(@Param("componentUuid") String componentUuid);
 
+  void deleteEventComponentChangesByComponentUuid(@Param("componentUuid") String componentUuid);
+
   List<PurgeableAnalysisDto> selectPurgeableAnalysesWithEvents(@Param("componentUuid") String componentUuid);
 
   List<PurgeableAnalysisDto> selectPurgeableAnalysesWithoutEvents(@Param("componentUuid") String componentUuid);
@@ -90,21 +94,27 @@ public interface PurgeMapper {
 
   void deleteFileSourcesByFileUuid(@Param("fileUuids") List<String> fileUuids);
 
-  void deleteCeTaskCharacteristicsOfCeActivityByProjectUuid(@Param("projectUuid") String projectUuid);
+  void deleteCeTaskCharacteristicsOfCeActivityByRootUuid(@Param("rootUuid") String rootUuid);
 
-  void deleteCeTaskInputOfCeActivityByProjectUuid(@Param("projectUuid") String projectUuid);
+  void deleteCeTaskInputOfCeActivityByRootUuid(@Param("rootUuid") String rootUuid);
 
-  void deleteCeScannerContextOfCeActivityByProjectUuid(@Param("projectUuid") String projectUuid);
+  void deleteCeScannerContextOfCeActivityByRootUuid(@Param("rootUuid") String rootUuid);
 
-  void deleteCeActivityByProjectUuid(@Param("projectUuid") String projectUuid);
+  void deleteCeTaskMessageOfCeActivityByRootUuid(@Param("rootUuid") String rootUuid);
 
-  void deleteCeScannerContextOfCeQueueByProjectUuid(@Param("projectUuid") String projectUuid);
+  void deleteCeActivityByRootUuid(@Param("rootUuid") String rootUuid);
 
-  void deleteCeTaskCharacteristicsOfCeQueueByProjectUuid(@Param("projectUuid") String projectUuid);
+  void deleteCeScannerContextOfCeQueueByRootUuid(@Param("rootUuid") String rootUuid);
 
-  void deleteCeTaskInputOfCeQueueByProjectUuid(@Param("projectUuid") String projectUuid);
+  void deleteCeTaskCharacteristicsOfCeQueueByRootUuid(@Param("rootUuid") String rootUuid);
 
-  void deleteCeQueueByProjectUuid(@Param("projectUuid") String projectUuid);
+  void deleteCeTaskInputOfCeQueueByRootUuid(@Param("rootUuid") String rootUuid);
+
+  void deleteCeTaskMessageOfCeQueueByRootUuid(@Param("rootUuid") String rootUuid);
+
+  void deleteCeQueueByRootUuid(@Param("rootUuid") String rootUuid);
+
+  void deleteWebhooksByProjectUuid(@Param("projectUuid") String projectUuid);
 
   void deleteWebhookDeliveriesByProjectUuid(@Param("projectUuid") String projectUuid);
 
@@ -115,4 +125,6 @@ public interface PurgeMapper {
   void deleteBranchByUuid(@Param("uuid") String uuid);
 
   void deleteLiveMeasuresByProjectUuid(@Param("projectUuid") String projectUuid);
+
+  void deleteLiveMeasuresByComponentUuids(@Param("componentUuids") List<String> componentUuids);
 }

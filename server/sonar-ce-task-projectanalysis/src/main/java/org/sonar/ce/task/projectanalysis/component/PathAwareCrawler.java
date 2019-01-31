@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -52,7 +52,7 @@ public final class PathAwareCrawler<T> implements ComponentCrawler {
       VisitException.rethrowOrWrap(
         e,
         "Visit failed for Component {key=%s,type=%s} %s",
-        component.getKey(), component.getType(), new ComponentPathPrinter<>(stack));
+        component.getDbKey(), component.getType(), new ComponentPathPrinter<>(stack));
     }
   }
 
@@ -95,9 +95,6 @@ public final class PathAwareCrawler<T> implements ComponentCrawler {
       case PROJECT:
         this.visitor.visitProject(component, stack);
         break;
-      case MODULE:
-        this.visitor.visitModule(component, stack);
-        break;
       case DIRECTORY:
         this.visitor.visitDirectory(component, stack);
         break;
@@ -122,8 +119,6 @@ public final class PathAwareCrawler<T> implements ComponentCrawler {
     switch (component.getType()) {
       case PROJECT:
         return this.visitor.getFactory().createForProject(component);
-      case MODULE:
-        return this.visitor.getFactory().createForModule(component);
       case DIRECTORY:
         return this.visitor.getFactory().createForDirectory(component);
       case FILE:
@@ -174,7 +169,7 @@ public final class PathAwareCrawler<T> implements ComponentCrawler {
       @Override
       @Nonnull
       public String apply(@Nonnull PathAwareVisitor.PathElement<?> input) {
-        return format("%s(type=%s)", input.getComponent().getKey(), input.getComponent().getType());
+        return format("%s(type=%s)", input.getComponent().getDbKey(), input.getComponent().getType());
       }
     }
   }

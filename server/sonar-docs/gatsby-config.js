@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,16 +17,21 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+const DOCS_VERSION = process.env.GATSBY_DOCS_VERSION || '1.0';
+
 module.exports = {
+  pathPrefix: '/' + DOCS_VERSION,
   siteMetadata: {
     title: 'SonarQube Documentation'
   },
   plugins: [
+    `gatsby-plugin-typescript`,
+    `gatsby-plugin-layout`,
+    'gatsby-plugin-react-helmet',
     {
-      resolve: 'gatsby-source-filesystem',
+      resolve: `sonarsource-source-filesystem`,
       options: { name: 'src', path: `${__dirname}/src/` }
     },
-    'gatsby-plugin-react-helmet',
     {
       resolve: 'gatsby-plugin-typography',
       options: { pathToConfigModule: `src/utils/typography` }
@@ -49,7 +54,6 @@ module.exports = {
           }
         ]
       }
-    },
-    'gatsby-plugin-glamor'
+    }
   ]
 };

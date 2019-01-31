@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,15 +19,17 @@
  */
 package org.sonar.db.dialect;
 
-import java.util.Arrays;
+import com.google.common.collect.ImmutableSet;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Predicate;
+import java.util.function.Supplier;
 import org.apache.commons.lang.StringUtils;
 import org.sonar.api.utils.MessageException;
 
 public final class DialectUtils {
 
-  private static final Dialect[] DIALECTS = new Dialect[] {new H2(), new MySql(), new Oracle(), new PostgreSql(), new MsSql()};
+  private static final Set<Supplier<Dialect>> DIALECTS = ImmutableSet.of(H2::new, MySql::new, Oracle::new, PostgreSql::new, MsSql::new);
 
   private DialectUtils() {
     // only static stuff
@@ -40,7 +42,7 @@ public final class DialectUtils {
   }
 
   private static Optional<Dialect> findByJdbcUrl(String jdbcConnectionUrl) {
-    return findDialect(dialect -> dialect != null && dialect.matchesJdbcURL(StringUtils.trimToEmpty(jdbcConnectionUrl)));
+    return findDialect(dialect -> dialect != null && dialect.matchesJdbcUrl(StringUtils.trimToEmpty(jdbcConnectionUrl)));
   }
 
   private static Optional<Dialect> findById(String dialectId) {
@@ -48,7 +50,8 @@ public final class DialectUtils {
   }
 
   private static Optional<Dialect> findDialect(Predicate<Dialect> predicate) {
-    return Arrays.stream(DIALECTS)
+    return DIALECTS.stream()
+      .map(Supplier::get)
       .filter(predicate)
       .findFirst();
   }

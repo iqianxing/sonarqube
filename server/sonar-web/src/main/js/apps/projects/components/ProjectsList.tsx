@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,14 +28,14 @@ import EmptyFavoriteSearch from './EmptyFavoriteSearch';
 import EmptySearch from '../../../components/common/EmptySearch';
 import { Project } from '../types';
 import { Query } from '../query';
-import { Organization, CurrentUser } from '../../../app/types';
+import { OnboardingContext } from '../../../app/components/OnboardingContext';
 
 interface Props {
   cardType?: string;
-  currentUser: CurrentUser;
+  currentUser: T.CurrentUser;
   isFavorite: boolean;
   isFiltered: boolean;
-  organization: Organization | undefined;
+  organization: T.Organization | undefined;
   projects: Project[];
   query: Query;
 }
@@ -51,9 +51,21 @@ export default class ProjectsList extends React.PureComponent<Props> {
       return isFavorite ? <EmptyFavoriteSearch query={query} /> : <EmptySearch />;
     }
     return isFavorite ? (
-      <NoFavoriteProjects />
+      <OnboardingContext.Consumer>
+        {openProjectOnboarding => (
+          <NoFavoriteProjects openProjectOnboarding={openProjectOnboarding} />
+        )}
+      </OnboardingContext.Consumer>
     ) : (
-      <EmptyInstance currentUser={currentUser} organization={organization} />
+      <OnboardingContext.Consumer>
+        {openProjectOnboarding => (
+          <EmptyInstance
+            currentUser={currentUser}
+            openProjectOnboarding={openProjectOnboarding}
+            organization={organization}
+          />
+        )}
+      </OnboardingContext.Consumer>
     );
   }
 
@@ -77,10 +89,10 @@ export default class ProjectsList extends React.PureComponent<Props> {
     const cardHeight = this.getCardHeight();
     return (
       <WindowScroller>
-        {({ height, isScrolling, registerChild, onChildScroll, scrollTop }) => (
+        {({ height, isScrolling, onChildScroll, scrollTop }) => (
           <AutoSizer disableHeight={true}>
             {({ width }) => (
-              <div ref={registerChild as any}>
+              <div>
                 <List
                   autoHeight={true}
                   height={height}

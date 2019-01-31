@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,7 @@
  */
 .navbar-global,
 .navbar-global .navbar-inner {
-  background-color: #262626;
+  background-color: var(--globalNavBarBg);
   z-index: 421;
 }
 
@@ -50,8 +50,7 @@
   border: none !important;
 }
 
-.navbar-help,
-.navbar-plus {
+.navbar-icon {
   display: inline-block;
   height: var(--globalNavHeight);
   padding: calc(var(--globalNavHeight) - var(--globalNavContentHeight)) 12px !important;
@@ -98,11 +97,12 @@
 .global-navbar-menu-right {
   flex: 1;
   justify-content: flex-end;
+  margin-left: calc(5 * var(--gridSize));
 }
 
 .global-navbar-menu-right .navbar-search {
-  flex: 1;
-  max-width: 310px;
+  flex: 0 1 240px; /* Workaround for SONAR-10971 */
+  min-width: 0;
 }
 
 .global-navbar-menu-right .navbar-search .search-box,

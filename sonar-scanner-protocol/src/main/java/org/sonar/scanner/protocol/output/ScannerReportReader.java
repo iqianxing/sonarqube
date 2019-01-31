@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -48,6 +48,14 @@ public class ScannerReportReader {
       return emptyCloseableIterator();
     }
     return Protobuf.readStream(file, ScannerReport.ActiveRule.parser());
+  }
+
+  public CloseableIterator<ScannerReport.AdHocRule> readAdHocRules() {
+    File file = fileStructure.adHocRules();
+    if (!fileExists(file)) {
+      return emptyCloseableIterator();
+    }
+    return Protobuf.readStream(file, ScannerReport.AdHocRule.parser());
   }
 
   public CloseableIterator<ScannerReport.Measure> readComponentMeasures(int componentRef) {
@@ -129,6 +137,15 @@ public class ScannerReportReader {
     return null;
   }
 
+  @CheckForNull
+  public ScannerReport.ChangedLines readComponentChangedLines(int fileRef) {
+    File file = fileStructure.fileFor(FileStructure.Domain.CHANGED_LINES, fileRef);
+    if (fileExists(file)) {
+      return Protobuf.read(file, ScannerReport.ChangedLines.parser());
+    }
+    return null;
+  }
+
   public boolean hasSignificantCode(int fileRef) {
     File file = fileStructure.fileFor(FileStructure.Domain.SGNIFICANT_CODE, fileRef);
     return fileExists(file);
@@ -164,32 +181,20 @@ public class ScannerReportReader {
     return null;
   }
 
-  @CheckForNull
-  public File readTests(int testFileRef) {
-    File file = fileStructure.fileFor(FileStructure.Domain.TESTS, testFileRef);
-    if (fileExists(file)) {
-      return file;
-    }
-
-    return null;
-  }
-
-  @CheckForNull
-  public File readCoverageDetails(int testFileRef) {
-    File file = fileStructure.fileFor(FileStructure.Domain.COVERAGE_DETAILS, testFileRef);
-    if (fileExists(file)) {
-      return file;
-    }
-
-    return null;
-  }
-
   public CloseableIterator<ScannerReport.ContextProperty> readContextProperties() {
     File file = fileStructure.contextProperties();
     if (!fileExists(file)) {
       return emptyCloseableIterator();
     }
     return Protobuf.readStream(file, ScannerReport.ContextProperty.parser());
+  }
+
+  public CloseableIterator<ScannerReport.AnalysisWarning> readAnalysisWarnings() {
+    File file = fileStructure.analysisWarnings();
+    if (!fileExists(file)) {
+      return emptyCloseableIterator();
+    }
+    return Protobuf.readStream(file, ScannerReport.AnalysisWarning.parser());
   }
 
   private static boolean fileExists(File file) {

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,9 +21,8 @@ package org.sonar.duplications.internal.pmd;
 
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.annotation.concurrent.Immutable;
-
+import org.sonar.api.batch.sensor.cpd.internal.TokensLine;
 import org.sonar.duplications.block.Block;
 import org.sonar.duplications.block.ByteArray;
 

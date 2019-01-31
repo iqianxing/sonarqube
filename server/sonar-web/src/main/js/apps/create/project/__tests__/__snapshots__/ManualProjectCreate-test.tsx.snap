@@ -1,0 +1,52 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`should render correctly 1`] = `
+<div
+  className="create-project"
+>
+  <div
+    className="flex-1 huge-spacer-right"
+  >
+    <form
+      className="manual-project-create"
+      onSubmit={[Function]}
+    >
+      <withRouter(OrganizationInput)
+        onChange={[Function]}
+        organization=""
+        organizations={
+          Array [
+            Object {
+              "key": "foo",
+              "name": "Foo",
+            },
+            Object {
+              "key": "bar",
+              "name": "Bar",
+              "subscription": "PAID",
+            },
+          ]
+        }
+      />
+      <ProjectKeyInput
+        className="form-field"
+        onChange={[Function]}
+      />
+      <ProjectNameInput
+        className="form-field"
+        onChange={[Function]}
+      />
+      <SubmitButton
+        disabled={true}
+      >
+        set_up
+      </SubmitButton>
+      <DeferredSpinner
+        className="spacer-left"
+        loading={false}
+        timeout={100}
+      />
+    </form>
+  </div>
+</div>
+`;

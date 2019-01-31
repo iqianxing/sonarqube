@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,54 +19,33 @@
  */
 import { omitBy } from 'lodash';
 import { getJSON, RequestData, post, postJSON } from '../helpers/request';
-import { TYPE_PROPERTY_SET } from '../apps/settings/constants';
-import { BranchParameters } from '../app/types';
 import throwGlobalError from '../app/utils/throwGlobalError';
+import { isCategoryDefinition } from '../apps/settings/utils';
 
-interface DefinitionField {
-  description: string;
-  key: string;
-  name: string;
-  options: string[];
-}
-
-export interface Definition {
-  category: string;
-  description: string;
-  fields: DefinitionField[];
-  key: string;
-  name: string;
-  options: string[];
-  subCategory: string;
-  type: string;
-}
-
-export function getDefinitions(component?: string): Promise<any> {
-  return getJSON('/api/settings/list_definitions', { component }).then(r => r.definitions);
-}
-
-export interface SettingValue {
-  inherited?: boolean;
-  key: string;
-  parentValue?: string;
-  parentValues?: string[];
-  value?: any;
-  values?: string[];
+export function getDefinitions(component?: string): Promise<T.SettingCategoryDefinition[]> {
+  return getJSON('/api/settings/list_definitions', { component }).then(
+    r => r.definitions,
+    throwGlobalError
+  );
 }
 
 export function getValues(
-  data: { keys: string; component?: string } & BranchParameters
-): Promise<SettingValue[]> {
+  data: { keys: string; component?: string } & T.BranchParameters
+): Promise<T.SettingValue[]> {
   return getJSON('/api/settings/values', data).then(r => r.settings);
 }
 
-export function setSettingValue(definition: any, value: any, component?: string): Promise<void> {
+export function setSettingValue(
+  definition: T.SettingDefinition,
+  value: any,
+  component?: string
+): Promise<void> {
   const { key } = definition;
   const data: RequestData = { key, component };
 
-  if (definition.multiValues) {
+  if (isCategoryDefinition(definition) && definition.multiValues) {
     data.values = value;
-  } else if (definition.type === TYPE_PROPERTY_SET) {
+  } else if (definition.type === 'PROPERTY_SET') {
     data.fieldValues = value
       .map((fields: any) => omitBy(fields, value => value == null))
       .map(JSON.stringify);
@@ -78,13 +57,13 @@ export function setSettingValue(definition: any, value: any, component?: string)
 }
 
 export function setSimpleSettingValue(
-  data: { component?: string; value: string; key: string } & BranchParameters
+  data: { component?: string; value: string; key: string } & T.BranchParameters
 ): Promise<void | Response> {
   return post('/api/settings/set', data).catch(throwGlobalError);
 }
 
 export function resetSettingValue(
-  data: { keys: string; component?: string } & BranchParameters
+  data: { keys: string; component?: string } & T.BranchParameters
 ): Promise<void> {
   return post('/api/settings/reset', data);
 }
@@ -93,14 +72,14 @@ export function sendTestEmail(to: string, subject: string, message: string): Pro
   return post('/api/emails/send', { to, subject, message });
 }
 
-export function checkSecretKey(): Promise<any> {
-  return getJSON('/api/settings/check_secret_key');
+export function checkSecretKey(): Promise<{ secretKeyAvailable: boolean }> {
+  return getJSON('/api/settings/check_secret_key').catch(throwGlobalError);
 }
 
-export function generateSecretKey(): Promise<any> {
-  return postJSON('/api/settings/generate_secret_key');
+export function generateSecretKey(): Promise<{ secretKey: string }> {
+  return postJSON('/api/settings/generate_secret_key').catch(throwGlobalError);
 }
 
-export function encryptValue(value: string): Promise<any> {
-  return postJSON('/api/settings/encrypt', { value });
+export function encryptValue(value: string): Promise<{ encryptedValue: string }> {
+  return postJSON('/api/settings/encrypt', { value }).catch(throwGlobalError);
 }

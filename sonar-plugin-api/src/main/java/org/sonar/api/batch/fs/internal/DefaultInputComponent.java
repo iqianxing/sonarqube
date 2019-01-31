@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,8 +27,8 @@ import org.sonar.api.batch.fs.InputComponent;
 public abstract class DefaultInputComponent implements InputComponent {
   private int id;
 
-  public DefaultInputComponent(int batchId) {
-    this.id = batchId;
+  public DefaultInputComponent(int scannerId) {
+    this.id = scannerId;
   }
 
   @Override
@@ -44,7 +44,7 @@ public abstract class DefaultInputComponent implements InputComponent {
     return key().equals(that.key());
   }
 
-  public int batchId() {
+  public int scannerId() {
     return id;
   }
 

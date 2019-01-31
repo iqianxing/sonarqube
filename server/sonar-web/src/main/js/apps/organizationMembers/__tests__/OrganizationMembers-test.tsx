@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,6 @@ import OrganizationMembers from '../OrganizationMembers';
 import { waitAndUpdate } from '../../../helpers/testUtils';
 import { searchMembers, addMember, removeMember } from '../../../api/organizations';
 import { searchUsersGroups, addUserToGroup, removeUserFromGroup } from '../../../api/user_groups';
-import { OrganizationMember } from '../../../app/types';
 
 jest.mock('../../../api/organizations', () => ({
   addMember: jest.fn().mockResolvedValue({ login: 'bar', name: 'Bar', groupCount: 1 }),
@@ -67,7 +66,7 @@ it('should fetch members and render for non-admin', async () => {
 
 it('should fetch members and groups and render for admin', async () => {
   const wrapper = shallow(
-    <OrganizationMembers organization={{ ...organization, canAdmin: true }} />
+    <OrganizationMembers organization={{ ...organization, actions: { admin: true } }} />
   );
   await waitAndUpdate(wrapper);
   expect(wrapper).toMatchSnapshot();
@@ -77,7 +76,7 @@ it('should fetch members and groups and render for admin', async () => {
 
 it('should search users', async () => {
   const wrapper = shallow(
-    <OrganizationMembers organization={{ ...organization, canAdmin: true }} />
+    <OrganizationMembers organization={{ ...organization, actions: { admin: true } }} />
   );
   await waitAndUpdate(wrapper);
   wrapper.find('MembersListHeader').prop<Function>('handleSearch')('user');
@@ -86,7 +85,7 @@ it('should search users', async () => {
 
 it('should load more members', async () => {
   const wrapper = shallow(
-    <OrganizationMembers organization={{ ...organization, canAdmin: true }} />
+    <OrganizationMembers organization={{ ...organization, actions: { admin: true } }} />
   );
   await waitAndUpdate(wrapper);
   wrapper.find('ListFooter').prop<Function>('loadMore')();
@@ -95,7 +94,7 @@ it('should load more members', async () => {
 
 it('should add new member', async () => {
   const wrapper = shallow(
-    <OrganizationMembers organization={{ ...organization, canAdmin: true }} />
+    <OrganizationMembers organization={{ ...organization, actions: { admin: true } }} />
   );
   await waitAndUpdate(wrapper);
   wrapper.find('AddMemberForm').prop<Function>('addMember')({ login: 'bar' });
@@ -103,7 +102,7 @@ it('should add new member', async () => {
   expect(
     wrapper
       .find('MembersList')
-      .prop<OrganizationMember[]>('members')
+      .prop<T.OrganizationMember[]>('members')
       .find(m => m.login === 'bar')
   ).toBeDefined();
   expect(wrapper.find('ListFooter').prop('total')).toEqual(4);
@@ -112,7 +111,7 @@ it('should add new member', async () => {
 
 it('should remove member', async () => {
   const wrapper = shallow(
-    <OrganizationMembers organization={{ ...organization, canAdmin: true }} />
+    <OrganizationMembers organization={{ ...organization, actions: { admin: true } }} />
   );
   await waitAndUpdate(wrapper);
   wrapper.find('MembersList').prop<Function>('removeMember')({ login: 'john' });
@@ -120,7 +119,7 @@ it('should remove member', async () => {
   expect(
     wrapper
       .find('MembersList')
-      .prop<OrganizationMember[]>('members')
+      .prop<T.OrganizationMember[]>('members')
       .find(m => m.login === 'john')
   ).toBeUndefined();
   expect(wrapper.find('ListFooter').prop('total')).toEqual(2);
@@ -129,7 +128,7 @@ it('should remove member', async () => {
 
 it('should update groups', async () => {
   const wrapper = shallow(
-    <OrganizationMembers organization={{ ...organization, canAdmin: true }} />
+    <OrganizationMembers organization={{ ...organization, actions: { admin: true } }} />
   );
   await waitAndUpdate(wrapper);
   wrapper.find('MembersList').prop<Function>('updateMemberGroups')(
@@ -140,7 +139,7 @@ it('should update groups', async () => {
   await waitAndUpdate(wrapper);
   const john = wrapper
     .find('MembersList')
-    .prop<OrganizationMember[]>('members')
+    .prop<T.OrganizationMember[]>('members')
     .find(m => m.login === 'john');
   expect(john && john.groupCount).toBe(2);
   expect(addUserToGroup).toHaveBeenCalledTimes(2);

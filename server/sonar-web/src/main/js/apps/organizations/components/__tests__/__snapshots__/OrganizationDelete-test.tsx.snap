@@ -1,7 +1,7 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`should show a info message for paying organization 1`] = `
-<React.Fragment>
+<Fragment>
   <HelmetWrapper
     defer={true}
     encodeSpecialCharacters={true}
@@ -28,28 +28,52 @@ exports[`should show a info message for paying organization 1`] = `
     </header>
     <ConfirmButton
       confirmButtonText="delete"
+      confirmDisable={true}
       isDestructive={true}
       modalBody={
         <div>
-          <div
-            className="alert alert-warning modal-alert"
+          <Alert
+            variant="warning"
           >
             organization.delete.sonarcloud.paid_plan_info
-          </div>
+          </Alert>
           <p>
             organization.delete.question
           </p>
+          <div
+            className="spacer-top"
+          >
+            <label
+              htmlFor="downgrade-organization-name"
+            >
+              billing.downgrade.modal.type_to_proceed
+            </label>
+            <div
+              className="little-spacer-top"
+            >
+              <input
+                autoFocus={true}
+                className="input-super-large"
+                id="downgrade-organization-name"
+                onChange={[Function]}
+                type="text"
+                value=""
+              />
+            </div>
+          </div>
         </div>
       }
-      modalHeader="organization.delete"
+      modalHeader="organization.delete_x.Foo"
       onConfirm={[Function]}
-    />
+    >
+      <Component />
+    </ConfirmButton>
   </div>
-</React.Fragment>
+</Fragment>
 `;
 
 exports[`smoke test 1`] = `
-<React.Fragment>
+<Fragment>
   <HelmetWrapper
     defer={true}
     encodeSpecialCharacters={true}
@@ -76,17 +100,41 @@ exports[`smoke test 1`] = `
     </header>
     <ConfirmButton
       confirmButtonText="delete"
+      confirmDisable={true}
       isDestructive={true}
       modalBody={
         <div>
           <p>
             organization.delete.question
           </p>
+          <div
+            className="spacer-top"
+          >
+            <label
+              htmlFor="downgrade-organization-name"
+            >
+              billing.downgrade.modal.type_to_proceed
+            </label>
+            <div
+              className="little-spacer-top"
+            >
+              <input
+                autoFocus={true}
+                className="input-super-large"
+                id="downgrade-organization-name"
+                onChange={[Function]}
+                type="text"
+                value=""
+              />
+            </div>
+          </div>
         </div>
       }
-      modalHeader="organization.delete"
+      modalHeader="organization.delete_x.Foo"
       onConfirm={[Function]}
-    />
+    >
+      <Component />
+    </ConfirmButton>
   </div>
-</React.Fragment>
+</Fragment>
 `;

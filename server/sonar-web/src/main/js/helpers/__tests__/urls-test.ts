@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,13 +18,14 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import {
+  isRelativeUrl,
   getComponentIssuesUrl,
   getComponentDrilldownUrl,
   getPathUrlAsString,
   getProjectUrl,
   getQualityGatesUrl,
   getQualityGateUrl,
-  isUrl
+  getReturnUrl
 } from '../urls';
 
 const SIMPLE_COMPONENT_KEY = 'sonarqube';
@@ -119,54 +120,20 @@ describe('#getQualityGate(s)Url', () => {
   });
 });
 
-describe('#isUrl', () => {
-  it('should be valid', () => {
-    expect(isUrl('https://localhost')).toBeTruthy();
-    expect(isUrl('https://localhost/')).toBeTruthy();
-    expect(isUrl('https://localhost:9000')).toBeTruthy();
-    expect(isUrl('https://localhost:9000/')).toBeTruthy();
-    expect(isUrl('https://foo:bar@localhost:9000')).toBeTruthy();
-    expect(isUrl('https://foo@localhost')).toBeTruthy();
-    expect(isUrl('http://foo.com/blah_blah')).toBeTruthy();
-    expect(isUrl('http://foo.com/blah_blah/')).toBeTruthy();
-    expect(isUrl('http://www.example.com/wpstyle/?p=364')).toBeTruthy();
-    expect(isUrl('https://www.example.com/foo/?bar=baz&inga=42&quux')).toBeTruthy();
-    expect(isUrl('http://userid@example.com')).toBeTruthy();
-    expect(isUrl('http://userid@example.com/')).toBeTruthy();
-    expect(isUrl('http://userid:password@example.com:8080')).toBeTruthy();
-    expect(isUrl('http://userid:password@example.com:8080/')).toBeTruthy();
-    expect(isUrl('http://userid@example.com:8080')).toBeTruthy();
-    expect(isUrl('http://userid@example.com:8080/')).toBeTruthy();
-    expect(isUrl('http://userid:password@example.com')).toBeTruthy();
-    expect(isUrl('http://userid:password@example.com/')).toBeTruthy();
-    expect(isUrl('http://142.42.1.1/')).toBeTruthy();
-    expect(isUrl('http://142.42.1.1:8080/')).toBeTruthy();
-    expect(isUrl('http://foo.com/blah_(wikipedia)#cite-1')).toBeTruthy();
-    expect(isUrl('http://foo.com/blah_(wikipedia)_blah#cite-1')).toBeTruthy();
-    expect(isUrl('http://foo.com/(something)?after=parens')).toBeTruthy();
-    expect(isUrl('http://code.google.com/events/#&product=browser')).toBeTruthy();
-    expect(isUrl('http://j.mp')).toBeTruthy();
-    expect(isUrl('http://foo.bar/?q=Test%20URL-encoded%20stuff')).toBeTruthy();
-    expect(isUrl('http://1337.net')).toBeTruthy();
-    expect(isUrl('http://a.b-c.de')).toBeTruthy();
-    expect(isUrl('http://223.255.255.254')).toBeTruthy();
-    expect(isUrl('https://foo_bar.example.com/')).toBeTruthy();
+describe('#getReturnUrl', () => {
+  it('should get the return url', () => {
+    expect(getReturnUrl({ query: { return_to: '/test' } })).toBe('/test');
+    expect(getReturnUrl({ query: { return_to: 'http://www.google.com' } })).toBe('/');
+    expect(getReturnUrl({})).toBe('/');
   });
+});
 
-  it('should not be valid', () => {
-    expect(isUrl('http://')).toBeFalsy();
-    expect(isUrl('http://?')).toBeFalsy();
-    expect(isUrl('http://??')).toBeFalsy();
-    expect(isUrl('http://??/')).toBeFalsy();
-    expect(isUrl('http://#')).toBeFalsy();
-    expect(isUrl('http://##')).toBeFalsy();
-    expect(isUrl('http://##/')).toBeFalsy();
-    expect(isUrl('//')).toBeFalsy();
-    expect(isUrl('//a')).toBeFalsy();
-    expect(isUrl('///a')).toBeFalsy();
-    expect(isUrl('///')).toBeFalsy();
-    expect(isUrl('foo.com')).toBeFalsy();
-    expect(isUrl('http:// shouldfail.com')).toBeFalsy();
-    expect(isUrl(':// should fail')).toBeFalsy();
+describe('#isRelativeUrl', () => {
+  it('should check a relative url', () => {
+    expect(isRelativeUrl('/test')).toBeTruthy();
+    expect(isRelativeUrl('http://www.google.com')).toBeFalsy();
+    expect(isRelativeUrl('javascript:alert("test")')).toBeFalsy();
+    expect(isRelativeUrl('\\test')).toBeFalsy();
+    expect(isRelativeUrl('//test')).toBeFalsy();
   });
 });

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,7 +17,6 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 // keep this file in JavaScript, because it is used by a webpack loader
 module.exports = { getFrontMatter, separateFrontMatter, filterContent };
 
@@ -72,11 +71,16 @@ function parseFrontMatter(lines) {
  * @returns {string}
  */
 function filterContent(content) {
-  const { isSonarCloud } = require('./system');
-  const contentWithoutStatic = cutConditionalContent(content, 'static');
-  return isSonarCloud()
+  const regexBase = '<!-- \\/?(sonarqube|sonarcloud|static) -->';
+  const { isSonarCloud, getInstance } = require('./system');
+  const contentWithInstance = content.replace(/{instance}/gi, getInstance());
+  const contentWithoutStatic = cutConditionalContent(contentWithInstance, 'static');
+  const filteredContent = isSonarCloud()
     ? cutConditionalContent(contentWithoutStatic, 'sonarqube')
     : cutConditionalContent(contentWithoutStatic, 'sonarcloud');
+  return filteredContent
+    .replace(new RegExp(`^${regexBase}(\n|\r|\r\n|$)`, 'gm'), '') // First, remove single-line ones, including ending carriage-returns.
+    .replace(new RegExp(`${regexBase}`, 'g'), ''); // Now remove all remaining ones.
 }
 
 /**

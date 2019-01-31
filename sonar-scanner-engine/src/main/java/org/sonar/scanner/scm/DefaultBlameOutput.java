@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -72,7 +72,7 @@ class DefaultBlameOutput implements BlameOutput {
 
     Builder scmBuilder = ScannerReport.Changesets.newBuilder();
     DefaultInputFile inputFile = (DefaultInputFile) file;
-    scmBuilder.setComponentRef(inputFile.batchId());
+    scmBuilder.setComponentRef(inputFile.scannerId());
     Map<String, Integer> changesetsIdByRevision = new HashMap<>();
 
     int lineId = 1;

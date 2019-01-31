@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,18 +18,25 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import SonarCloudPage from './SonarCloudPage';
-import SQStartUsing from './SQStartUsing';
-import SQTopNav from './SQTopNav';
-import { isLoggedIn } from '../../../app/types';
+import Helmet from 'react-helmet';
+import SQPageContainer from './components/SQPageContainer';
+import SQStartUsing from './components/SQStartUsing';
+import SQTopNav from './components/SQTopNav';
+import { isLoggedIn } from '../../../helpers/users';
 import { getBaseUrl } from '../../../helpers/urls';
 import './style.css';
 
 export default function SonarLintIntegration() {
   return (
-    <SonarCloudPage>
+    <SQPageContainer>
       {({ currentUser }) => (
         <div className="page page-limited sc-page">
+          <Helmet title="Enhance SonarCloud experience with SonarLint | SonarCloud">
+            <meta
+              content="SonarLint connected teams are efficient, consistent and get more value. Connect SonarCloud with SonarLint and share consistent rulesets and analysis settings in everyone’s IDE."
+              name="description"
+            />
+          </Helmet>
           <SQTopNav />
 
           <div className="sc-child-header">
@@ -77,7 +84,7 @@ export default function SonarLintIntegration() {
             <li className="sc-feature sc-child-feature">
               <h3 className="sc-feature-title">Share configuration</h3>
               <p className="sc-feature-description">
-                Project configuration such as exclutions, parameters and false positives get
+                Project configuration such as exclusions, parameters and false positives get
                 conveyed to the IDE as they get defined, enabling the team get exactly the same view
                 on the project they are working on.
               </p>
@@ -95,6 +102,6 @@ export default function SonarLintIntegration() {
           {!isLoggedIn(currentUser) && <SQStartUsing />}
         </div>
       )}
-    </SonarCloudPage>
+    </SQPageContainer>
   );
 }

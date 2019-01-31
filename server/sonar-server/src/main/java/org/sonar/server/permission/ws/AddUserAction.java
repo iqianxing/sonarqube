@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 package org.sonar.server.permission.ws;
 
 import java.util.Optional;
+import org.sonar.api.server.ws.Change;
 import org.sonar.api.server.ws.Request;
 import org.sonar.api.server.ws.Response;
 import org.sonar.api.server.ws.WebService;
@@ -29,6 +30,7 @@ import org.sonar.db.component.ComponentDto;
 import org.sonar.db.organization.OrganizationDto;
 import org.sonar.server.exceptions.NotFoundException;
 import org.sonar.server.permission.PermissionChange;
+import org.sonar.server.permission.PermissionService;
 import org.sonar.server.permission.PermissionUpdater;
 import org.sonar.server.permission.ProjectId;
 import org.sonar.server.permission.UserId;
@@ -38,14 +40,11 @@ import org.sonar.server.user.UserSession;
 import static com.google.common.base.Preconditions.checkArgument;
 import static java.util.Collections.singletonList;
 import static org.sonar.server.permission.PermissionPrivilegeChecker.checkProjectAdmin;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createOrganizationParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createPermissionParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createProjectParameters;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createUserLoginParameter;
+import static org.sonar.server.permission.ws.WsParameters.createOrganizationParameter;
+import static org.sonar.server.permission.ws.WsParameters.createProjectParameters;
+import static org.sonar.server.permission.ws.WsParameters.createUserLoginParameter;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_ORGANIZATION;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_PERMISSION;
-import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_PROJECT_ID;
-import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_PROJECT_KEY;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_USER_LOGIN;
 
 public class AddUserAction implements PermissionsWsAction {
@@ -55,13 +54,18 @@ public class AddUserAction implements PermissionsWsAction {
   private final DbClient dbClient;
   private final UserSession userSession;
   private final PermissionUpdater permissionUpdater;
-  private final PermissionWsSupport support;
+  private final PermissionWsSupport wsSupport;
+  private final WsParameters wsParameters;
+  private final PermissionService permissionService;
 
-  public AddUserAction(DbClient dbClient, UserSession userSession, PermissionUpdater permissionUpdater, PermissionWsSupport support) {
+  public AddUserAction(DbClient dbClient, UserSession userSession, PermissionUpdater permissionUpdater, PermissionWsSupport wsSupport,
+    WsParameters wsParameters, PermissionService permissionService) {
     this.dbClient = dbClient;
     this.userSession = userSession;
     this.permissionUpdater = permissionUpdater;
-    this.support = support;
+    this.wsSupport = wsSupport;
+    this.wsParameters = wsParameters;
+    this.permissionService = permissionService;
   }
 
   @Override
@@ -76,28 +80,29 @@ public class AddUserAction implements PermissionsWsAction {
         "</ul>")
       .setSince("5.2")
       .setPost(true)
-      .setHandler(this);
+      .setHandler(this)
+      .setChangelog(
+        new Change("7.4", "If organizationKey and projectId are both set, the organisationKey must be the key of the organization of the project"));
 
-    createPermissionParameter(action);
+    wsParameters.createPermissionParameter(action);
     createUserLoginParameter(action);
     createProjectParameters(action);
     createOrganizationParameter(action)
-      .setSince("6.2")
-      .setDescription("Key of organization, cannot be used at the same time with %s and %s", PARAM_PROJECT_ID, PARAM_PROJECT_KEY);
+      .setSince("6.2");
   }
 
   @Override
   public void handle(Request request, Response response) throws Exception {
     try (DbSession dbSession = dbClient.openSession(false)) {
-      UserId user = support.findUser(dbSession, request.mandatoryParam(PARAM_USER_LOGIN));
-      Optional<ComponentDto> project = support.findProject(dbSession, request);
+      UserId user = wsSupport.findUser(dbSession, request.mandatoryParam(PARAM_USER_LOGIN));
+      Optional<ComponentDto> project = wsSupport.findProject(dbSession, request);
       String organizationKey = request.param(PARAM_ORGANIZATION);
-      checkArgument(!project.isPresent() || organizationKey == null, "Organization must not be set when project is set.");
       OrganizationDto org = project
         .map(dto -> dbClient.organizationDao().selectByUuid(dbSession, dto.getOrganizationUuid()))
-        .orElseGet(() -> Optional.ofNullable(support.findOrganization(dbSession, organizationKey)))
+        .orElseGet(() -> Optional.ofNullable(wsSupport.findOrganization(dbSession, organizationKey)))
         .orElseThrow(() -> new NotFoundException(String.format("Organization with key '%s' not found", organizationKey)));
-      support.checkMembership(dbSession, org, user);
+      checkArgument(organizationKey == null || org.getKey().equals(organizationKey), "Organization key is incorrect.");
+      wsSupport.checkMembership(dbSession, org, user);
 
       Optional<ProjectId> projectId = project.map(ProjectId::new);
       checkProjectAdmin(userSession, org.getUuid(), projectId);
@@ -107,7 +112,7 @@ public class AddUserAction implements PermissionsWsAction {
         org.getUuid(),
         request.mandatoryParam(PARAM_PERMISSION),
         projectId.orElse(null),
-        user);
+        user, permissionService);
       permissionUpdater.apply(dbSession, singletonList(change));
     }
     response.noContent();

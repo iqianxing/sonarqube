@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,8 +23,7 @@
   border: 1px solid var(--gray80);
   box-sizing: border-box;
   background-color: #fff;
-  overflow-x: auto;
-  overflow-y: hidden;
+  overflow: hidden;
 }
 
 .source-table {
@@ -70,6 +69,11 @@
 
 .source-line-filtered .source-line-code {
   background-color: var(--leakColor) !important;
+}
+
+.source-line-filtered.source-line-highlighted .source-line-code,
+.source-line-filtered.source-line-highlighted:hover .source-line-code {
+  background-color: #cdd9c4 !important;
 }
 
 .source-line-filtered:hover .source-line-code {
@@ -222,16 +226,24 @@
   height: 18px;
 }
 
+.source-line-bar[role='button'] {
+  cursor: pointer;
+}
+
+.source-line-bar:focus {
+  outline: none;
+}
+
 .source-line-covered {
-  background-color: var(--green) !important;
+  background-color: var(--lineCoverageGreen) !important;
 }
 
 .source-line-uncovered {
-  background-color: var(--red) !important;
+  background-color: var(--lineCoverageRed) !important;
 }
 
 .source-line-partially-covered {
-  background-color: var(--orange) !important;
+  background-color: var(--lineCoverageRed) !important;
   background-image: repeating-linear-gradient(
     45deg,
     rgba(255, 255, 255, 0.5) 4px,
@@ -278,12 +290,11 @@
 }
 
 .source-viewer-header-component-project {
-  color: var(--secondFontColor);
   font-size: var(--smallFontSize);
 }
 
 .source-viewer-header-component-name {
-  font-weight: 600;
+  font-size: var(--smallFontSize);
 }
 
 .source-viewer-header-favorite {
@@ -353,6 +364,10 @@
   border-right: none;
   background-color: #fff;
   line-height: 1.8;
+}
+
+.source-viewer-code {
+  overflow-x: auto;
 }
 
 .source-viewer-measures-overlay {
@@ -507,6 +522,7 @@
   font-family: var(--baseFontFamily);
   font-size: var(--baseFontSize);
   text-align: left;
+  user-select: text;
 }
 
 .issue-location {

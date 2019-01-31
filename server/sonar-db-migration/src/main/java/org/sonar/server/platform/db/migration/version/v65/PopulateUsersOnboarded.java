@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,6 @@ import java.sql.SQLException;
 import org.sonar.api.utils.System2;
 import org.sonar.db.Database;
 import org.sonar.server.platform.db.migration.step.DataChange;
-import org.sonar.server.platform.db.migration.step.Select;
 
 public class PopulateUsersOnboarded extends DataChange {
 
@@ -41,14 +40,5 @@ public class PopulateUsersOnboarded extends DataChange {
       .setLong(2, system2.now())
       .execute()
       .commit();
-    long users = context.prepareSelect("select count(u.id) from users u").get(Select.LONG_READER);
-    if (users == 1) {
-      context.prepareUpsert("update users set onboarded=?, updated_at=? where login=?")
-        .setBoolean(1, false)
-        .setLong(2, system2.now())
-        .setString(3, "admin")
-        .execute()
-        .commit();
-    }
   }
 }

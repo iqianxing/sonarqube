@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,6 +21,7 @@ import * as React from 'react';
 import CreateButton from './CreateButton';
 import DeferredSpinner from '../../../components/common/DeferredSpinner';
 import { translate } from '../../../helpers/l10n';
+import { Alert } from '../../../components/ui/Alert';
 
 interface Props {
   loading: boolean;
@@ -36,7 +37,12 @@ export default function Header({ loading, onCreate, skipMetrics }: Props) {
       <div className="page-actions">
         <CreateButton onCreate={onCreate} skipMetrics={skipMetrics} />
       </div>
-      <p className="page-description">{translate('custom_measures.page.description')}</p>
+      <div className="page-description">
+        <Alert display="inline" variant="error">
+          {translate('custom_measures.deprecated')}
+        </Alert>
+        <p>{translate('custom_measures.page.description')}</p>
+      </div>
     </header>
   );
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,10 +18,9 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import Helmet from 'react-helmet';
 import * as key from 'keymaster';
+import Helmet from 'react-helmet';
 import { keyBy, omit, union, without } from 'lodash';
-import * as PropTypes from 'prop-types';
 import BulkChangeModal from './BulkChangeModal';
 import ComponentBreadcrumbs from './ComponentBreadcrumbs';
 import IssuesList from './IssuesList';
@@ -33,7 +32,6 @@ import PageActions from './PageActions';
 import ConciseIssuesList from '../conciseIssuesList/ConciseIssuesList';
 import ConciseIssuesListHeader from '../conciseIssuesList/ConciseIssuesListHeader';
 import Sidebar from '../sidebar/Sidebar';
-import Suggestions from '../../../app/components/embed-docs-modal/Suggestions';
 import * as actions from '../actions';
 import {
   areMyIssuesSelected,
@@ -53,20 +51,17 @@ import {
   STANDARDS,
   ReferencedRule
 } from '../utils';
-import {
-  Component,
-  CurrentUser,
-  Issue,
-  Paging,
-  BranchLike,
-  Organization
-} from '../../../app/types';
-import handleRequiredAuthentication from '../../../app/utils/handleRequiredAuthentication';
-import Dropdown from '../../../components/controls/Dropdown';
-import ListFooter from '../../../components/controls/ListFooter';
-import FiltersHeader from '../../../components/common/FiltersHeader';
-import ScreenPositionHelper from '../../../components/common/ScreenPositionHelper';
 import { Button } from '../../../components/ui/buttons';
+import Checkbox from '../../../components/controls/Checkbox';
+import DeferredSpinner from '../../../components/common/DeferredSpinner';
+import Dropdown from '../../../components/controls/Dropdown';
+import DropdownIcon from '../../../components/icons-components/DropdownIcon';
+import EmptySearch from '../../../components/common/EmptySearch';
+import FiltersHeader from '../../../components/common/FiltersHeader';
+import handleRequiredAuthentication from '../../../app/utils/handleRequiredAuthentication';
+import ListFooter from '../../../components/controls/ListFooter';
+import ScreenPositionHelper from '../../../components/common/ScreenPositionHelper';
+import Suggestions from '../../../app/components/embed-docs-modal/Suggestions';
 import {
   isShortLivingBranch,
   isSameBranchLike,
@@ -76,37 +71,42 @@ import {
 } from '../../../helpers/branches';
 import { translate, translateWithParameters } from '../../../helpers/l10n';
 import { RawQuery } from '../../../helpers/query';
+import {
+  addSideBarClass,
+  addWhitePageClass,
+  removeSideBarClass,
+  removeWhitePageClass
+} from '../../../helpers/pages';
 import { scrollToElement } from '../../../helpers/scrolling';
-import EmptySearch from '../../../components/common/EmptySearch';
-import Checkbox from '../../../components/controls/Checkbox';
-import DropdownIcon from '../../../components/icons-components/DropdownIcon';
 import { isSonarCloud } from '../../../helpers/system';
+import { withRouter, Location, Router } from '../../../components/hoc/withRouter';
 import '../../../components/search-navigator.css';
 import '../styles.css';
-import DeferredSpinner from '../../../components/common/DeferredSpinner';
 
 interface FetchIssuesPromise {
   components: ReferencedComponent[];
   effortTotal: number;
   facets: RawFacet[];
-  issues: Issue[];
+  issues: T.Issue[];
   languages: ReferencedLanguage[];
-  paging: Paging;
+  paging: T.Paging;
   rules: ReferencedRule[];
   users: ReferencedUser[];
 }
 
 interface Props {
-  branchLike?: BranchLike;
-  component?: Component;
-  currentUser: CurrentUser;
+  branchLike?: T.BranchLike;
+  component?: T.Component;
+  currentUser: T.CurrentUser;
   fetchIssues: (query: RawQuery, requestOrganizations?: boolean) => Promise<FetchIssuesPromise>;
   hideAuthorFacet?: boolean;
-  location: { pathname: string; query: RawQuery };
+  location: Pick<Location, 'pathname' | 'query'>;
+  multiOrganizations?: boolean;
   myIssues?: boolean;
   onBranchesChange: () => void;
   organization?: { key: string };
-  userOrganizations: Organization[];
+  router: Pick<Router, 'push' | 'replace'>;
+  userOrganizations: T.Organization[];
 }
 
 export interface State {
@@ -114,7 +114,7 @@ export interface State {
   checked: string[];
   effortTotal?: number;
   facets: { [facet: string]: Facet };
-  issues: Issue[];
+  issues: T.Issue[];
   lastChecked?: string;
   loading: boolean;
   loadingFacets: { [key: string]: boolean };
@@ -122,9 +122,9 @@ export interface State {
   locationsNavigator: boolean;
   myIssues: boolean;
   openFacets: { [facet: string]: boolean };
-  openIssue?: Issue;
+  openIssue?: T.Issue;
   openPopup?: { issue: string; name: string };
-  paging?: Paging;
+  paging?: T.Paging;
   query: Query;
   referencedComponentsById: { [id: string]: ReferencedComponent };
   referencedComponentsByKey: { [key: string]: ReferencedComponent };
@@ -138,12 +138,8 @@ export interface State {
 
 const DEFAULT_QUERY = { resolved: 'false' };
 
-export default class App extends React.PureComponent<Props, State> {
+export class App extends React.PureComponent<Props, State> {
   mounted = false;
-
-  static contextTypes = {
-    router: PropTypes.object.isRequired
-  };
 
   constructor(props: Props) {
     super(props);
@@ -175,15 +171,8 @@ export default class App extends React.PureComponent<Props, State> {
       return;
     }
 
-    document.body.classList.add('white-page');
-    // $FlowFixMe
-    document.documentElement.classList.add('white-page');
-
-    const footer = document.getElementById('footer');
-    if (footer) {
-      footer.classList.add('page-footer-with-sidebar');
-    }
-
+    addWhitePageClass();
+    addSideBarClass();
     this.attachShortcuts();
     this.fetchFirstIssues();
   }
@@ -233,17 +222,9 @@ export default class App extends React.PureComponent<Props, State> {
 
   componentWillUnmount() {
     this.detachShortcuts();
-
-    document.body.classList.remove('white-page');
-    // $FlowFixMe
-    document.documentElement.classList.remove('white-page');
-
-    const footer = document.getElementById('footer');
-    if (footer) {
-      footer.classList.remove('page-footer-with-sidebar');
-    }
-
     this.mounted = false;
+    removeWhitePageClass();
+    removeSideBarClass();
   }
 
   attachShortcuts() {
@@ -319,7 +300,7 @@ export default class App extends React.PureComponent<Props, State> {
     return index !== -1 ? index : undefined;
   }
 
-  getOpenIssue = (props: Props, issues: Issue[]) => {
+  getOpenIssue = (props: Props, issues: T.Issue[]) => {
     const open = getOpen(props.location.query);
     return open ? issues.find(issue => issue.key === open) : undefined;
   };
@@ -378,16 +359,16 @@ export default class App extends React.PureComponent<Props, State> {
           this.scrollToSelectedIssue
         );
       } else {
-        this.context.router.replace(path);
+        this.props.router.replace(path);
       }
     } else {
-      this.context.router.push(path);
+      this.props.router.push(path);
     }
   };
 
   closeIssue = () => {
     if (this.state.query) {
-      this.context.router.push({
+      this.props.router.push({
         pathname: this.props.location.pathname,
         query: {
           ...serializeQuery(this.state.query),
@@ -458,7 +439,10 @@ export default class App extends React.PureComponent<Props, State> {
       Object.assign(parameters, { assignees: '__me__' });
     }
 
-    return this.props.fetchIssues(parameters, requestOrganizations);
+    return this.props.fetchIssues(
+      parameters,
+      Boolean(requestOrganizations && this.props.multiOrganizations)
+    );
   };
 
   fetchFirstIssues() {
@@ -506,8 +490,8 @@ export default class App extends React.PureComponent<Props, State> {
 
   fetchIssuesUntil = (
     p: number,
-    done: (issues: Issue[], paging: Paging) => boolean
-  ): Promise<{ issues: Issue[]; paging: Paging }> => {
+    done: (issues: T.Issue[], paging: T.Paging) => boolean
+  ): Promise<{ issues: T.Issue[]; paging: T.Paging }> => {
     return this.fetchIssuesPage(p).then(response => {
       const { issues, paging } = response;
 
@@ -557,9 +541,9 @@ export default class App extends React.PureComponent<Props, State> {
       return Promise.reject(undefined);
     }
 
-    const isSameComponent = (issue: Issue) => issue.component === openIssue.component;
+    const isSameComponent = (issue: T.Issue) => issue.component === openIssue.component;
 
-    const done = (issues: Issue[], paging: Paging) => {
+    const done = (issues: T.Issue[], paging: T.Paging) => {
       if (paging.total <= paging.pageIndex * paging.pageSize) {
         return true;
       }
@@ -634,14 +618,14 @@ export default class App extends React.PureComponent<Props, State> {
   getCheckedIssues = () => {
     const issues = this.state.checked
       .map(checked => this.state.issues.find(issue => issue.key === checked))
-      .filter((issue): issue is Issue => issue !== undefined);
+      .filter((issue): issue is T.Issue => issue !== undefined);
     const paging = { pageIndex: 1, pageSize: issues.length, total: issues.length };
     return Promise.resolve({ issues, paging });
   };
 
   handleFilterChange = (changes: Partial<Query>) => {
     this.setState({ loading: true });
-    this.context.router.push({
+    this.props.router.push({
       pathname: this.props.location.pathname,
       query: {
         ...serializeQuery({ ...this.state.query, ...changes }),
@@ -657,7 +641,7 @@ export default class App extends React.PureComponent<Props, State> {
     if (!this.props.component) {
       saveMyIssues(myIssues);
     }
-    this.context.router.push({
+    this.props.router.push({
       pathname: this.props.location.pathname,
       query: {
         ...serializeQuery({ ...this.state.query, assigned: true, assignees: [] }),
@@ -711,7 +695,7 @@ export default class App extends React.PureComponent<Props, State> {
   };
 
   handleReset = () => {
-    this.context.router.push({
+    this.props.router.push({
       pathname: this.props.location.pathname,
       query: {
         ...DEFAULT_QUERY,
@@ -735,7 +719,7 @@ export default class App extends React.PureComponent<Props, State> {
     });
   };
 
-  handleIssueCheck = (issue: string, event: MouseEvent) => {
+  handleIssueCheck = (issue: string, event: { shiftKey?: boolean }) => {
     // Selecting multiple issues with shift+click
     const { lastChecked } = this.state;
     if (event.shiftKey && lastChecked) {
@@ -767,7 +751,7 @@ export default class App extends React.PureComponent<Props, State> {
     }
   };
 
-  handleIssueChange = (issue: Issue) => {
+  handleIssueChange = (issue: T.Issue) => {
     this.setState(state => ({
       issues: state.issues.map(candidate => (candidate.key === issue.key ? issue : candidate))
     }));
@@ -848,7 +832,7 @@ export default class App extends React.PureComponent<Props, State> {
     this.setState(actions.selectPreviousFlow);
   };
 
-  renderBulkChange(openIssue: Issue | undefined) {
+  renderBulkChange(openIssue: T.Issue | undefined) {
     const { component, currentUser } = this.props;
     const { bulkChange, checked, paging, issues } = this.state;
 
@@ -997,7 +981,7 @@ export default class App extends React.PureComponent<Props, State> {
     );
   }
 
-  renderSide(openIssue: Issue | undefined) {
+  renderSide(openIssue: T.Issue | undefined) {
     return (
       <ScreenPositionHelper className="layout-page-side-outer">
         {({ top }) => (
@@ -1130,7 +1114,6 @@ export default class App extends React.PureComponent<Props, State> {
                 {openIssue ? (
                   <div className="pull-left width-60">
                     <ComponentBreadcrumbs
-                      branchLike={this.props.branchLike}
                       component={component}
                       issue={openIssue}
                       organization={this.props.organization}
@@ -1162,3 +1145,5 @@ export default class App extends React.PureComponent<Props, State> {
     );
   }
 }
+
+export default withRouter(App);

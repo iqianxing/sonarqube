@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -120,18 +120,16 @@ public class DeleteAction implements OrganizationsWsAction {
       deleteGroups(dbSession, organization);
       deleteQualityProfiles(dbSession, organization);
       deleteQualityGates(dbSession, organization);
+      deleteOrganizationAlmBinding(dbSession, organization);
       deleteOrganization(dbSession, organization);
-      billingValidations.onDelete(new BillingValidations.Organization(organization.getKey(), organization.getUuid()));
+      billingValidations.onDelete(new BillingValidations.Organization(organization.getKey(), organization.getUuid(), organization.getName()));
 
       response.noContent();
     }
   }
 
   private void deleteProjects(DbSession dbSession, OrganizationDto organization) {
-    List<ComponentDto> roots = dbClient.componentDao().selectAllRootsByOrganization(dbSession, organization.getUuid());
-    roots.forEach(project -> dbClient.webhookDao().selectByProject(dbSession, project)
-      .forEach(wh -> dbClient.webhookDeliveryDao().deleteByWebhook(dbSession, wh)));
-    roots.forEach(project -> dbClient.webhookDao().deleteByProject(dbSession, project));
+    List<ComponentDto> roots = dbClient.componentDao().selectProjectsByOrganization(dbSession, organization.getUuid());
     try {
       componentCleanerService.delete(dbSession, roots);
     } finally {
@@ -151,16 +149,12 @@ public class DeleteAction implements OrganizationsWsAction {
 
   private void deletePermissions(DbSession dbSession, OrganizationDto organization) {
     dbClient.permissionTemplateDao().deleteByOrganization(dbSession, organization.getUuid());
-    dbSession.commit();
     dbClient.userPermissionDao().deleteByOrganization(dbSession, organization.getUuid());
-    dbSession.commit();
     dbClient.groupPermissionDao().deleteByOrganization(dbSession, organization.getUuid());
-    dbSession.commit();
   }
 
   private void deleteGroups(DbSession dbSession, OrganizationDto organization) {
     dbClient.groupDao().deleteByOrganization(dbSession, organization.getUuid());
-    dbSession.commit();
   }
 
   private void deleteQualityProfiles(DbSession dbSession, OrganizationDto organization) {
@@ -175,6 +169,10 @@ public class DeleteAction implements OrganizationsWsAction {
       .map(QualityGateDto::getUuid)
       .collect(MoreCollectors.toList()));
     dbClient.qualityGateDao().deleteOrgQualityGatesByOrganization(dbSession, organization);
+  }
+
+  private void deleteOrganizationAlmBinding(DbSession dbSession, OrganizationDto organization){
+    dbClient.organizationAlmBindingDao().deleteByOrganization(dbSession, organization);
   }
 
   private void deleteOrganization(DbSession dbSession, OrganizationDto organization) {

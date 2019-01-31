@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -35,6 +35,9 @@ public class PostJobWrapper {
     this.optimizer = optimizer;
     this.descriptor = new DefaultPostJobDescriptor();
     newPostJob.describe(descriptor);
+    if (descriptor.name() == null) {
+      descriptor.name(newPostJob.getClass().getName());
+    }
     this.adaptor = adaptor;
   }
 

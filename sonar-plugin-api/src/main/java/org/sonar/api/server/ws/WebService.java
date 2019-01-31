@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -523,7 +523,7 @@ public interface WebService extends Definable<WebService.Context> {
       this.changelog = newAction.changelog;
 
       checkState(this.handler != null, "RequestHandler is not set on action %s", path);
-      logWarningIf(isNullOrEmpty(this.description), "Description is not set on action " + path);
+      logWarningIf(isNullOrEmpty(this.description), "Description is not set on action " + path);
       logWarningIf(isNullOrEmpty(this.since), "Since is not set on action " + path);
       logWarningIf(!this.post && this.responseExample == null, "The response example is not set on action " + path);
 

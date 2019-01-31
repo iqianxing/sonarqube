@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,6 +23,10 @@ import com.google.common.annotations.VisibleForTesting;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+import javax.annotation.Nullable;
 import org.apache.ibatis.logging.LogFactory;
 import org.apache.ibatis.session.ExecutorType;
 import org.apache.ibatis.session.SqlSession;
@@ -31,17 +35,20 @@ import org.apache.ibatis.session.SqlSessionFactoryBuilder;
 import org.apache.ibatis.session.TransactionIsolationLevel;
 import org.sonar.api.Startable;
 import org.sonar.db.alm.AlmAppInstallMapper;
+import org.sonar.db.alm.OrganizationAlmBindingMapper;
 import org.sonar.db.alm.ProjectAlmBindingDto;
-import org.sonar.db.alm.ProjectAlmBindingsMapper;
+import org.sonar.db.alm.ProjectAlmBindingMapper;
 import org.sonar.db.ce.CeActivityMapper;
 import org.sonar.db.ce.CeQueueMapper;
 import org.sonar.db.ce.CeScannerContextMapper;
 import org.sonar.db.ce.CeTaskCharacteristicDto;
 import org.sonar.db.ce.CeTaskCharacteristicMapper;
 import org.sonar.db.ce.CeTaskInputMapper;
+import org.sonar.db.ce.CeTaskMessageMapper;
 import org.sonar.db.component.AnalysisPropertiesMapper;
 import org.sonar.db.component.BranchMapper;
 import org.sonar.db.component.ComponentDto;
+import org.sonar.db.component.ComponentWithModuleUuidDto;
 import org.sonar.db.component.ComponentDtoWithSnapshotId;
 import org.sonar.db.component.ComponentKeyUpdaterMapper;
 import org.sonar.db.component.ComponentMapper;
@@ -57,6 +64,7 @@ import org.sonar.db.component.ViewsSnapshotDto;
 import org.sonar.db.duplication.DuplicationMapper;
 import org.sonar.db.duplication.DuplicationUnitDto;
 import org.sonar.db.es.EsQueueMapper;
+import org.sonar.db.event.EventComponentChangeMapper;
 import org.sonar.db.event.EventDto;
 import org.sonar.db.event.EventMapper;
 import org.sonar.db.issue.IssueChangeDto;
@@ -128,6 +136,7 @@ import org.sonar.db.user.UserDto;
 import org.sonar.db.user.UserGroupDto;
 import org.sonar.db.user.UserGroupMapper;
 import org.sonar.db.user.UserMapper;
+import org.sonar.db.user.UserPropertiesMapper;
 import org.sonar.db.user.UserTokenCount;
 import org.sonar.db.user.UserTokenDto;
 import org.sonar.db.user.UserTokenMapper;
@@ -135,11 +144,16 @@ import org.sonar.db.webhook.WebhookDeliveryMapper;
 import org.sonar.db.webhook.WebhookMapper;
 
 public class MyBatis implements Startable {
-
+  private final List<MyBatisConfExtension> confExtensions;
   private final Database database;
   private SqlSessionFactory sessionFactory;
 
   public MyBatis(Database database) {
+    this(database, null);
+  }
+
+  public MyBatis(Database database, @Nullable MyBatisConfExtension[] confExtensions) {
+    this.confExtensions = confExtensions == null ? Collections.emptyList() : Arrays.asList(confExtensions);
     this.database = database;
   }
 
@@ -154,6 +168,7 @@ public class MyBatis implements Startable {
     confBuilder.loadAlias("ActiveRuleParam", ActiveRuleParamDto.class);
     confBuilder.loadAlias("CeTaskCharacteristic", CeTaskCharacteristicDto.class);
     confBuilder.loadAlias("Component", ComponentDto.class);
+    confBuilder.loadAlias("ComponentWithModuleUuid", ComponentWithModuleUuidDto.class);
     confBuilder.loadAlias("ComponentWithSnapshot", ComponentDtoWithSnapshotId.class);
     confBuilder.loadAlias("CustomMeasure", CustomMeasureDto.class);
     confBuilder.loadAlias("DuplicationUnit", DuplicationUnitDto.class);
@@ -198,6 +213,7 @@ public class MyBatis implements Startable {
     confBuilder.loadAlias("User", UserDto.class);
     confBuilder.loadAlias("UuidWithProjectUuid", UuidWithProjectUuidDto.class);
     confBuilder.loadAlias("ViewsSnapshot", ViewsSnapshotDto.class);
+    confExtensions.forEach(ext -> ext.loadAliases(confBuilder::loadAlias));
 
     // keep them sorted alphabetically
     Class<?>[] mappers = {
@@ -211,6 +227,7 @@ public class MyBatis implements Startable {
       CeScannerContextMapper.class,
       CeTaskInputMapper.class,
       CeTaskCharacteristicMapper.class,
+      CeTaskMessageMapper.class,
       ComponentKeyUpdaterMapper.class,
       ComponentMapper.class,
       LiveMeasureMapper.class,
@@ -219,6 +236,7 @@ public class MyBatis implements Startable {
       DuplicationMapper.class,
       EsQueueMapper.class,
       EventMapper.class,
+      EventComponentChangeMapper.class,
       FileSourceMapper.class,
       GroupMapper.class,
       GroupMembershipMapper.class,
@@ -230,12 +248,13 @@ public class MyBatis implements Startable {
       MeasureMapper.class,
       MetricMapper.class,
       NotificationQueueMapper.class,
+      OrganizationAlmBindingMapper.class,
       OrganizationMapper.class,
       OrganizationMemberMapper.class,
       PermissionTemplateCharacteristicMapper.class,
       PermissionTemplateMapper.class,
       PluginMapper.class,
-      ProjectAlmBindingsMapper.class,
+      ProjectAlmBindingMapper.class,
       ProjectLinkMapper.class,
       ProjectMappingsMapper.class,
       ProjectQgateAssociationMapper.class,
@@ -255,11 +274,15 @@ public class MyBatis implements Startable {
       UserGroupMapper.class,
       UserMapper.class,
       UserPermissionMapper.class,
+      UserPropertiesMapper.class,
       UserTokenMapper.class,
       WebhookMapper.class,
       WebhookDeliveryMapper.class
     };
     confBuilder.loadMappers(mappers);
+    confExtensions.stream()
+      .flatMap(MyBatisConfExtension::getMapperClasses)
+      .forEach(confBuilder::loadMapper);
 
     sessionFactory = new SqlSessionFactoryBuilder().build(confBuilder.build());
   }

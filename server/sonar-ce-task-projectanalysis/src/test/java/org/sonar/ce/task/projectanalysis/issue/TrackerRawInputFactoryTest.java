@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -79,8 +79,9 @@ public class TrackerRawInputFactoryTest {
   private SourceLinesHashRepository sourceLinesHash = mock(SourceLinesHashRepository.class);
   private CommonRuleEngine commonRuleEngine = mock(CommonRuleEngine.class);
   private IssueFilter issueFilter = mock(IssueFilter.class);
+  private IssueRelocationToRoot issueRelocationToRoot = mock(IssueRelocationToRoot.class);
   private TrackerRawInputFactory underTest = new TrackerRawInputFactory(treeRootHolder, reportReader, sourceLinesHash,
-    commonRuleEngine, issueFilter, ruleRepository, activeRulesHolder);
+    commonRuleEngine, issueFilter, ruleRepository, activeRulesHolder, issueRelocationToRoot);
 
   @Test
   public void load_source_hash_sequences() {
@@ -139,6 +140,33 @@ public class TrackerRawInputFactoryTest {
     assertThat(issue.effort()).isNull();
   }
 
+  @Test
+  public void set_rule_name_as_message_when_issue_message_from_report_is_empty() {
+    RuleKey ruleKey = RuleKey.of("java", "S001");
+    markRuleAsActive(ruleKey);
+    registerRule(ruleKey, "Rule 1");
+    when(issueFilter.accept(any(), eq(FILE))).thenReturn(true);
+    when(sourceLinesHash.getLineHashesMatchingDBVersion(FILE)).thenReturn(Collections.singletonList("line"));
+    ScannerReport.Issue reportIssue = ScannerReport.Issue.newBuilder()
+      .setRuleRepository(ruleKey.repository())
+      .setRuleKey(ruleKey.rule())
+      .setMsg("")
+      .build();
+    reportReader.putIssues(FILE.getReportAttributes().getRef(), singletonList(reportIssue));
+    Input<DefaultIssue> input = underTest.create(FILE);
+
+    Collection<DefaultIssue> issues = input.getIssues();
+    assertThat(issues).hasSize(1);
+    DefaultIssue issue = Iterators.getOnlyElement(issues.iterator());
+
+    // fields set by analysis report
+    assertThat(issue.ruleKey()).isEqualTo(ruleKey);
+
+    // fields set by compute engine
+    assertInitializedIssue(issue);
+    assertThat(issue.message()).isEqualTo("Rule 1");
+  }
+
   // SONAR-10781
   @Test
   public void load_issues_from_report_missing_secondary_location_component() {
@@ -191,8 +219,8 @@ public class TrackerRawInputFactoryTest {
     ScannerReport.ExternalIssue reportIssue = ScannerReport.ExternalIssue.newBuilder()
       .setTextRange(TextRange.newBuilder().setStartLine(2).build())
       .setMsg("the message")
-      .setRuleRepository("eslint")
-      .setRuleKey("S001")
+      .setEngineId("eslint")
+      .setRuleId("S001")
       .setSeverity(Constants.Severity.BLOCKER)
       .setEffort(20l)
       .setType(ScannerReport.IssueType.SECURITY_HOTSPOT)
@@ -224,8 +252,8 @@ public class TrackerRawInputFactoryTest {
     ScannerReport.ExternalIssue reportIssue = ScannerReport.ExternalIssue.newBuilder()
       .setTextRange(TextRange.newBuilder().setStartLine(2).build())
       .setMsg("the message")
-      .setRuleRepository("eslint")
-      .setRuleKey("S001")
+      .setEngineId("eslint")
+      .setRuleId("S001")
       .setSeverity(Constants.Severity.BLOCKER)
       .setType(ScannerReport.IssueType.BUG)
       .build();
@@ -345,8 +373,8 @@ public class TrackerRawInputFactoryTest {
   }
 
   private void assertInitializedIssue(DefaultIssue issue) {
-    assertThat(issue.projectKey()).isEqualTo(PROJECT.getPublicKey());
-    assertThat(issue.componentKey()).isEqualTo(FILE.getPublicKey());
+    assertThat(issue.projectKey()).isEqualTo(PROJECT.getKey());
+    assertThat(issue.componentKey()).isEqualTo(FILE.getKey());
     assertThat(issue.componentUuid()).isEqualTo(FILE.getUuid());
     assertThat(issue.resolution()).isNull();
     assertThat(issue.status()).isEqualTo(Issue.STATUS_OPEN);
@@ -357,8 +385,8 @@ public class TrackerRawInputFactoryTest {
   }
 
   private void assertInitializedExternalIssue(DefaultIssue issue) {
-    assertThat(issue.projectKey()).isEqualTo(PROJECT.getPublicKey());
-    assertThat(issue.componentKey()).isEqualTo(FILE.getPublicKey());
+    assertThat(issue.projectKey()).isEqualTo(PROJECT.getKey());
+    assertThat(issue.componentKey()).isEqualTo(FILE.getKey());
     assertThat(issue.componentUuid()).isEqualTo(FILE.getUuid());
     assertThat(issue.resolution()).isNull();
     assertThat(issue.status()).isEqualTo(Issue.STATUS_OPEN);
@@ -367,6 +395,14 @@ public class TrackerRawInputFactoryTest {
   }
 
   private void markRuleAsActive(RuleKey ruleKey) {
-    activeRulesHolder.put(new ActiveRule(ruleKey, Severity.CRITICAL, emptyMap(), 1_000L, null));
+    activeRulesHolder.put(new ActiveRule(ruleKey, Severity.CRITICAL, emptyMap(), 1_000L, null, "qp1"));
   }
+
+  private void registerRule(RuleKey ruleKey, String name) {
+    DumbRule dumbRule = new DumbRule(ruleKey);
+    dumbRule.setName(name);
+    ruleRepository.add(dumbRule);
+  }
+
+
 }

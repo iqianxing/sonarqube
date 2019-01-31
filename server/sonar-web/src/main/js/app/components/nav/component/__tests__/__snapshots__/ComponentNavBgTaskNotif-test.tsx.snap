@@ -1,30 +1,79 @@
 // Jest Snapshot v1, https://goo.gl/fbAQLP
 
 exports[`renders background task error correctly 1`] = `
-<NavBarNotif
-  className="alert alert-danger"
+<Alert
+  display="banner"
+  variant="error"
 >
-  <span>
-    component_navigation.status.failed
-  </span>
-</NavBarNotif>
+  <FormattedMessage
+    defaultMessage="component_navigation.status.failed"
+    id="component_navigation.status.failed"
+    values={
+      Object {
+        "branch": undefined,
+        "url": undefined,
+      }
+    }
+  />
+</Alert>
+`;
+
+exports[`renders background task error correctly for a different branch/PR 1`] = `
+<Alert
+  display="banner"
+  variant="error"
+>
+  <FormattedMessage
+    defaultMessage="component_navigation.status.failed_branch"
+    id="component_navigation.status.failed_branch"
+    values={
+      Object {
+        "branch": "my/branch",
+        "url": undefined,
+      }
+    }
+  />
+</Alert>
+`;
+
+exports[`renders background task error correctly for a different branch/PR 2`] = `
+<Alert
+  display="banner"
+  variant="error"
+>
+  <FormattedMessage
+    defaultMessage="component_navigation.status.failed_branch"
+    id="component_navigation.status.failed_branch"
+    values={
+      Object {
+        "branch": "650 - feature/my_pr",
+        "url": undefined,
+      }
+    }
+  />
+</Alert>
 `;
 
 exports[`renders background task in progress info correctly 1`] = `
-<NavBarNotif
-  className="alert alert-info"
+<Alert
+  display="banner"
+  variant="info"
 >
-  <i
-    className="spinner spacer-right text-bottom"
+  <FormattedMessage
+    defaultMessage="component_navigation.status.in_progress"
+    id="component_navigation.status.in_progress"
+    values={
+      Object {
+        "branch": undefined,
+        "url": undefined,
+      }
+    }
   />
-  <span>
-    component_navigation.status.in_progress
-  </span>
-</NavBarNotif>
+</Alert>
 `;
 
 exports[`renders background task license info correctly 1`] = `
-<ComponentNavLicenseNotif
+<Connect(withAppState(ComponentNavLicenseNotif))
   currentTask={
     Object {
       "errorMessage": "Foo",
@@ -36,30 +85,34 @@ exports[`renders background task license info correctly 1`] = `
 `;
 
 exports[`renders background task pending info correctly 1`] = `
-<NavBarNotif
-  className="alert alert-info"
+<Alert
+  display="banner"
+  variant="info"
 >
-  <PendingIcon
-    className="spacer-right"
+  <FormattedMessage
+    defaultMessage="component_navigation.status.pending"
+    id="component_navigation.status.pending"
+    values={
+      Object {
+        "branch": undefined,
+        "url": undefined,
+      }
+    }
   />
-  <span>
-    component_navigation.status.pending
-  </span>
-</NavBarNotif>
+</Alert>
 `;
 
 exports[`renders background task pending info correctly for admin 1`] = `
-<NavBarNotif
-  className="alert alert-info"
+<Alert
+  display="banner"
+  variant="info"
 >
-  <PendingIcon
-    className="spacer-right"
-  />
   <FormattedMessage
     defaultMessage="component_navigation.status.pending.admin"
     id="component_navigation.status.pending.admin"
     values={
       Object {
+        "branch": undefined,
         "url": <Link
           onlyActiveOnIndex={false}
           style={Object {}}
@@ -78,5 +131,5 @@ exports[`renders background task pending info correctly for admin 1`] = `
       }
     }
   />
-</NavBarNotif>
+</Alert>
 `;

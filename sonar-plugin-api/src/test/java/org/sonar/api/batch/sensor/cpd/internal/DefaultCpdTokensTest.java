@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,12 +19,10 @@
  */
 package org.sonar.api.batch.sensor.cpd.internal;
 
-import java.io.File;
 import org.junit.Test;
-import org.sonar.api.batch.fs.InputFile;
+import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
-import org.sonar.api.config.internal.MapSettings;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.fail;
@@ -35,31 +33,32 @@ import static org.mockito.Mockito.verifyZeroInteractions;
 
 public class DefaultCpdTokensTest {
 
-  private static final InputFile INPUT_FILE = new TestInputFileBuilder("foo", "src/Foo.java")
+  private final DefaultInputFile inputFile = new TestInputFileBuilder("foo", "src/Foo.java")
     .setLines(2)
-    .setOriginalLineOffsets(new int[] {0, 50})
-    .setLastValidOffset(100)
+    .setOriginalLineStartOffsets(new int[] {0, 50})
+    .setOriginalLineEndOffsets(new int[] {49, 100})
+    .setLastValidOffset(101)
     .build();
 
   @Test
   public void save_no_tokens() {
     SensorStorage sensorStorage = mock(SensorStorage.class);
-    DefaultCpdTokens tokens = new DefaultCpdTokens(new MapSettings().asConfig(), sensorStorage)
-      .onFile(INPUT_FILE);
+    DefaultCpdTokens tokens = new DefaultCpdTokens(sensorStorage)
+      .onFile(inputFile);
 
     tokens.save();
 
     verify(sensorStorage).store(tokens);
 
-    assertThat(tokens.inputFile()).isEqualTo(INPUT_FILE);
+    assertThat(tokens.inputFile()).isEqualTo(inputFile);
   }
 
   @Test
   public void save_one_token() {
     SensorStorage sensorStorage = mock(SensorStorage.class);
-    DefaultCpdTokens tokens = new DefaultCpdTokens(new MapSettings().asConfig(), sensorStorage)
-      .onFile(INPUT_FILE)
-      .addToken(INPUT_FILE.newRange(1, 2, 1, 5), "foo");
+    DefaultCpdTokens tokens = new DefaultCpdTokens(sensorStorage)
+      .onFile(inputFile)
+      .addToken(inputFile.newRange(1, 2, 1, 5), "foo");
 
     tokens.save();
 
@@ -69,13 +68,12 @@ public class DefaultCpdTokensTest {
   }
 
   @Test
-  public void handle_exclusions_by_pattern() {
+  public void handle_exclusions() {
     SensorStorage sensorStorage = mock(SensorStorage.class);
-    MapSettings settings = new MapSettings();
-    settings.setProperty("sonar.cpd.exclusions", "src/Foo.java,another");
-    DefaultCpdTokens tokens = new DefaultCpdTokens(settings.asConfig(), sensorStorage)
-      .onFile(INPUT_FILE)
-      .addToken(INPUT_FILE.newRange(1, 2, 1, 5), "foo");
+    inputFile.setExcludedForDuplication(true);
+    DefaultCpdTokens tokens = new DefaultCpdTokens(sensorStorage)
+      .onFile(inputFile)
+      .addToken(inputFile.newRange(1, 2, 1, 5), "foo");
 
     tokens.save();
 
@@ -87,12 +85,12 @@ public class DefaultCpdTokensTest {
   @Test
   public void save_many_tokens() {
     SensorStorage sensorStorage = mock(SensorStorage.class);
-    DefaultCpdTokens tokens = new DefaultCpdTokens(new MapSettings().asConfig(), sensorStorage)
-      .onFile(INPUT_FILE)
-      .addToken(INPUT_FILE.newRange(1, 2, 1, 5), "foo")
-      .addToken(INPUT_FILE.newRange(1, 6, 1, 10), "bar")
-      .addToken(INPUT_FILE.newRange(1, 20, 1, 25), "biz")
-      .addToken(INPUT_FILE.newRange(2, 1, 2, 10), "next");
+    DefaultCpdTokens tokens = new DefaultCpdTokens(sensorStorage)
+      .onFile(inputFile)
+      .addToken(inputFile.newRange(1, 2, 1, 5), "foo")
+      .addToken(inputFile.newRange(1, 6, 1, 10), "bar")
+      .addToken(inputFile.newRange(1, 20, 1, 25), "biz")
+      .addToken(inputFile.newRange(2, 1, 2, 10), "next");
 
     tokens.save();
 
@@ -108,7 +106,7 @@ public class DefaultCpdTokensTest {
   @Test
   public void basic_validation() {
     SensorStorage sensorStorage = mock(SensorStorage.class);
-    DefaultCpdTokens tokens = new DefaultCpdTokens(new MapSettings().asConfig(), sensorStorage);
+    DefaultCpdTokens tokens = new DefaultCpdTokens(sensorStorage);
     try {
       tokens.save();
       fail("Expected exception");
@@ -116,7 +114,7 @@ public class DefaultCpdTokensTest {
       assertThat(e).hasMessage("Call onFile() first");
     }
     try {
-      tokens.addToken(INPUT_FILE.newRange(1, 2, 1, 5), "foo");
+      tokens.addToken(inputFile.newRange(1, 2, 1, 5), "foo");
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).hasMessage("Call onFile() first");
@@ -128,7 +126,7 @@ public class DefaultCpdTokensTest {
       assertThat(e).hasMessage("Range should not be null");
     }
     try {
-      tokens.addToken(INPUT_FILE.newRange(1, 2, 1, 5), null);
+      tokens.addToken(inputFile.newRange(1, 2, 1, 5), null);
       fail("Expected exception");
     } catch (Exception e) {
       assertThat(e).hasMessage("Image should not be null");
@@ -138,15 +136,15 @@ public class DefaultCpdTokensTest {
   @Test
   public void validate_tokens_order() {
     SensorStorage sensorStorage = mock(SensorStorage.class);
-    DefaultCpdTokens tokens = new DefaultCpdTokens(new MapSettings().asConfig(), sensorStorage)
-      .onFile(INPUT_FILE)
-      .addToken(INPUT_FILE.newRange(1, 6, 1, 10), "bar");
+    DefaultCpdTokens tokens = new DefaultCpdTokens(sensorStorage)
+      .onFile(inputFile)
+      .addToken(inputFile.newRange(1, 6, 1, 10), "bar");
 
     try {
-      tokens.addToken(INPUT_FILE.newRange(1, 2, 1, 5), "foo");
+      tokens.addToken(inputFile.newRange(1, 2, 1, 5), "foo");
       fail("Expected exception");
     } catch (Exception e) {
-      assertThat(e).hasMessage("Tokens of file src" + File.separator + "Foo.java should be provided in order.\n" +
+      assertThat(e).hasMessage("Tokens of file src/Foo.java should be provided in order.\n" +
         "Previous token: Range[from [line=1, lineOffset=6] to [line=1, lineOffset=10]]\n" +
         "Last token: Range[from [line=1, lineOffset=2] to [line=1, lineOffset=5]]");
     }

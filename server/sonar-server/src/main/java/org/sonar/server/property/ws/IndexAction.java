@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -120,10 +120,10 @@ public class IndexAction implements WsAction {
 
   private Optional<ComponentDto> loadComponent(DbSession dbSession, String component) {
     try {
-      Long componentId = Long.parseLong(component);
-      return Optional.ofNullable(dbClient.componentDao().selectById(dbSession, componentId).orNull());
+      long componentId = Long.parseLong(component);
+      return Optional.ofNullable(dbClient.componentDao().selectById(dbSession, componentId).orElse(null));
     } catch (NumberFormatException e) {
-      return Optional.ofNullable(dbClient.componentDao().selectByKey(dbSession, component).orNull());
+      return Optional.ofNullable(dbClient.componentDao().selectByKey(dbSession, component).orElse(null));
     }
   }
 

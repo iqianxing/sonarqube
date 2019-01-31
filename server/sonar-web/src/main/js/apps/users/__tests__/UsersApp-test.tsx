@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,10 +19,10 @@
  */
 /* eslint-disable import/order */
 import * as React from 'react';
-import { Location } from 'history';
 import { shallow } from 'enzyme';
-import UsersApp from '../UsersApp';
+import { UsersApp } from '../UsersApp';
 import { waitAndUpdate } from '../../../helpers/testUtils';
+import { Location } from '../../../components/hoc/withRouter';
 
 jest.mock('../../../api/users', () => ({
   getIdentityProviders: jest.fn(() =>
@@ -77,16 +77,14 @@ it('should render correctly', async () => {
   expect(wrapper).toMatchSnapshot();
 });
 
-function getWrapper(props = {}) {
+function getWrapper(props: Partial<UsersApp['props']> = {}) {
   return shallow(
     <UsersApp
       currentUser={currentUser}
       location={location}
       organizationsEnabled={true}
+      router={{ push: jest.fn() }}
       {...props}
-    />,
-    {
-      context: { router: {} }
-    }
+    />
   );
 }

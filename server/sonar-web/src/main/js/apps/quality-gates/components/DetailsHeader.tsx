@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,12 +26,11 @@ import ModalButton from '../../../components/controls/ModalButton';
 import { setQualityGateAsDefault } from '../../../api/quality-gates';
 import { Button } from '../../../components/ui/buttons';
 import { translate } from '../../../helpers/l10n';
-import { QualityGate } from '../../../app/types';
 
 interface Props {
   onSetDefault: () => void;
   organization?: string;
-  qualityGate: QualityGate;
+  qualityGate: T.QualityGate;
   refreshItem: () => Promise<void>;
   refreshList: () => Promise<void>;
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,6 +25,8 @@ import org.sonar.ce.task.container.TaskContainer;
 import org.sonar.ce.task.projectanalysis.filemove.FileMoveDetectionStep;
 import org.sonar.ce.task.projectanalysis.measure.PostMeasuresComputationChecksStep;
 import org.sonar.ce.task.projectanalysis.purge.PurgeDatastoresStep;
+import org.sonar.ce.task.projectanalysis.qualityprofile.RegisterQualityProfileStatusStep;
+import org.sonar.ce.task.projectanalysis.source.PersistFileSourcesStep;
 import org.sonar.ce.task.step.ComputationStep;
 import org.sonar.ce.task.step.ExecuteStatelessInitExtensionsStep;
 
@@ -36,6 +38,7 @@ public class ReportComputationSteps extends AbstractComputationSteps {
   private static final List<Class<? extends ComputationStep>> STEPS = Arrays.asList(
     ExtractReportStep.class,
     PersistScannerContextStep.class,
+    PersistAnalysisWarningsStep.class,
     DbMigrationsStep.class,
     GenerateAnalysisUuid.class,
 
@@ -71,14 +74,11 @@ public class ReportComputationSteps extends AbstractComputationSteps {
     ComplexityMeasuresStep.class,
 
     LoadMeasureComputersStep.class,
+    RegisterQualityProfileStatusStep.class,
     ExecuteVisitorsStep.class,
 
     PostMeasuresComputationChecksStep.class,
 
-    // Must be executed after computation of all measures
-    ComputeMeasureVariationsStep.class,
-
-    // Must be executed after computation of differential measures
     QualityGateMeasuresStep.class,
     // Must be executed after computation of language distribution
     ComputeQProfileMeasureStep.class,
@@ -94,12 +94,11 @@ public class ReportComputationSteps extends AbstractComputationSteps {
     PersistAnalysisPropertiesStep.class,
     PersistMeasuresStep.class,
     PersistLiveMeasuresStep.class,
-    PersistExternalRulesStep.class,
+    PersistAdHocRulesStep.class,
     PersistIssuesStep.class,
     PersistProjectLinksStep.class,
     PersistEventsStep.class,
     PersistFileSourcesStep.class,
-    PersistTestsStep.class,
     PersistCrossProjectDuplicationIndexStep.class,
     EnableAnalysisStep.class,
 

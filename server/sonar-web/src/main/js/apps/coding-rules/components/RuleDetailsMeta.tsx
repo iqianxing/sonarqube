@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,21 +21,20 @@ import * as React from 'react';
 import { Link } from 'react-router';
 import RuleDetailsTagsPopup from './RuleDetailsTagsPopup';
 import SimilarRulesFilter from './SimilarRulesFilter';
-import { Query } from '../query';
-import { RuleDetails, RuleScope } from '../../../app/types';
-import { getRuleUrl } from '../../../helpers/urls';
+import DateFormatter from '../../../components/intl/DateFormatter';
+import DocTooltip from '../../../components/docs/DocTooltip';
+import Dropdown from '../../../components/controls/Dropdown';
+import IssueTypeIcon from '../../../components/ui/IssueTypeIcon';
 import LinkIcon from '../../../components/icons-components/LinkIcon';
 import RuleScopeIcon from '../../../components/icons-components/RuleScopeIcon';
-import Tooltip from '../../../components/controls/Tooltip';
-import DocTooltip from '../../../components/docs/DocTooltip';
-import { translate, translateWithParameters } from '../../../helpers/l10n';
-import IssueTypeIcon from '../../../components/ui/IssueTypeIcon';
 import SeverityHelper from '../../../components/shared/SeverityHelper';
-import Dropdown from '../../../components/controls/Dropdown';
 import TagsList from '../../../components/tags/TagsList';
-import DateFormatter from '../../../components/intl/DateFormatter';
-import { Button } from '../../../components/ui/buttons';
+import Tooltip from '../../../components/controls/Tooltip';
+import { ButtonLink } from '../../../components/ui/buttons';
 import { PopupPlacement } from '../../../components/ui/popups';
+import { Query } from '../query';
+import { getRuleUrl } from '../../../helpers/urls';
+import { translate, translateWithParameters } from '../../../helpers/l10n';
 
 interface Props {
   canWrite: boolean | undefined;
@@ -44,7 +43,7 @@ interface Props {
   onTagsChange: (tags: string[]) => void;
   organization: string | undefined;
   referencedRepositories: { [repository: string]: { key: string; language: string; name: string } };
-  ruleDetails: RuleDetails;
+  ruleDetails: T.RuleDetails;
 }
 
 const EXTERNAL_RULE_REPO_PREFIX = 'external_';
@@ -109,12 +108,12 @@ export default class RuleDetailsMeta extends React.PureComponent<Props> {
               />
             }
             overlayPlacement={PopupPlacement.BottomLeft}>
-            <Button className="button-link">
+            <ButtonLink>
               <TagsList
                 allowUpdate={canWrite}
                 tags={allTags.length > 0 ? allTags : [translate('coding_rules.no_tags')]}
               />
-            </Button>
+            </ButtonLink>
           </Dropdown>
         ) : (
           <TagsList
@@ -201,7 +200,7 @@ export default class RuleDetailsMeta extends React.PureComponent<Props> {
   };
 
   renderScope = () => {
-    const scope = this.props.ruleDetails.scope || RuleScope.Main;
+    const scope = this.props.ruleDetails.scope || 'MAIN';
     return (
       <Tooltip overlay={translate('coding_rules.scope.title')}>
         <li className="coding-rules-detail-property">
@@ -232,6 +231,15 @@ export default class RuleDetailsMeta extends React.PureComponent<Props> {
     );
   };
 
+  renderKey() {
+    const EXTERNAL_PREFIX = 'external_';
+    const { ruleDetails } = this.props;
+    const displayedKey = ruleDetails.key.startsWith(EXTERNAL_PREFIX)
+      ? ruleDetails.key.substr(EXTERNAL_PREFIX.length)
+      : ruleDetails.key;
+    return <span className="note text-middle">{displayedKey}</span>;
+  }
+
   render() {
     const { ruleDetails } = this.props;
     const hasTypeData = !ruleDetails.isExternal || ruleDetails.type !== 'UNKNOWN';
@@ -239,7 +247,7 @@ export default class RuleDetailsMeta extends React.PureComponent<Props> {
       <div className="js-rule-meta">
         <header className="page-header">
           <div className="pull-right">
-            <span className="note text-middle">{ruleDetails.key}</span>
+            {this.renderKey()}
             {!ruleDetails.isExternal && (
               <Link
                 className="coding-rules-detail-permalink link-no-underline spacer-left text-middle"

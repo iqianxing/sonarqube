@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,7 +17,6 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-
 import * as React from 'react';
 import { AutoSizer } from 'react-virtualized/dist/commonjs/AutoSizer';
 import { scaleLinear, scaleOrdinal } from 'd3-scale';
@@ -29,14 +28,13 @@ import QualifierIcon from '../../../components/icons-components/QualifierIcon';
 import TreeMap, { TreeMapItem } from '../../../components/charts/TreeMap';
 import { translate, translateWithParameters, getLocalizedMetricName } from '../../../helpers/l10n';
 import { formatMeasure, isDiffMetric } from '../../../helpers/measures';
-import { getBranchLikeUrl } from '../../../helpers/urls';
-import { BranchLike, ComponentMeasureEnhanced, Metric } from '../../../app/types';
+import { isDefined } from '../../../helpers/types';
 
 interface Props {
-  branchLike?: BranchLike;
-  components: ComponentMeasureEnhanced[];
+  branchLike?: T.BranchLike;
+  components: T.ComponentMeasureEnhanced[];
   handleSelect: (component: string) => void;
-  metric: Metric;
+  metric: T.Metric;
 }
 
 interface State {
@@ -55,13 +53,13 @@ export default class TreeMapView extends React.PureComponent<Props, State> {
     this.state = { treemapItems: this.getTreemapComponents(props) };
   }
 
-  componentWillReceiveProps(nextProps: Props) {
-    if (nextProps.components !== this.props.components || nextProps.metric !== this.props.metric) {
-      this.setState({ treemapItems: this.getTreemapComponents(nextProps) });
+  componentDidUpdate(prevProps: Props) {
+    if (prevProps.components !== this.props.components || prevProps.metric !== this.props.metric) {
+      this.setState({ treemapItems: this.getTreemapComponents(this.props) });
     }
   }
 
-  getTreemapComponents = ({ branchLike, components, metric }: Props) => {
+  getTreemapComponents = ({ components, metric }: Props) => {
     const colorScale = this.getColorScale(metric);
     return components
       .map(component => {
@@ -80,13 +78,15 @@ export default class TreeMapView extends React.PureComponent<Props, State> {
         }
 
         const sizeValue = Number(rawSizeValue);
+        if (sizeValue < 1) {
+          return undefined;
+        }
         return {
           color:
             colorValue !== undefined ? (colorScale as Function)(colorValue) : theme.secondFontColor,
           icon: <QualifierIcon fill={theme.baseFontColor} qualifier={component.qualifier} />,
           key: component.refKey || component.key,
           label: component.name,
-          link: getBranchLikeUrl(component.refKey || component.key, branchLike),
           size: sizeValue,
           tooltip: this.getTooltip({
             colorMetric: metric,
@@ -97,7 +97,7 @@ export default class TreeMapView extends React.PureComponent<Props, State> {
           })
         };
       })
-      .filter(Boolean) as TreeMapItem[];
+      .filter(isDefined);
   };
 
   getLevelColorScale = () =>
@@ -105,9 +105,9 @@ export default class TreeMapView extends React.PureComponent<Props, State> {
       .domain(['ERROR', 'WARN', 'OK', 'NONE'])
       .range(LEVEL_COLORS);
 
-  getPercentColorScale = (metric: Metric) => {
+  getPercentColorScale = (metric: T.Metric) => {
     const color = scaleLinear<string, string>().domain([0, 25, 50, 75, 100]);
-    color.range(metric.direction === 1 ? [...COLORS].reverse() : COLORS);
+    color.range(metric.higherValuesAreBetter ? [...COLORS].reverse() : COLORS);
     return color;
   };
 
@@ -116,7 +116,7 @@ export default class TreeMapView extends React.PureComponent<Props, State> {
       .domain([1, 2, 3, 4, 5])
       .range(COLORS);
 
-  getColorScale = (metric: Metric) => {
+  getColorScale = (metric: T.Metric) => {
     if (metric.type === 'LEVEL') {
       return this.getLevelColorScale();
     }
@@ -133,10 +133,10 @@ export default class TreeMapView extends React.PureComponent<Props, State> {
     sizeMetric,
     sizeValue
   }: {
-    colorMetric: Metric;
+    colorMetric: T.Metric;
     colorValue?: string;
     componentName: string;
-    sizeMetric: Metric;
+    sizeMetric: T.Metric;
     sizeValue: number;
   }) => {
     const formatted =
@@ -169,7 +169,6 @@ export default class TreeMapView extends React.PureComponent<Props, State> {
         className="measure-details-treemap-legend"
         colorNA={theme.secondFontColor}
         colorScale={colorScale}
-        direction={metric.direction}
         height={20}
         width={200}
       />

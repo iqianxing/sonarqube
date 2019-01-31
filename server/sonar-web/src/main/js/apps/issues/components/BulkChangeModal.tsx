@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,6 @@ import * as React from 'react';
 import { pickBy, sortBy } from 'lodash';
 import { searchAssignees } from '../utils';
 import { searchIssueTags, bulkChangeIssues } from '../../../api/issues';
-import { Component, CurrentUser, Issue, Paging, isLoggedIn, IssueType } from '../../../app/types';
 import throwGlobalError from '../../../app/utils/throwGlobalError';
 import MarkdownTips from '../../../components/common/MarkdownTips';
 import SearchSelect from '../../../components/controls/SearchSelect';
@@ -34,6 +33,8 @@ import Avatar from '../../../components/ui/Avatar';
 import { SubmitButton } from '../../../components/ui/buttons';
 import IssueTypeIcon from '../../../components/ui/IssueTypeIcon';
 import { translate, translateWithParameters } from '../../../helpers/l10n';
+import { Alert } from '../../../components/ui/Alert';
+import { isLoggedIn } from '../../../helpers/users';
 
 interface AssigneeOption {
   avatar?: string;
@@ -48,9 +49,9 @@ interface TagOption {
 }
 
 interface Props {
-  component: Component | undefined;
-  currentUser: CurrentUser;
-  fetchIssues: (x: {}) => Promise<{ issues: Issue[]; paging: Paging }>;
+  component: T.Component | undefined;
+  currentUser: T.CurrentUser;
+  fetchIssues: (x: {}) => Promise<{ issues: T.Issue[]; paging: T.Paging }>;
   onClose: () => void;
   onDone: () => void;
   organization: { key: string } | undefined;
@@ -70,10 +71,10 @@ interface FormFields {
 
 interface State extends FormFields {
   initialTags: Array<{ label: string; value: string }>;
-  issues: Issue[];
+  issues: T.Issue[];
   // used for initial loading of issues
   loading: boolean;
-  paging?: Paging;
+  paging?: T.Paging;
   // used when submitting a form
   submitting: boolean;
 }
@@ -200,7 +201,7 @@ export default class BulkChangeModal extends React.PureComponent<Props, State> {
 
   handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    /* eslint-disable camelcase */
+
     const query = pickBy(
       {
         add_tags: this.state.addTags && this.state.addTags.map(t => t.value).join(),
@@ -214,7 +215,7 @@ export default class BulkChangeModal extends React.PureComponent<Props, State> {
       },
       x => x !== undefined
     );
-    /* eslint-enable camelcase */
+
     const issueKeys = this.state.issues.map(issue => issue.key);
 
     this.setState({ submitting: true });
@@ -230,7 +231,7 @@ export default class BulkChangeModal extends React.PureComponent<Props, State> {
     );
   };
 
-  getAvailableTransitions(issues: Issue[]) {
+  getAvailableTransitions(issues: T.Issue[]) {
     const transitions: { [x: string]: number } = {};
     issues.forEach(issue => {
       if (issue.transitions) {
@@ -269,8 +270,12 @@ export default class BulkChangeModal extends React.PureComponent<Props, State> {
     </div>
   );
 
-  renderCheckbox = (field: keyof FormFields) => (
-    <Checkbox checked={this.state[field] !== undefined} onCheck={this.handleFieldCheck(field)} />
+  renderCheckbox = (field: keyof FormFields, id?: string) => (
+    <Checkbox
+      checked={this.state[field] !== undefined}
+      id={id}
+      onCheck={this.handleFieldCheck(field)}
+    />
   );
 
   renderAffected = (affected: number) => (
@@ -332,7 +337,7 @@ export default class BulkChangeModal extends React.PureComponent<Props, State> {
       return null;
     }
 
-    const types = [IssueType.Bug, IssueType.Vulnerability, IssueType.CodeSmell];
+    const types: T.IssueType[] = ['BUG', 'VULNERABILITY', 'CODE_SMELL'];
     const options = types.map(type => ({ label: translate('issue.type', type), value: type }));
 
     const optionRenderer = (option: { label: string; value: string }) => (
@@ -484,7 +489,7 @@ export default class BulkChangeModal extends React.PureComponent<Props, State> {
   renderNotificationsField = () => (
     <div className="modal-field">
       <label htmlFor="send-notifications">{translate('issue.send_notifications')}</label>
-      {this.renderCheckbox('notifications')}
+      {this.renderCheckbox('notifications', 'send-notifications')}
     </div>
   );
 
@@ -501,9 +506,9 @@ export default class BulkChangeModal extends React.PureComponent<Props, State> {
 
         <div className="modal-body">
           {limitReached && (
-            <div className="alert alert-warning">
+            <Alert variant="warning">
               {translateWithParameters('issue_bulk_change.max_issues_reached', issues.length)}
-            </div>
+            </Alert>
           )}
 
           {this.renderAssigneeField()}
@@ -515,7 +520,7 @@ export default class BulkChangeModal extends React.PureComponent<Props, State> {
           {this.renderCommentField()}
           {issues.length > 0 && this.renderNotificationsField()}
           {issues.length === 0 && (
-            <span className="alert alert-warning">{translate('issue_bulk_change.no_match')}</span>
+            <Alert variant="warning">{translate('issue_bulk_change.no_match')}</Alert>
           )}
         </div>
 
@@ -540,7 +545,7 @@ export default class BulkChangeModal extends React.PureComponent<Props, State> {
 }
 
 function hasAction(action: string) {
-  return (issue: Issue) => issue.actions && issue.actions.includes(action);
+  return (issue: T.Issue) => issue.actions && issue.actions.includes(action);
 }
 
 function promptCreateTag(label: string) {

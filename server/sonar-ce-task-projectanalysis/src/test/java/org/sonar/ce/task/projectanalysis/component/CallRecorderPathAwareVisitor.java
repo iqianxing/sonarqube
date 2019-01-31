@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -35,7 +35,7 @@ class CallRecorderPathAwareVisitor extends PathAwareVisitorAdapter<Integer> {
     super(maxDepth, order, new SimpleStackElementFactory<Integer>() {
       @Override
       public Integer createForAny(Component component) {
-        return component.getType().isReportType() ? component.getReportAttributes().getRef() : Integer.valueOf(component.getKey());
+        return component.getType().isReportType() ? component.getReportAttributes().getRef() : Integer.valueOf(component.getDbKey());
       }
     });
   }
@@ -43,11 +43,6 @@ class CallRecorderPathAwareVisitor extends PathAwareVisitorAdapter<Integer> {
   @Override
   public void visitProject(Component project, Path<Integer> path) {
     callsRecords.add(reportCallRecord(project, path, "visitProject"));
-  }
-
-  @Override
-  public void visitModule(Component module, Path<Integer> path) {
-    callsRecords.add(reportCallRecord(module, path, "visitModule"));
   }
 
   @Override
@@ -86,7 +81,7 @@ class CallRecorderPathAwareVisitor extends PathAwareVisitorAdapter<Integer> {
   }
 
   private static PathAwareCallRecord viewsCallRecord(Component component, Path<Integer> path, String method) {
-    return PathAwareCallRecord.viewsCallRecord(method, component.getKey(), path.current(), getParent(path), path.root(),
+    return PathAwareCallRecord.viewsCallRecord(method, component.getDbKey(), path.current(), getParent(path), path.root(),
       toValueList(path));
   }
 

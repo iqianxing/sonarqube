@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,12 +21,11 @@ import * as React from 'react';
 import ProjectCard from './ProjectCard';
 import ListFooter from '../../../components/controls/ListFooter';
 import { translate } from '../../../helpers/l10n';
-import { MyProject } from '../../../app/types';
 
 interface Props {
   loading: boolean;
   loadMore: () => void;
-  projects: MyProject[];
+  projects: T.MyProject[];
   total?: number;
 }
 

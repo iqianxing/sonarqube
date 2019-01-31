@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -60,7 +60,7 @@ public class CommonRuleDefinitionsImpl implements CommonRuleDefinitions {
     RulesDefinition.NewRule rule = repo.createRule(CommonRuleKeys.INSUFFICIENT_BRANCH_COVERAGE);
     rule.setName("Branches should have sufficient coverage by tests")
       .addTags("bad-practice")
-      .setHtmlDescription("An issue is created on a file as soon as the branch coverage on this file is less than the required threshold."
+      .setHtmlDescription("An issue is created on a file as soon as the branch coverage on this file is less than the required threshold. "
         + "It gives the number of branches to be covered in order to reach the required threshold.")
       .setDebtRemediationFunction(rule.debtRemediationFunctions().linear("5min"))
       .setGapDescription("number of uncovered conditions")

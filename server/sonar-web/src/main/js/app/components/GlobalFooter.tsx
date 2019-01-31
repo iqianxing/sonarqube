@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,14 +22,15 @@ import { Link } from 'react-router';
 import GlobalFooterSonarCloud from './GlobalFooterSonarCloud';
 import GlobalFooterBranding from './GlobalFooterBranding';
 import InstanceMessage from '../../components/common/InstanceMessage';
-import { EDITIONS, EditionKey } from '../../apps/marketplace/utils';
+import { EDITIONS } from '../../apps/marketplace/utils';
 import { translate, translateWithParameters } from '../../helpers/l10n';
 import { isSonarCloud } from '../../helpers/system';
+import { Alert } from '../../components/ui/Alert';
 
 interface Props {
   hideLoggedInInfo?: boolean;
   productionDatabase: boolean;
-  sonarqubeEdition?: EditionKey;
+  sonarqubeEdition?: T.EditionKey;
   sonarqubeVersion?: string;
 }
 
@@ -48,14 +49,12 @@ export default function GlobalFooter({
   return (
     <div className="page-footer page-container" id="footer">
       {productionDatabase === false && (
-        <div className="alert alert-danger">
-          <p className="big" id="evaluation_warning">
-            {translate('footer.production_database_warning')}
-          </p>
+        <Alert display="inline" id="evaluation_warning" variant="warning">
+          <p className="big">{translate('footer.production_database_warning')}</p>
           <p>
             <InstanceMessage message={translate('footer.production_database_explanation')} />
           </p>
-        </div>
+        </Alert>
       )}
 
       <GlobalFooterBranding />

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,9 +19,8 @@
  */
 package org.sonar.ce.task.projectanalysis.formula;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 import javax.annotation.Nullable;
-import org.assertj.guava.api.Assertions;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
@@ -30,7 +29,6 @@ import org.sonar.ce.task.projectanalysis.component.ReportComponent;
 import org.sonar.ce.task.projectanalysis.formula.counter.LongSumCounter;
 import org.sonar.ce.task.projectanalysis.measure.Measure;
 import org.sonar.ce.task.projectanalysis.metric.Metric;
-import org.sonar.ce.task.projectanalysis.period.PeriodHolder;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
@@ -48,9 +46,9 @@ public class LongSumFormulaTest {
   public ExpectedException thrown = ExpectedException.none();
 
   CreateMeasureContext projectCreateMeasureContext = new DumbCreateMeasureContext(
-    ReportComponent.builder(Component.Type.PROJECT, 1).build(), mock(Metric.class), mock(PeriodHolder.class));
+    ReportComponent.builder(Component.Type.PROJECT, 1).build(), mock(Metric.class));
   CreateMeasureContext fileCreateMeasureContext = new DumbCreateMeasureContext(
-    ReportComponent.builder(Component.Type.FILE, 2).build(), mock(Metric.class), mock(PeriodHolder.class));
+    ReportComponent.builder(Component.Type.FILE, 2).build(), mock(Metric.class));
 
   @Test
   public void check_create_new_counter_class() {
@@ -144,7 +142,7 @@ public class LongSumFormulaTest {
   }
 
   private void assertCreateNoMeasure(LongSumCounter counter) {
-    Assertions.assertThat(LONG_SUM_FORMULA.createMeasure(counter, projectCreateMeasureContext)).isAbsent();
+    assertThat(LONG_SUM_FORMULA.createMeasure(counter, projectCreateMeasureContext)).isNotPresent();
   }
 
   private void assertCreateMeasureValue(LongSumCounter counter, long expectMeasureValue) {
@@ -154,7 +152,7 @@ public class LongSumFormulaTest {
   private void initialize_does_not_create_measure_on_file(LongSumCounter counter) {
     counter.initialize(createMeasureInInitContext(10));
 
-    Assertions.assertThat(LONG_SUM_FORMULA.createMeasure(counter, fileCreateMeasureContext)).isAbsent();
+    assertThat(LONG_SUM_FORMULA.createMeasure(counter, fileCreateMeasureContext)).isNotPresent();
   }
 
   private static CounterInitializationContext createMeasureInInitContext(long value) {
@@ -165,7 +163,7 @@ public class LongSumFormulaTest {
 
   private static CounterInitializationContext createNoMeasureInInitContext() {
     CounterInitializationContext initContext = mock(CounterInitializationContext.class);
-    when(initContext.getMeasure(LINES_KEY)).thenReturn(Optional.absent());
+    when(initContext.getMeasure(LINES_KEY)).thenReturn(Optional.empty());
     return initContext;
   }
 

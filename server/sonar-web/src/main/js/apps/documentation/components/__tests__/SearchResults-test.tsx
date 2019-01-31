@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,16 +28,34 @@ jest.mock('lunr', () => ({
       {
         ref: 'lorem/origin',
         matchData: {
-          metadata: { from: { title: { position: [[19, 5]] }, text: { position: [[121, 4]] } } }
+          metadata: {
+            simply: {
+              title: { position: [[19, 5]] },
+              text: {
+                position: [[15, 6], [28, 4]],
+                tokenContext: ['is simply dummy', 'simply dummy text']
+              }
+            }
+          }
         }
       },
-      { ref: 'foobar', matchData: { metadata: { from: { title: { position: [[23, 4]] } } } } }
+      {
+        ref: 'foobar',
+        matchData: {
+          metadata: {
+            simply: {
+              title: { position: [[23, 4]] },
+              text: { position: [[111, 6], [118, 4]], tokenContext: ['keywords simply text'] }
+            }
+          }
+        }
+      }
     ])
   }))
 }));
 
 function createPage(title: string, relativeName: string, text = '') {
-  return { relativeName, title, order: -1, text, content: text };
+  return { relativeName, url: '/' + relativeName, title, navTitle: undefined, text, content: text };
 }
 
 const pages = [
@@ -54,13 +72,22 @@ const pages = [
   createPage(
     'Where does Foobar come from?',
     'foobar',
-    'Foobar is a universal variable understood to represent whatever is being discussed.'
+    'Foobar is a universal variable understood to represent whatever is being discussed. Now we need some keywords: simply text.'
   )
 ];
 
 it('should search', () => {
-  const wrapper = shallow(<SearchResults pages={pages} query="from" splat="foobar" />);
+  const wrapper = shallow(
+    <SearchResults
+      navigation={['lorem/index', 'lorem/origin', 'foobar']}
+      pages={pages}
+      query="simply text"
+      splat="foobar"
+    />
+  );
   expect(wrapper).toMatchSnapshot();
   expect(lunr).toBeCalled();
-  expect((wrapper.instance() as SearchResults).index.search).toBeCalledWith('from~1 from*');
+  expect((wrapper.instance() as SearchResults).index.search).toBeCalledWith(
+    'simply~1 simply* text~1 text*'
+  );
 });

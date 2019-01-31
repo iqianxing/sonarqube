@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -314,7 +314,7 @@ public class ViewsCommentMeasuresStepTest {
   }
 
   private void assertNoRawMeasure(String metricKey, int componentRef) {
-    assertThat(measureRepository.getAddedRawMeasure(componentRef, metricKey)).isAbsent();
+    assertThat(measureRepository.getAddedRawMeasure(componentRef, metricKey)).isNotPresent();
   }
 
   private void addRawMeasure(int componentRef, String metricKey, int value) {

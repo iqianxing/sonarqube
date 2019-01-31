@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,7 +17,6 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-import { SecurityHotspot } from '../app/types';
 import { getJSON } from '../helpers/request';
 import throwGlobalError from '../app/utils/throwGlobalError';
 
@@ -26,6 +25,6 @@ export function getSecurityHotspots(data: {
   standard: 'owaspTop10' | 'sansTop25' | 'cwe';
   includeDistribution?: boolean;
   branch?: string;
-}): Promise<{ categories: Array<SecurityHotspot> }> {
+}): Promise<{ categories: T.SecurityHotspot[] }> {
   return getJSON('/api/security_reports/show', data).catch(throwGlobalError);
 }

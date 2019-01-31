@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,7 +22,7 @@ import SeverityHelper from '../../../components/shared/SeverityHelper';
 import { translate } from '../../../helpers/l10n';
 
 interface Props {
-  severity: string | null;
+  severity: string;
 }
 
 export default function SeverityChange({ severity }: Props) {

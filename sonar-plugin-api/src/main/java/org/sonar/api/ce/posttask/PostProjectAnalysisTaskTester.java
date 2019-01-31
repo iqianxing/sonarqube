@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -81,7 +81,6 @@ import static java.util.Objects.requireNonNull;
  *               .setMetricKey("metric key")
  *               .setOperator(QualityGate.Operator.GREATER_THAN)
  *               .setErrorThreshold("12")
- *               .setOnLeakPeriod(true)
  *               .build(QualityGate.EvaluationStatus.OK, "value"))
  *           .build())
  *       .execute();
@@ -511,12 +510,11 @@ public class PostProjectAnalysisTaskTester {
   public static final class ConditionBuilder {
     private static final String METRIC_KEY_CAN_NOT_BE_NULL = "metricKey cannot be null";
     private static final String OPERATOR_CAN_NOT_BE_NULL = "operator cannot be null";
+    private static final String ERROR_THRESHOLD_CAN_NOT_BE_NULL = "errorThreshold cannot be null";
 
     private String metricKey;
     private QualityGate.Operator operator;
     private String errorThreshold;
-    private String warningThreshold;
-    private boolean onLeakPeriod;
 
     private ConditionBuilder() {
       // prevents instantiation outside PostProjectAnalysisTaskTester
@@ -532,18 +530,25 @@ public class PostProjectAnalysisTaskTester {
       return this;
     }
 
-    public ConditionBuilder setErrorThreshold(@Nullable String errorThreshold) {
-      this.errorThreshold = errorThreshold;
+    public ConditionBuilder setErrorThreshold(String errorThreshold) {
+      this.errorThreshold = requireNonNull(errorThreshold, ERROR_THRESHOLD_CAN_NOT_BE_NULL);
       return this;
     }
 
+    /**
+     * @deprecated in 7.6. This method has no longer any effect.
+     */
+    @Deprecated
     public ConditionBuilder setWarningThreshold(@Nullable String warningThreshold) {
-      this.warningThreshold = warningThreshold;
       return this;
     }
 
+    /**
+     * @deprecated in 7.6. This method has no longer any effect.
+     * Conditions "on leak period" were removed. Use "New X" conditions instead.
+     */
+    @Deprecated
     public ConditionBuilder setOnLeakPeriod(boolean onLeakPeriod) {
-      this.onLeakPeriod = onLeakPeriod;
       return this;
     }
 
@@ -570,14 +575,19 @@ public class PostProjectAnalysisTaskTester {
           return errorThreshold;
         }
 
+        @Deprecated
         @Override
         public String getWarningThreshold() {
-          return warningThreshold;
+          return null;
         }
 
+        /**
+         * @deprecated in 7.6. Conditions "on leak period" were removed. Use "New X" conditions instead.
+         */
+        @Deprecated
         @Override
         public boolean isOnLeakPeriod() {
-          return onLeakPeriod;
+          return false;
         }
 
         @Override
@@ -592,8 +602,6 @@ public class PostProjectAnalysisTaskTester {
             ", metricKey='" + metricKey + '\'' +
             ", operator=" + operator +
             ", errorThreshold='" + errorThreshold + '\'' +
-            ", warningThreshold='" + warningThreshold + '\'' +
-            ", onLeakPeriod=" + onLeakPeriod +
             '}';
         }
       };
@@ -625,14 +633,19 @@ public class PostProjectAnalysisTaskTester {
           return errorThreshold;
         }
 
+        @Deprecated
         @Override
         public String getWarningThreshold() {
-          return warningThreshold;
+          return null;
         }
 
+        /**
+         * @deprecated in 7.6. Conditions "on leak period" were removed. Use "New X" conditions instead.
+         */
+        @Deprecated
         @Override
         public boolean isOnLeakPeriod() {
-          return onLeakPeriod;
+          return false;
         }
 
         @Override
@@ -647,8 +660,6 @@ public class PostProjectAnalysisTaskTester {
             ", metricKey='" + metricKey + '\'' +
             ", operator=" + operator +
             ", errorThreshold='" + errorThreshold + '\'' +
-            ", warningThreshold='" + warningThreshold + '\'' +
-            ", onLeakPeriod=" + onLeakPeriod +
             ", value='" + value + '\'' +
             '}';
         }
@@ -658,7 +669,7 @@ public class PostProjectAnalysisTaskTester {
     private void checkCommonProperties() {
       requireNonNull(metricKey, METRIC_KEY_CAN_NOT_BE_NULL);
       requireNonNull(operator, OPERATOR_CAN_NOT_BE_NULL);
-      checkState(errorThreshold != null || warningThreshold != null, "At least one of errorThreshold and warningThreshold must be non null");
+      requireNonNull(errorThreshold, ERROR_THRESHOLD_CAN_NOT_BE_NULL);
     }
   }
 
@@ -779,6 +790,11 @@ public class PostProjectAnalysisTaskTester {
         @Override
         public ScannerContext getScannerContext() {
           return scannerContext;
+        }
+
+        @Override
+        public String getScmRevisionId() {
+          return null;
         }
 
         @Override

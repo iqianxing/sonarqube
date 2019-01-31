@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,20 +24,21 @@ import ComponentNavMenu from './ComponentNavMenu';
 import ComponentNavBgTaskNotif from './ComponentNavBgTaskNotif';
 import RecentHistory from '../../RecentHistory';
 import * as theme from '../../../theme';
-import { BranchLike, Component } from '../../../types';
 import ContextNavBar from '../../../../components/nav/ContextNavBar';
-import { Task } from '../../../../api/ce';
 import { STATUSES } from '../../../../apps/background-tasks/constants';
 import './ComponentNav.css';
 
 interface Props {
-  branchLikes: BranchLike[];
-  currentBranchLike: BranchLike | undefined;
-  component: Component;
-  currentTask?: Task;
+  branchLikes: T.BranchLike[];
+  branchMeasures?: T.Measure[];
+  currentBranchLike: T.BranchLike | undefined;
+  component: T.Component;
+  currentTask?: T.Task;
+  currentTaskOnSameBranch?: boolean;
   isInProgress?: boolean;
   isPending?: boolean;
   location: {};
+  warnings: string[];
 }
 
 export default class ComponentNav extends React.PureComponent<Props> {
@@ -74,6 +75,7 @@ export default class ComponentNav extends React.PureComponent<Props> {
         <ComponentNavBgTaskNotif
           component={component}
           currentTask={currentTask}
+          currentTaskOnSameBranch={this.props.currentTaskOnSameBranch}
           isInProgress={isInProgress}
           isPending={isPending}
         />
@@ -92,7 +94,12 @@ export default class ComponentNav extends React.PureComponent<Props> {
             // to close dropdown on any location change
             location={this.props.location}
           />
-          <ComponentNavMeta branchLike={currentBranchLike} component={component} />
+          <ComponentNavMeta
+            branchLike={currentBranchLike}
+            branchMeasures={this.props.branchMeasures}
+            component={component}
+            warnings={this.props.warnings}
+          />
         </div>
         <ComponentNavMenu
           branchLike={currentBranchLike}

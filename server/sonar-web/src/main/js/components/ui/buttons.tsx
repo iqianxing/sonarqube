@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,24 +20,24 @@
 import * as React from 'react';
 import * as classNames from 'classnames';
 import * as theme from '../../app/theme';
-import { Omit } from '../../app/types';
 import ClearIcon from '../icons-components/ClearIcon';
 import EditIcon from '../icons-components/EditIcon';
 import Tooltip from '../controls/Tooltip';
 import './buttons.css';
 
-interface ButtonProps {
+type AllowedButtonAttributes = Pick<
+  React.ButtonHTMLAttributes<HTMLButtonElement>,
+  'className' | 'disabled' | 'id' | 'style' | 'title'
+>;
+
+interface ButtonProps extends AllowedButtonAttributes {
   autoFocus?: boolean;
-  className?: string;
   children?: React.ReactNode;
-  disabled?: boolean;
-  id?: string;
   innerRef?: (node: HTMLElement | null) => void;
   name?: string;
-  onClick?: (event: React.MouseEvent<HTMLElement>) => void;
+  onClick?: () => void;
   preventDefault?: boolean;
   stopPropagation?: boolean;
-  style?: React.CSSProperties;
   type?: string;
 }
 
@@ -48,7 +48,7 @@ export class Button extends React.PureComponent<ButtonProps> {
     event.currentTarget.blur();
     if (preventDefault) event.preventDefault();
     if (stopPropagation) event.stopPropagation();
-    if (onClick) onClick(event);
+    if (onClick) onClick();
   };
 
   render() {
@@ -76,13 +76,17 @@ export class Button extends React.PureComponent<ButtonProps> {
   }
 }
 
-export function SubmitButton(props: Omit<ButtonProps, 'type'>) {
+export function ButtonLink({ className, ...props }: ButtonProps) {
+  return <Button {...props} className={classNames('button-link', className)} />;
+}
+
+export function SubmitButton(props: T.Omit<ButtonProps, 'type'>) {
   // do not prevent default to actually submit a form
   return <Button {...props} preventDefault={false} type="submit" />;
 }
 
-export function ResetButtonLink({ className, ...props }: Omit<ButtonProps, 'type'>) {
-  return <Button {...props} className={classNames('button-link', className)} type="reset" />;
+export function ResetButtonLink(props: T.Omit<ButtonProps, 'type'>) {
+  return <ButtonLink {...props} type="reset" />;
 }
 
 interface ButtonIconProps {

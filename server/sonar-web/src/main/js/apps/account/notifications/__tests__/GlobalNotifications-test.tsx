@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,8 +20,20 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import GlobalNotifications from '../GlobalNotifications';
+import { isSonarCloud } from '../../../../helpers/system';
+
+jest.mock('../../../../helpers/system', () => ({ isSonarCloud: jest.fn() }));
 
 it('should match snapshot', () => {
+  expect(shallowRender()).toMatchSnapshot();
+});
+
+it('should show SonarCloud options if in SC context', () => {
+  (isSonarCloud as jest.Mock).mockImplementation(() => true);
+  expect(shallowRender()).toMatchSnapshot();
+});
+
+function shallowRender(props = {}) {
   const channels = ['channel1', 'channel2'];
   const types = ['type1', 'type2'];
   const notifications = [
@@ -30,15 +42,14 @@ it('should match snapshot', () => {
     { channel: 'channel2', type: 'type2' }
   ];
 
-  expect(
-    shallow(
-      <GlobalNotifications
-        addNotification={jest.fn()}
-        channels={channels}
-        notifications={notifications}
-        removeNotification={jest.fn()}
-        types={types}
-      />
-    )
-  ).toMatchSnapshot();
-});
+  return shallow(
+    <GlobalNotifications
+      addNotification={jest.fn()}
+      channels={channels}
+      notifications={notifications}
+      removeNotification={jest.fn()}
+      types={types}
+      {...props}
+    />
+  );
+}

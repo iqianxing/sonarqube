@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,7 +25,6 @@ import org.sonar.core.hash.LineRange;
 import org.sonar.core.util.CloseableIterator;
 import org.sonar.scanner.protocol.output.ScannerReport.LineSgnificantCode;
 import org.sonar.ce.task.projectanalysis.batch.BatchReportReader;
-import org.sonar.ce.task.projectanalysis.component.Component;
 
 public class SignificantCodeRepository {
   private final BatchReportReader reportReader;
@@ -37,8 +36,13 @@ public class SignificantCodeRepository {
   public Optional<LineRange[]> getRangesPerLine(Component component) {
     int numLines = component.getFileAttributes().getLines();
 
-    Optional<CloseableIterator<LineSgnificantCode>> significantCode = reportReader.readComponentSignificantCode(component.getReportAttributes().getRef());
-    return significantCode.map(s -> toArray(s, numLines));
+    Optional<CloseableIterator<LineSgnificantCode>> opt = reportReader.readComponentSignificantCode(component.getReportAttributes().getRef());
+    if (!opt.isPresent()) {
+      return Optional.empty();
+    }
+    try (CloseableIterator<LineSgnificantCode> significantCode = opt.get()) {
+      return Optional.of(toArray(significantCode, numLines));
+    }
   }
 
   private static LineRange[] toArray(CloseableIterator<LineSgnificantCode> lineRanges, int numLines) {

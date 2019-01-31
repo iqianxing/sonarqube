@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,32 +22,33 @@ package org.sonar.core.issue.tracking;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
-import org.sonar.api.batch.InstantiationStrategy;
-import org.sonar.api.batch.ScannerSide;
+import org.sonar.api.scanner.ScannerSide;
 import org.sonar.api.issue.Issue;
 
 import static org.sonar.core.util.stream.MoreCollectors.toList;
 
-@InstantiationStrategy(InstantiationStrategy.PER_BATCH)
 @ScannerSide
 public class Tracker<RAW extends Trackable, BASE extends Trackable> extends AbstractTracker<RAW, BASE> {
 
   public NonClosedTracking<RAW, BASE> trackNonClosed(Input<RAW> rawInput, Input<BASE> baseInput) {
     NonClosedTracking<RAW, BASE> tracking = NonClosedTracking.of(rawInput, baseInput);
 
-    // 1. match issues with same rule, same line and same line hash, but not necessarily with same message
+    // 1. match by rule, line, line hash and message
+    match(tracking, LineAndLineHashAndMessage::new);
+
+    // 2. match issues with same rule, same line and same line hash, but not necessarily with same message
     match(tracking, LineAndLineHashKey::new);
 
-    // 2. detect code moves by comparing blocks of codes
+    // 3. detect code moves by comparing blocks of codes
     detectCodeMoves(rawInput, baseInput, tracking);
 
-    // 3. match issues with same rule, same message and same line hash
+    // 4. match issues with same rule, same message and same line hash
     match(tracking, LineHashAndMessageKey::new);
 
-    // 4. match issues with same rule, same line and same message
+    // 5. match issues with same rule, same line and same message
     match(tracking, LineAndMessageKey::new);
 
-    // 5. match issues with same rule and same line hash but different line and different message.
+    // 6. match issues with same rule and same line hash but different line and different message.
     // See SONAR-2812
     match(tracking, LineHashKey::new);
 

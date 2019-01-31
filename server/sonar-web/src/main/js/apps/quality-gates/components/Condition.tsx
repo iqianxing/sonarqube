@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,10 +18,7 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import ConditionOperator from './ConditionOperator';
-import Period from './Period';
 import ConditionModal from './ConditionModal';
-import { Condition as ICondition, Metric, QualityGate } from '../../../app/types';
 import ActionsDropdown, { ActionsDropdownItem } from '../../../components/controls/ActionsDropdown';
 import { translate, getLocalizedMetricName, translateWithParameters } from '../../../helpers/l10n';
 import { formatMeasure } from '../../../helpers/measures';
@@ -29,22 +26,18 @@ import ConfirmModal from '../../../components/controls/ConfirmModal';
 import { deleteCondition } from '../../../api/quality-gates';
 
 interface Props {
-  condition: ICondition;
+  condition: T.Condition;
   canEdit: boolean;
-  metric: Metric;
+  metric: T.Metric;
   organization?: string;
-  onRemoveCondition: (Condition: ICondition) => void;
-  onSaveCondition: (newCondition: ICondition, oldCondition: ICondition) => void;
-  qualityGate: QualityGate;
+  onRemoveCondition: (Condition: T.Condition) => void;
+  onSaveCondition: (newCondition: T.Condition, oldCondition: T.Condition) => void;
+  qualityGate: T.QualityGate;
 }
 
 interface State {
   deleteFormOpen: boolean;
-  error: string;
   modal: boolean;
-  op?: string;
-  period?: number;
-  warning: string;
 }
 
 export default class Condition extends React.PureComponent<Props, State> {
@@ -52,15 +45,11 @@ export default class Condition extends React.PureComponent<Props, State> {
     super(props);
     this.state = {
       deleteFormOpen: false,
-      error: props.condition.error || '',
-      modal: false,
-      op: props.condition.op,
-      period: props.condition.period,
-      warning: props.condition.warning || ''
+      modal: false
     };
   }
 
-  handleUpdateCondition = (newCondition: ICondition) => {
+  handleUpdateCondition = (newCondition: T.Condition) => {
     this.props.onSaveCondition(newCondition, this.props.condition);
   };
 
@@ -80,12 +69,24 @@ export default class Condition extends React.PureComponent<Props, State> {
     this.setState({ deleteFormOpen: false });
   };
 
-  removeCondition = (condition: ICondition) => {
+  removeCondition = (condition: T.Condition) => {
     deleteCondition({ id: condition.id, organization: this.props.organization }).then(
       () => this.props.onRemoveCondition(condition),
       () => {}
     );
   };
+
+  renderOperator() {
+    // TODO can operator be missing?
+    const { op = 'GT' } = this.props.condition;
+    return (
+      <span className="note">
+        {this.props.metric.type === 'RATING'
+          ? translate('quality_gates.operator', op, 'rating')
+          : translate('quality_gates.operator', op)}
+      </span>
+    );
+  }
 
   render() {
     const { condition, canEdit, metric, organization, qualityGate } = this.props;
@@ -98,15 +99,7 @@ export default class Condition extends React.PureComponent<Props, State> {
           )}
         </td>
 
-        <td className="thin text-middle nowrap">
-          <Period canEdit={false} metric={metric} period={condition.period === 1} />
-        </td>
-
-        <td className="thin text-middle nowrap">
-          <ConditionOperator canEdit={false} metric={metric} op={condition.op} />
-        </td>
-
-        <td className="thin text-middle nowrap">{formatMeasure(condition.warning, metric.type)}</td>
+        <td className="thin text-middle nowrap">{this.renderOperator()}</td>
 
         <td className="thin text-middle nowrap">{formatMeasure(condition.error, metric.type)}</td>
 

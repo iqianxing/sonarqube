@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -43,7 +43,7 @@ import org.sonarqube.ws.client.project.ProjectsWsParameters;
 
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
-import static org.sonar.core.permission.ProjectPermissions.PUBLIC_PERMISSIONS;
+import static org.sonar.api.web.UserRole.PUBLIC_PERMISSIONS;
 import static org.sonar.server.ws.KeyExamples.KEY_PROJECT_EXAMPLE_001;
 import static org.sonar.server.ws.WsUtils.checkRequest;
 import static org.sonarqube.ws.client.project.ProjectsWsParameters.PARAM_PROJECT;
@@ -126,7 +126,8 @@ public class UpdateVisibilityAction implements ProjectsWsAction {
   }
 
   private boolean noPendingTask(DbSession dbSession, ComponentDto rootComponent) {
-    return dbClient.ceQueueDao().selectByComponentUuid(dbSession, rootComponent.uuid()).isEmpty();
+    // FIXME this is probably broken in case a branch is passed to the WS
+    return dbClient.ceQueueDao().selectByMainComponentUuid(dbSession, rootComponent.uuid()).isEmpty();
   }
 
   private void updatePermissionsToPrivate(DbSession dbSession, ComponentDto component) {

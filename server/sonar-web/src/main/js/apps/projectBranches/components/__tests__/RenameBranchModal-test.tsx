@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,6 @@ jest.mock('../../../../api/branches', () => ({ renameBranch: jest.fn() }));
 import * as React from 'react';
 import { shallow, ShallowWrapper } from 'enzyme';
 import RenameBranchModal from '../RenameBranchModal';
-import { MainBranch } from '../../../../app/types';
 import { submit, doAsync, click, change, waitAndUpdate } from '../../../../helpers/testUtils';
 import { renameBranch } from '../../../../api/branches';
 
@@ -77,11 +76,11 @@ it('stops loading on WS error', async () => {
 });
 
 function shallowRender(onRename: () => void = jest.fn(), onClose: () => void = jest.fn()) {
-  const branch: MainBranch = { isMain: true, name: 'master' };
-  const wrapper = shallow(
+  const branch: T.MainBranch = { isMain: true, name: 'master' };
+  const wrapper = shallow<RenameBranchModal>(
     <RenameBranchModal branch={branch} component="foo" onClose={onClose} onRename={onRename} />
   );
-  (wrapper.instance() as any).mounted = true;
+  wrapper.instance().mounted = true;
   return wrapper;
 }
 

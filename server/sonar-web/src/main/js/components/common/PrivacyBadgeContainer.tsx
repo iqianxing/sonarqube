@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,29 +23,33 @@ import { connect } from 'react-redux';
 import * as theme from '../../app/theme';
 import Tooltip from '../controls/Tooltip';
 import { translate } from '../../helpers/l10n';
-import { Visibility, Organization, CurrentUser } from '../../app/types';
 import { isSonarCloud } from '../../helpers/system';
 import { isCurrentUserMemberOf, isPaidOrganization } from '../../helpers/organizations';
-import { getCurrentUser, getOrganizationByKey, getMyOrganizations } from '../../store/rootReducer';
+import {
+  getCurrentUser,
+  getOrganizationByKey,
+  getMyOrganizations,
+  Store
+} from '../../store/rootReducer';
 import VisibleIcon from '../icons-components/VisibleIcon';
 import DocTooltip from '../docs/DocTooltip';
 
 interface StateToProps {
-  currentUser: CurrentUser;
-  organization?: Organization;
-  userOrganizations: Organization[];
+  currentUser: T.CurrentUser;
+  organization?: T.Organization;
+  userOrganizations: T.Organization[];
 }
 
 interface OwnProps {
   className?: string;
-  organization: Organization | string | undefined;
+  organization: T.Organization | string | undefined;
   qualifier: string;
   tooltipProps?: { projectKey: string };
-  visibility: Visibility;
+  visibility: T.Visibility;
 }
 
 interface Props extends OwnProps, StateToProps {
-  organization: Organization | undefined;
+  organization: T.Organization | undefined;
 }
 
 export function PrivacyBadge({
@@ -59,14 +63,14 @@ export function PrivacyBadge({
 }: Props) {
   const onSonarCloud = isSonarCloud();
   if (
-    visibility !== Visibility.Private &&
+    visibility !== 'private' &&
     (!onSonarCloud || !isCurrentUserMemberOf(currentUser, organization, userOrganizations))
   ) {
     return null;
   }
 
   let icon = null;
-  if (isPaidOrganization(organization) && visibility === Visibility.Public) {
+  if (isPaidOrganization(organization) && visibility === 'public') {
     icon = <VisibleIcon className="little-spacer-right" fill={theme.blue} />;
   }
 
@@ -99,7 +103,7 @@ export function PrivacyBadge({
   );
 }
 
-const mapStateToProps = (state: any, { organization }: OwnProps) => {
+const mapStateToProps = (state: Store, { organization }: OwnProps) => {
   if (typeof organization === 'string') {
     organization = getOrganizationByKey(state, organization);
   }
@@ -110,20 +114,20 @@ const mapStateToProps = (state: any, { organization }: OwnProps) => {
   };
 };
 
-export default connect<StateToProps, {}, OwnProps>(mapStateToProps)(PrivacyBadge);
+export default connect(mapStateToProps)(PrivacyBadge);
 
-function getDoc(visibility: Visibility, icon: JSX.Element | null, organization: Organization) {
+function getDoc(visibility: T.Visibility, icon: JSX.Element | null, organization: T.Organization) {
   let doc;
-  const canAdmin = organization.canAdmin || organization.isAdmin;
-  if (visibility === Visibility.Private) {
+  const { actions = {} } = organization;
+  if (visibility === 'private') {
     doc = import(/* webpackMode: "eager" */ 'Docs/tooltips/project/visibility-private.md');
   } else if (icon) {
-    if (canAdmin) {
+    if (actions.admin) {
       doc = import(/* webpackMode: "eager" */ 'Docs/tooltips/project/visibility-public-paid-org-admin.md');
     } else {
       doc = import(/* webpackMode: "eager" */ 'Docs/tooltips/project/visibility-public-paid-org.md');
     }
-  } else if (canAdmin) {
+  } else if (actions.admin) {
     doc = import(/* webpackMode: "eager" */ 'Docs/tooltips/project/visibility-public-admin.md');
   } else {
     doc = import(/* webpackMode: "eager" */ 'Docs/tooltips/project/visibility-public.md');

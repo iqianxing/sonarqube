@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,16 +19,15 @@
  */
 import * as React from 'react';
 import Facet, { BasicProps } from './Facet';
-import { RuleInheritance, Omit } from '../../../app/types';
 import { translate } from '../../../helpers/l10n';
 
-interface Props extends Omit<BasicProps, 'values'> {
+interface Props extends T.Omit<BasicProps, 'values'> {
   disabled: boolean;
-  value: RuleInheritance | undefined;
+  value: T.RuleInheritance | undefined;
 }
 
 export default class InheritanceFacet extends React.PureComponent<Props> {
-  renderName = (value: RuleInheritance) =>
+  renderName = (value: T.RuleInheritance) =>
     translate('coding_rules.filters.inheritance', value.toLowerCase());
 
   render() {
@@ -39,7 +38,7 @@ export default class InheritanceFacet extends React.PureComponent<Props> {
         {...props}
         disabled={this.props.disabled}
         disabledHelper={translate('coding_rules.filters.inheritance.inactive')}
-        options={Object.values(RuleInheritance)}
+        options={['NONE', 'INHERITED', 'OVERRIDES']}
         property="inheritance"
         renderName={this.renderName}
         renderTextName={this.renderName}

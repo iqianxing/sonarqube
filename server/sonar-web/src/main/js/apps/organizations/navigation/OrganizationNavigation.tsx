@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,13 +23,12 @@ import OrganizationNavigationMeta from './OrganizationNavigationMeta';
 import OrganizationNavigationMenuContainer from './OrganizationNavigationMenuContainer';
 import * as theme from '../../../app/theme';
 import ContextNavBar from '../../../components/nav/ContextNavBar';
-import { Organization, CurrentUser } from '../../../app/types';
 
 interface Props {
-  currentUser: CurrentUser;
+  currentUser: T.CurrentUser;
   location: { pathname: string };
-  organization: Organization;
-  userOrganizations: Organization[];
+  organization: T.Organization;
+  userOrganizations: T.Organization[];
 }
 
 export default function OrganizationNavigation({

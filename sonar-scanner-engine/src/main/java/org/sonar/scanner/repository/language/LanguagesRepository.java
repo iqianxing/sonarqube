@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,17 +20,13 @@
 package org.sonar.scanner.repository.language;
 
 import java.util.Collection;
-
 import javax.annotation.CheckForNull;
 import javax.annotation.concurrent.Immutable;
-
-import org.sonar.api.batch.ScannerSide;
 
 /**
  * Languages repository
  * @since 4.4
  */
-@ScannerSide
 @Immutable
 public interface LanguagesRepository {
 

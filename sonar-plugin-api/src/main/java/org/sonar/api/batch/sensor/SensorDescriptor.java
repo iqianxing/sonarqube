@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,6 +22,7 @@ package org.sonar.api.batch.sensor;
 import java.util.function.Predicate;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.config.Configuration;
+import org.sonar.api.scanner.sensor.ProjectSensor;
 
 /**
  * Describe what a {@link Sensor} is doing. Information may be used by the platform
@@ -88,11 +89,13 @@ public interface SensorDescriptor {
   /**
    * This sensor should be executed at the project level, instead of per-module.
    * @since 6.4
+   * @deprecated since 7.6 change your {@link Sensor} to a {@link ProjectSensor} instead
    */
+  @Deprecated
   SensorDescriptor global();
 
   /**
-   * Predicate that will be evaluated on current module/project {@link Configuration} by the platform to decide if execution of the {@link Sensor} should be skipped.
+   * Predicate that will be evaluated on current project {@link Configuration} by the platform to decide if execution of the {@link Sensor} should be skipped.
    * @since 6.5
    */
   SensorDescriptor onlyWhenConfiguration(Predicate<Configuration> predicate);

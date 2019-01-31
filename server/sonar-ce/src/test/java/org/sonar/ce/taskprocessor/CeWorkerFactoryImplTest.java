@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -35,7 +35,7 @@ import static org.mockito.Mockito.mock;
 public class CeWorkerFactoryImplTest {
   private int randomOrdinal = new Random().nextInt(20);
   private CeWorkerFactoryImpl underTest = new CeWorkerFactoryImpl(mock(InternalCeQueue.class),
-    mock(CeTaskProcessorRepository.class), UuidFactoryImpl.INSTANCE, mock(EnabledCeWorkerController.class));
+    mock(CeTaskProcessorRepository.class), UuidFactoryImpl.INSTANCE, mock(CeWorkerController.class));
 
   @Test
   public void create_return_CeWorker_object_with_specified_ordinal() {
@@ -49,7 +49,7 @@ public class CeWorkerFactoryImplTest {
     CeWorker.ExecutionListener executionListener1 = mock(CeWorker.ExecutionListener.class);
     CeWorker.ExecutionListener executionListener2 = mock(CeWorker.ExecutionListener.class);
     CeWorkerFactoryImpl underTest = new CeWorkerFactoryImpl(mock(InternalCeQueue.class),
-      mock(CeTaskProcessorRepository.class), UuidFactoryImpl.INSTANCE, mock(EnabledCeWorkerController.class),
+      mock(CeTaskProcessorRepository.class), UuidFactoryImpl.INSTANCE, mock(CeWorkerController.class),
       new CeWorker.ExecutionListener[] {executionListener1, executionListener2});
 
     CeWorker ceWorker = underTest.create(randomOrdinal);
@@ -91,18 +91,17 @@ public class CeWorkerFactoryImplTest {
   }
 
   @Test
-  public void CeWorkerFactory_has_an_empty_set_of_uuids_when_created() {
-    assertThat(underTest.getWorkerUUIDs()).isEmpty();
+  public void getWorkers_returns_empty_if_create_has_not_been_called_before() {
+    assertThat(underTest.getWorkers()).isEmpty();
   }
 
   @Test
-  public void CeWorkerFactory_must_returns_the_uuids_of_worker() {
-    Set<String> ceWorkerUUIDs = new HashSet<>();
-
-    for (int i = 0; i < 10; i++) {
-      ceWorkerUUIDs.add(underTest.create(i).getUUID());
+  public void CeWorkerFactory_must_returns_the_workers_returned_by_created() {
+    Set<CeWorker> expected = new HashSet<>();
+    for (int i = 0; i < 1 + new Random().nextInt(10); i++) {
+      expected.add(underTest.create(i));
     }
 
-    assertThat(underTest.getWorkerUUIDs()).isEqualTo(ceWorkerUUIDs);
+    assertThat(underTest.getWorkers()).isEqualTo(expected);
   }
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -32,7 +32,7 @@ public class SearchTemplatesDataTest {
   public ExpectedException expectedException = ExpectedException.none();
 
   SearchTemplatesData.Builder underTest = SearchTemplatesData.builder()
-    .defaultTemplates(new DefaultTemplatesResolverImpl.ResolvedDefaultTemplates("template_uuid", null))
+    .defaultTemplates(new DefaultTemplatesResolverImpl.ResolvedDefaultTemplates("template_uuid", null, null))
     .templates(singletonList(newPermissionTemplateDto()))
     .userCountByTemplateIdAndPermission(HashBasedTable.create())
     .groupCountByTemplateIdAndPermission(HashBasedTable.create())

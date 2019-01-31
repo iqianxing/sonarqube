@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,26 +27,28 @@ import org.sonar.db.DbSession;
 import org.sonar.db.permission.template.PermissionTemplateDto;
 import org.sonar.server.permission.ws.PermissionWsSupport;
 import org.sonar.server.permission.ws.PermissionsWsAction;
+import org.sonar.server.permission.ws.WsParameters;
 import org.sonar.server.user.UserSession;
 import org.sonar.server.usergroups.ws.GroupIdOrAnyone;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.sonar.server.permission.PermissionPrivilegeChecker.checkGlobalAdmin;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createGroupIdParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createGroupNameParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createProjectPermissionParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createTemplateParameters;
+import static org.sonar.server.permission.ws.WsParameters.createGroupIdParameter;
+import static org.sonar.server.permission.ws.WsParameters.createGroupNameParameter;
+import static org.sonar.server.permission.ws.WsParameters.createTemplateParameters;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_PERMISSION;
 
 public class RemoveGroupFromTemplateAction implements PermissionsWsAction {
   private final DbClient dbClient;
   private final PermissionWsSupport wsSupport;
   private final UserSession userSession;
+  private final WsParameters wsParameters;
 
-  public RemoveGroupFromTemplateAction(DbClient dbClient, PermissionWsSupport wsSupport, UserSession userSession) {
+  public RemoveGroupFromTemplateAction(DbClient dbClient, PermissionWsSupport wsSupport, UserSession userSession, WsParameters wsParameters) {
     this.dbClient = dbClient;
     this.wsSupport = wsSupport;
     this.userSession = userSession;
+    this.wsParameters = wsParameters;
   }
 
   @Override
@@ -61,7 +63,7 @@ public class RemoveGroupFromTemplateAction implements PermissionsWsAction {
       .setHandler(this);
 
     createTemplateParameters(action);
-    createProjectPermissionParameter(action);
+    wsParameters.createProjectPermissionParameter(action);
     createGroupIdParameter(action);
     createGroupNameParameter(action);
   }

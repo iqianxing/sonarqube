@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,10 +18,8 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import { Link } from 'react-router';
 import ComponentNavBranchesMenuItem from './ComponentNavBranchesMenuItem';
-import { BranchLike, Component } from '../../../types';
 import {
   sortBranchesAsTree,
   isLongLivingBranch,
@@ -37,28 +35,25 @@ import { getBranchLikeUrl } from '../../../../helpers/urls';
 import SearchBox from '../../../../components/controls/SearchBox';
 import HelpTooltip from '../../../../components/controls/HelpTooltip';
 import { DropdownOverlay } from '../../../../components/controls/Dropdown';
+import { withRouter, Router } from '../../../../components/hoc/withRouter';
 
 interface Props {
-  branchLikes: BranchLike[];
+  branchLikes: T.BranchLike[];
   canAdmin?: boolean;
-  component: Component;
-  currentBranchLike: BranchLike;
+  component: T.Component;
+  currentBranchLike: T.BranchLike;
   onClose: () => void;
+  router: Pick<Router, 'push'>;
 }
 
 interface State {
   query: string;
-  selected: BranchLike | undefined;
+  selected: T.BranchLike | undefined;
 }
 
-export default class ComponentNavBranchesMenu extends React.PureComponent<Props, State> {
-  private listNode?: HTMLUListElement | null;
-  private selectedBranchNode?: HTMLLIElement | null;
-
-  static contextTypes = {
-    router: PropTypes.object
-  };
-
+export class ComponentNavBranchesMenu extends React.PureComponent<Props, State> {
+  listNode?: HTMLUListElement | null;
+  selectedBranchNode?: HTMLLIElement | null;
   state: State = { query: '', selected: undefined };
 
   componentDidMount() {
@@ -114,7 +109,7 @@ export default class ComponentNavBranchesMenu extends React.PureComponent<Props,
   openSelected = () => {
     const selected = this.getSelected();
     if (selected) {
-      this.context.router.push(this.getProjectBranchUrl(selected));
+      this.props.router.push(this.getProjectBranchUrl(selected));
     }
   };
 
@@ -136,7 +131,7 @@ export default class ComponentNavBranchesMenu extends React.PureComponent<Props,
     }
   };
 
-  handleSelect = (branchLike: BranchLike) => {
+  handleSelect = (branchLike: T.BranchLike) => {
     this.setState({ selected: branchLike });
   };
 
@@ -157,10 +152,10 @@ export default class ComponentNavBranchesMenu extends React.PureComponent<Props,
     return undefined;
   };
 
-  getProjectBranchUrl = (branchLike: BranchLike) =>
+  getProjectBranchUrl = (branchLike: T.BranchLike) =>
     getBranchLikeUrl(this.props.component.key, branchLike);
 
-  isOrphan = (branchLike: BranchLike) => {
+  isOrphan = (branchLike: T.BranchLike) => {
     return (isShortLivingBranch(branchLike) || isPullRequest(branchLike)) && branchLike.isOrphan;
   };
 
@@ -264,3 +259,5 @@ export default class ComponentNavBranchesMenu extends React.PureComponent<Props,
     );
   }
 }
+
+export default withRouter(ComponentNavBranchesMenu);

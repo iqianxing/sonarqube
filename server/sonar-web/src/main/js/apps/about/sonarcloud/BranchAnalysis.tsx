@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,18 +18,25 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import SonarCloudPage from './SonarCloudPage';
-import SQStartUsing from './SQStartUsing';
-import SQTopNav from './SQTopNav';
-import { isLoggedIn } from '../../../app/types';
+import Helmet from 'react-helmet';
+import SQPageContainer from './components/SQPageContainer';
+import SQStartUsing from './components/SQStartUsing';
+import SQTopNav from './components/SQTopNav';
+import { isLoggedIn } from '../../../helpers/users';
 import { getBaseUrl } from '../../../helpers/urls';
 import './style.css';
 
 export default function BranchAnalysis() {
   return (
-    <SonarCloudPage>
+    <SQPageContainer>
       {({ currentUser }) => (
         <div className="page page-limited sc-page">
+          <Helmet title="Pull requests analysis in Github, BitBucket and Azure DevOps | SonarCloud">
+            <meta
+              content="SonarCloud automatically analyzes branches and decorates pull requests with Github, BitBucket and Azure DevOps."
+              name="description"
+            />
+          </Helmet>
           <SQTopNav />
 
           <div className="sc-child-header">
@@ -72,10 +79,10 @@ export default function BranchAnalysis() {
             </li>
             <li className="sc-feature sc-branch-feature">
               <div>
-                <h3 className="sc-feature-title">Decorate PRs on VSTS and GitHub</h3>
+                <h3 className="sc-feature-title">Decorate PRs on Azure DevOps and GitHub</h3>
                 <p className="sc-feature-description">
-                  Pull requests get decorated directly on VSTS and GitHub. The result of the PR
-                  analysis is available directly in the pull request itself, complementing nicely
+                  Pull requests get decorated directly on Azure DevOps and GitHub. The result of the
+                  PR analysis is available directly in the pull request itself, complementing nicely
                   manual reviews made by peers and enabling to make a more educated decision for
                   merging.
                 </p>
@@ -115,6 +122,6 @@ export default function BranchAnalysis() {
           {!isLoggedIn(currentUser) && <SQStartUsing />}
         </div>
       )}
-    </SonarCloudPage>
+    </SQPageContainer>
   );
 }

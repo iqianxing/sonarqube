@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,112 +24,80 @@ import com.google.common.collect.LinkedHashMultimap;
 import com.google.common.collect.SetMultimap;
 import com.google.common.collect.Table;
 import com.google.common.collect.TreeBasedTable;
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Stream;
 import javax.annotation.CheckForNull;
-import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.batch.fs.InputComponent;
-import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
-import org.sonar.api.batch.fs.InputFile.Status;
-import org.sonar.api.batch.fs.InputModule;
-import org.sonar.api.batch.fs.internal.DefaultInputDir;
+import org.sonar.api.batch.fs.internal.DefaultFileSystem;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.fs.internal.DefaultInputModule;
 import org.sonar.api.batch.fs.internal.FileExtensionPredicate;
-import org.sonar.api.scan.filesystem.PathResolver;
 import org.sonar.scanner.scan.branch.BranchConfiguration;
 
 /**
- * Store of all files and dirs. This cache is shared amongst all project modules. Inclusion and
+ * Store of all files and dirs. Inclusion and
  * exclusion patterns are already applied.
  */
-@ScannerSide
-public class InputComponentStore {
+public class InputComponentStore extends DefaultFileSystem.Cache {
 
   private final SortedSet<String> globalLanguagesCache = new TreeSet<>();
   private final Map<String, SortedSet<String>> languagesCache = new HashMap<>();
   private final Map<String, InputFile> globalInputFileCache = new HashMap<>();
-  private final Table<String, String, InputFile> inputFileCache = TreeBasedTable.create();
-  private final Map<String, InputDir> globalInputDirCache = new HashMap<>();
-  private final Table<String, String, InputDir> inputDirCache = TreeBasedTable.create();
+  private final Table<String, String, InputFile> inputFileByModuleCache = TreeBasedTable.create();
   // indexed by key with branch
-  private final Map<String, InputModule> inputModuleCache = new HashMap<>();
+  private final Map<String, DefaultInputModule> inputModuleCache = new HashMap<>();
   private final Map<String, InputComponent> inputComponents = new HashMap<>();
   private final SetMultimap<String, InputFile> filesByNameCache = LinkedHashMultimap.create();
   private final SetMultimap<String, InputFile> filesByExtensionCache = LinkedHashMultimap.create();
-  private final InputModule root;
   private final BranchConfiguration branchConfiguration;
 
-  public InputComponentStore(DefaultInputModule root, BranchConfiguration branchConfiguration) {
-    this.root = root;
+  public InputComponentStore(BranchConfiguration branchConfiguration) {
     this.branchConfiguration = branchConfiguration;
-    this.put(root);
   }
 
   public Collection<InputComponent> all() {
     return inputComponents.values();
   }
 
-  public Iterable<DefaultInputFile> allFilesToPublish() {
-    return inputFileCache.values().stream()
+  private Stream<DefaultInputFile> allFilesToPublishStream() {
+    return globalInputFileCache.values().stream()
       .map(f -> (DefaultInputFile) f)
-      .filter(DefaultInputFile::isPublished)
-      .filter(f -> !branchConfiguration.isShortOrPullRequest() || f.status() != Status.SAME)
+      .filter(DefaultInputFile::isPublished);
+  }
+
+  public Iterable<DefaultInputFile> allFilesToPublish() {
+    return allFilesToPublishStream()::iterator;
+  }
+
+  public Iterable<DefaultInputFile> allChangedFilesToPublish() {
+    return allFilesToPublishStream()
+      .filter(f -> !branchConfiguration.isShortOrPullRequest() || f.status() != InputFile.Status.SAME)
       ::iterator;
   }
 
-  public Iterable<InputFile> allFiles() {
-    return inputFileCache.values();
-  }
-
-  public Iterable<InputDir> allDirs() {
-    return inputDirCache.values();
+  @Override
+  public Collection<InputFile> inputFiles() {
+    return globalInputFileCache.values();
   }
 
   public InputComponent getByKey(String key) {
     return inputComponents.get(key);
   }
 
-  public InputModule root() {
-    return root;
-  }
-
   public Iterable<InputFile> filesByModule(String moduleKey) {
-    return inputFileCache.row(moduleKey).values();
+    return inputFileByModuleCache.row(moduleKey).values();
   }
 
-  public Iterable<InputDir> dirsByModule(String moduleKey) {
-    return inputDirCache.row(moduleKey).values();
-  }
-
-  public InputComponentStore removeModule(String moduleKey) {
-    inputFileCache.row(moduleKey).clear();
-    inputDirCache.row(moduleKey).clear();
-    return this;
-  }
-
-  public InputComponentStore remove(InputFile inputFile) {
+  public InputComponentStore put(String moduleKey, InputFile inputFile) {
     DefaultInputFile file = (DefaultInputFile) inputFile;
-    inputFileCache.remove(file.moduleKey(), file.getModuleRelativePath());
-    return this;
-  }
-
-  public InputComponentStore remove(InputDir inputDir) {
-    DefaultInputDir dir = (DefaultInputDir) inputDir;
-    inputDirCache.remove(dir.moduleKey(), inputDir.relativePath());
-    return this;
-  }
-
-  public InputComponentStore put(InputFile inputFile) {
-    DefaultInputFile file = (DefaultInputFile) inputFile;
-    addToLanguageCache(file);
-    inputFileCache.put(file.moduleKey(), file.getModuleRelativePath(), inputFile);
+    addToLanguageCache(moduleKey, file);
+    inputFileByModuleCache.put(moduleKey, file.getModuleRelativePath(), inputFile);
     globalInputFileCache.put(file.getProjectRelativePath(), inputFile);
     inputComponents.put(inputFile.key(), inputFile);
     filesByNameCache.put(inputFile.filename(), inputFile);
@@ -137,54 +105,39 @@ public class InputComponentStore {
     return this;
   }
 
-  private void addToLanguageCache(DefaultInputFile inputFile) {
+  private void addToLanguageCache(String moduleKey, DefaultInputFile inputFile) {
     String language = inputFile.language();
     if (language != null) {
       globalLanguagesCache.add(language);
-      languagesCache.computeIfAbsent(inputFile.moduleKey(), k -> new TreeSet<>()).add(language);
+      languagesCache.computeIfAbsent(moduleKey, k -> new TreeSet<>()).add(language);
     }
-  }
-
-  public InputComponentStore put(InputDir inputDir) {
-    DefaultInputDir dir = (DefaultInputDir) inputDir;
-    inputDirCache.put(dir.moduleKey(), inputDir.relativePath(), inputDir);
-    // FIXME an InputDir can be already indexed by another module
-    globalInputDirCache.put(getProjectRelativePath(dir), inputDir);
-    inputComponents.put(inputDir.key(), inputDir);
-    return this;
-  }
-
-  private String getProjectRelativePath(DefaultInputDir dir) {
-    return PathResolver.relativize(getProjectBaseDir(), dir.path()).orElseThrow(() -> new IllegalStateException("Dir " + dir.path() + " should be relative to project baseDir"));
-  }
-
-  private Path getProjectBaseDir() {
-    return ((DefaultInputModule) root).getBaseDir();
   }
 
   @CheckForNull
   public InputFile getFile(String moduleKey, String relativePath) {
-    return inputFileCache.get(moduleKey, relativePath);
+    return inputFileByModuleCache.get(moduleKey, relativePath);
   }
 
+  @Override
   @CheckForNull
-  public InputFile getFile(String relativePath) {
+  public InputFile inputFile(String relativePath) {
     return globalInputFileCache.get(relativePath);
   }
 
   @CheckForNull
-  public InputDir getDir(String moduleKey, String relativePath) {
-    return inputDirCache.get(moduleKey, relativePath);
-  }
-
-  @CheckForNull
-  public InputDir getDir(String relativePath) {
-    return globalInputDirCache.get(relativePath);
-  }
-
-  @CheckForNull
-  public InputModule getModule(String moduleKeyWithBranch) {
+  public DefaultInputModule getModule(String moduleKeyWithBranch) {
     return inputModuleCache.get(moduleKeyWithBranch);
+  }
+
+  @CheckForNull
+  public DefaultInputModule findModule(DefaultInputFile file) {
+    return inputFileByModuleCache
+      .cellSet()
+      .stream()
+      .filter(c -> c.getValue().equals(file))
+      .findFirst()
+      .map(c -> (DefaultInputModule) inputComponents.get(c.getRowKey()))
+      .orElse(null);
   }
 
   public void put(DefaultInputModule inputModule) {
@@ -197,19 +150,32 @@ public class InputComponentStore {
     inputModuleCache.put(keyWithBranch, inputModule);
   }
 
+  @Override
   public Iterable<InputFile> getFilesByName(String filename) {
     return filesByNameCache.get(filename);
   }
 
+  @Override
   public Iterable<InputFile> getFilesByExtension(String extension) {
     return filesByExtensionCache.get(extension);
   }
 
-  public SortedSet<String> getLanguages() {
+  @Override
+  public SortedSet<String> languages() {
     return globalLanguagesCache;
   }
 
-  public SortedSet<String> getLanguages(String moduleKey) {
+  public SortedSet<String> languages(String moduleKey) {
     return languagesCache.getOrDefault(moduleKey, Collections.emptySortedSet());
   }
+
+  public Collection<DefaultInputModule> allModules() {
+    return inputModuleCache.values();
+  }
+
+  @Override
+  protected void doAdd(InputFile inputFile) {
+    throw new UnsupportedOperationException();
+  }
+
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 package org.sonar.ce.task.projectanalysis.analysis;
 
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.CheckForNull;
 import org.sonar.server.project.Project;
 import org.sonar.server.qualityprofile.QualityProfile;
@@ -96,14 +97,16 @@ public interface AnalysisMetadataHolder {
   boolean isCrossProjectDuplicationEnabled();
 
   /**
-   * Branch being analyzed. Can be of any type: long or short, main or not. 
+   * Branch being analyzed. Can be of any type: long or short, main or not.
+   *
+   * @throws IllegalStateException if branch has not been set
    */
   Branch getBranch();
 
   /**
    * In a pull request analysis, return the ID of the pull request
    *
-   * @throws IllegalStateException if current analysis is not a pull request
+   * @throws IllegalStateException if pull request key has not been set
    */
   String getPullRequestKey();
 
@@ -134,4 +137,9 @@ public interface AnalysisMetadataHolder {
    * Plugins used during the analysis on scanner side
    */
   Map<String, ScannerPlugin> getScannerPluginsByKey();
+
+  /**
+   * Scm Revision id of the analysed code
+   */
+  Optional<String> getScmRevisionId();
 }

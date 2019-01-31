@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,11 +19,11 @@
  */
 import * as React from 'react';
 import { translate } from '../../../../helpers/l10n';
-import { Analysis } from '../../../../api/projectActivity';
 import ConfirmModal from '../../../../components/controls/ConfirmModal';
+import { ParsedAnalysis } from '../../utils';
 
 interface Props {
-  analysis: Analysis;
+  analysis: ParsedAnalysis;
   deleteAnalysis: (analysis: string) => Promise<void>;
   onClose: () => void;
 }

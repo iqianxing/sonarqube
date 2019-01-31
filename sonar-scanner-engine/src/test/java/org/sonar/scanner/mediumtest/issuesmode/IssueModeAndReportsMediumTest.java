@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -38,7 +38,7 @@ import org.sonar.api.utils.log.LogTester;
 import org.sonar.api.utils.log.LoggerLevel;
 import org.sonar.scanner.issue.tracking.TrackedIssue;
 import org.sonar.scanner.mediumtest.ScannerMediumTester;
-import org.sonar.scanner.mediumtest.TaskResult;
+import org.sonar.scanner.mediumtest.AnalysisResult;
 import org.sonar.scanner.protocol.Constants.Severity;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonar.xoo.XooPlugin;
@@ -110,17 +110,17 @@ public class IssueModeAndReportsMediumTest {
 
   private File copyProject(String path) throws Exception {
     File projectDir = temp.newFolder();
-    File originalProjectDir = new File(IssueModeAndReportsMediumTest.class.getResource(path).toURI());
+    File originalProjectDir = new File(path);
     FileUtils.copyDirectory(originalProjectDir, projectDir, FileFilterUtils.notFileFilter(FileFilterUtils.nameFileFilter(".sonar")));
     return projectDir;
   }
 
   @Test
   public void testIssueTracking() throws Exception {
-    File projectDir = copyProject("/mediumtest/xoo/sample");
+    File projectDir = copyProject("test-resources/mediumtest/xoo/sample");
 
-    TaskResult result = tester
-      .newScanTask(new File(projectDir, "sonar-project.properties"))
+    AnalysisResult result = tester
+      .newAnalysis(new File(projectDir, "sonar-project.properties"))
       .execute();
 
     int newIssues = 0;
@@ -147,7 +147,7 @@ public class IssueModeAndReportsMediumTest {
     String logs = StringUtils.join(logTester.logs(LoggerLevel.INFO), "\n");
 
     assertThat(logs).contains("Performing issue tracking");
-    assertThat(logs).contains("6/6 components tracked");
+    assertThat(logs).contains("4/4 components tracked");
 
     // assert that original fields of a matched issue are kept
     assertThat(result.trackedIssues()).haveExactly(1, new Condition<TrackedIssue>() {
@@ -163,10 +163,10 @@ public class IssueModeAndReportsMediumTest {
 
   @Test
   public void testPostJob() throws Exception {
-    File projectDir = copyProject("/mediumtest/xoo/sample");
+    File projectDir = copyProject("test-resources/mediumtest/xoo/sample");
 
     tester
-      .newScanTask(new File(projectDir, "sonar-project.properties"))
+      .newAnalysis(new File(projectDir, "sonar-project.properties"))
       .property("sonar.xoo.enablePostJob", "true")
       .execute();
 
@@ -185,7 +185,7 @@ public class IssueModeAndReportsMediumTest {
     FileUtils.write(xooFile, "Sample xoo\ncontent plop");
     FileUtils.write(xoohighlightingFile, "0:10:s\n11:18:k");
 
-    TaskResult result = tester.newTask()
+    AnalysisResult result = tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
         .put("sonar.projectKey", "com.foo.project")

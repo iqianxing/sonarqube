@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,11 +20,10 @@
 import * as React from 'react';
 import Select from '../../components/controls/Select';
 import { translate } from '../../helpers/l10n';
-import { QualityGate } from '../../app/types';
 
 interface Props {
-  allGates: QualityGate[];
-  gate?: QualityGate;
+  allGates: T.QualityGate[];
+  gate?: T.QualityGate;
   onChange: (oldGate?: number, newGate?: number) => Promise<void>;
 }
 

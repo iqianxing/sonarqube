@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -67,8 +67,8 @@ export default function Tooltip(props: Props) {
 
 export class TooltipInner extends React.Component<Props, State> {
   throttledPositionTooltip: (() => void);
-  mouseEnterInterval?: number;
-  mouseLeaveInterval?: number;
+  mouseEnterTimeout?: number;
+  mouseLeaveTimeout?: number;
   tooltipNode?: HTMLElement | null;
   mounted = false;
   mouseIn = false;
@@ -118,7 +118,7 @@ export class TooltipInner extends React.Component<Props, State> {
   componentWillUnmount() {
     this.mounted = false;
     this.removeEventListeners();
-    this.clearIntervals();
+    this.clearTimeouts();
   }
 
   addEventListeners = () => {
@@ -131,9 +131,9 @@ export class TooltipInner extends React.Component<Props, State> {
     window.removeEventListener('scroll', this.throttledPositionTooltip);
   };
 
-  clearIntervals = () => {
-    window.clearInterval(this.mouseEnterInterval);
-    window.clearInterval(this.mouseLeaveInterval);
+  clearTimeouts = () => {
+    window.clearTimeout(this.mouseEnterTimeout);
+    window.clearTimeout(this.mouseLeaveTimeout);
   };
 
   isVisible = () => {
@@ -206,11 +206,16 @@ export class TooltipInner extends React.Component<Props, State> {
   };
 
   handleMouseEnter = () => {
-    this.mouseEnterInterval = window.setTimeout(() => {
-      if (this.mounted) {
-        if (this.props.visible === undefined) {
-          this.setState({ visible: true });
-        }
+    this.mouseEnterTimeout = window.setTimeout(() => {
+      // for some reason even after the `this.mouseEnterTimeout` is cleared, it still triggers
+      // to workaround this issue, check that its value is not `undefined`
+      // (if it's `undefined`, it means the timer has been reset)
+      if (
+        this.mounted &&
+        this.props.visible === undefined &&
+        this.mouseEnterTimeout !== undefined
+      ) {
+        this.setState({ visible: true });
       }
     }, (this.props.mouseEnterDelay || 0) * 1000);
 
@@ -220,17 +225,15 @@ export class TooltipInner extends React.Component<Props, State> {
   };
 
   handleMouseLeave = () => {
-    if (this.mouseEnterInterval !== undefined) {
-      window.clearInterval(this.mouseEnterInterval);
-      this.mouseEnterInterval = undefined;
+    if (this.mouseEnterTimeout !== undefined) {
+      window.clearTimeout(this.mouseEnterTimeout);
+      this.mouseEnterTimeout = undefined;
     }
 
     if (!this.mouseIn) {
-      this.mouseLeaveInterval = window.setTimeout(() => {
-        if (this.mounted) {
-          if (this.props.visible === undefined && !this.mouseIn) {
-            this.setState({ visible: false });
-          }
+      this.mouseLeaveTimeout = window.setTimeout(() => {
+        if (this.mounted && this.props.visible === undefined && !this.mouseIn) {
+          this.setState({ visible: false });
         }
       }, (this.props.mouseLeaveDelay || 0) * 1000);
 
@@ -251,7 +254,6 @@ export class TooltipInner extends React.Component<Props, State> {
 
   render() {
     const { classNameSpace = 'tooltip' } = this.props;
-
     return (
       <>
         {React.cloneElement(this.props.children, {

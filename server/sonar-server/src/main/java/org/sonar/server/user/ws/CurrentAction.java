@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,6 +27,7 @@ import org.sonar.api.server.ws.Request;
 import org.sonar.api.server.ws.Response;
 import org.sonar.api.server.ws.WebService.NewController;
 import org.sonar.core.platform.PluginRepository;
+import org.sonar.core.util.stream.MoreCollectors;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.component.ComponentDto;
@@ -35,11 +36,13 @@ import org.sonar.db.permission.OrganizationPermission;
 import org.sonar.db.user.UserDto;
 import org.sonar.server.issue.ws.AvatarResolver;
 import org.sonar.server.organization.DefaultOrganizationProvider;
+import org.sonar.server.permission.PermissionService;
 import org.sonar.server.user.UserSession;
 import org.sonarqube.ws.Users.CurrentWsResponse;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.base.Strings.emptyToNull;
+import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static java.util.Optional.empty;
 import static java.util.Optional.of;
@@ -47,7 +50,6 @@ import static java.util.Optional.ofNullable;
 import static java.util.stream.Collectors.toList;
 import static org.apache.commons.lang.StringUtils.EMPTY;
 import static org.sonar.api.web.UserRole.USER;
-import static org.sonar.core.util.Protobuf.setNullable;
 import static org.sonar.server.ws.WsUtils.writeProtobuf;
 import static org.sonarqube.ws.Users.CurrentWsResponse.Permissions;
 import static org.sonarqube.ws.Users.CurrentWsResponse.newBuilder;
@@ -67,15 +69,17 @@ public class CurrentAction implements UsersWsAction {
   private final AvatarResolver avatarResolver;
   private final HomepageTypes homepageTypes;
   private final PluginRepository pluginRepository;
+  private final PermissionService permissionService;
 
   public CurrentAction(UserSession userSession, DbClient dbClient, DefaultOrganizationProvider defaultOrganizationProvider,
-    AvatarResolver avatarResolver, HomepageTypes homepageTypes, PluginRepository pluginRepository) {
+    AvatarResolver avatarResolver, HomepageTypes homepageTypes, PluginRepository pluginRepository, PermissionService permissionService) {
     this.userSession = userSession;
     this.dbClient = dbClient;
     this.defaultOrganizationProvider = defaultOrganizationProvider;
     this.avatarResolver = avatarResolver;
     this.homepageTypes = homepageTypes;
     this.pluginRepository = pluginRepository;
+    this.permissionService = permissionService;
   }
 
   @Override
@@ -110,6 +114,7 @@ public class CurrentAction implements UsersWsAction {
     UserDto user = dbClient.userDao().selectActiveUserByLogin(dbSession, userLogin);
     checkState(user != null, "User login '%s' cannot be found", userLogin);
     Collection<String> groups = dbClient.groupMembershipDao().selectGroupsByLogins(dbSession, singletonList(userLogin)).get(userLogin);
+    Optional<OrganizationDto> personalOrganization = getPersonalOrganization(dbSession, user);
 
     CurrentWsResponse.Builder builder = newBuilder()
       .setIsLoggedIn(true)
@@ -120,20 +125,31 @@ public class CurrentAction implements UsersWsAction {
       .addAllScmAccounts(user.getScmAccountsAsList())
       .setPermissions(Permissions.newBuilder().addAllGlobal(getGlobalPermissions()).build())
       .setHomepage(buildHomepage(dbSession, user))
-      .setShowOnboardingTutorial(!user.isOnboarded());
-    setNullable(emptyToNull(user.getEmail()), builder::setEmail);
-    setNullable(emptyToNull(user.getEmail()), u -> builder.setAvatar(avatarResolver.create(user)));
-    setNullable(user.getExternalLogin(), builder::setExternalIdentity);
-    setNullable(user.getExternalIdentityProvider(), builder::setExternalProvider);
+      .setShowOnboardingTutorial(!user.isOnboarded())
+      .addAllSettings(loadUserSettings(dbSession, user));
+    ofNullable(emptyToNull(user.getEmail())).ifPresent(builder::setEmail);
+    ofNullable(emptyToNull(user.getEmail())).ifPresent(u -> builder.setAvatar(avatarResolver.create(user)));
+    ofNullable(user.getExternalLogin()).ifPresent(builder::setExternalIdentity);
+    ofNullable(user.getExternalIdentityProvider()).ifPresent(builder::setExternalProvider);
+    personalOrganization.ifPresent(org -> builder.setPersonalOrganization(org.getKey()));
     return builder.build();
   }
 
   private List<String> getGlobalPermissions() {
     String defaultOrganizationUuid = defaultOrganizationProvider.get().getUuid();
-    return OrganizationPermission.all()
+    return permissionService.getAllOrganizationPermissions().stream()
       .filter(permission -> userSession.hasPermission(permission, defaultOrganizationUuid))
       .map(OrganizationPermission::getKey)
       .collect(toList());
+  }
+
+  private Optional<OrganizationDto> getPersonalOrganization(DbSession dbSession, UserDto user) {
+    String personalOrganizationUuid = user.getOrganizationUuid();
+    if (personalOrganizationUuid == null) {
+      return Optional.empty();
+    }
+    return Optional.of(dbClient.organizationDao().selectByUuid(dbSession, personalOrganizationUuid)
+      .orElseThrow(() -> new IllegalStateException(format("Organization uuid '%s' does not exist", personalOrganizationUuid))));
   }
 
   private CurrentWsResponse.Homepage buildHomepage(DbSession dbSession, UserDto user) {
@@ -164,7 +180,7 @@ public class CurrentAction implements UsersWsAction {
   }
 
   private Optional<CurrentWsResponse.Homepage> projectHomepage(DbSession dbSession, UserDto user) {
-    Optional<ComponentDto> projectOptional = ofNullable(dbClient.componentDao().selectByUuid(dbSession, of(user.getHomepageParameter()).orElse(EMPTY)).orNull());
+    Optional<ComponentDto> projectOptional = ofNullable(dbClient.componentDao().selectByUuid(dbSession, of(user.getHomepageParameter()).orElse(EMPTY)).orElse(null));
     if (shouldCleanProjectHomepage(projectOptional)) {
       cleanUserHomepageInDb(dbSession, user);
       return empty();
@@ -173,7 +189,7 @@ public class CurrentAction implements UsersWsAction {
     CurrentWsResponse.Homepage.Builder homepage = CurrentWsResponse.Homepage.newBuilder()
       .setType(CurrentWsResponse.HomepageType.valueOf(user.getHomepageType()))
       .setComponent(projectOptional.get().getKey());
-    setNullable(projectOptional.get().getBranch(), homepage::setBranch);
+    ofNullable(projectOptional.get().getBranch()).ifPresent(homepage::setBranch);
     return of(homepage.build());
   }
 
@@ -182,7 +198,7 @@ public class CurrentAction implements UsersWsAction {
   }
 
   private Optional<CurrentWsResponse.Homepage> applicationAndPortfolioHomepage(DbSession dbSession, UserDto user) {
-    Optional<ComponentDto> componentOptional = ofNullable(dbClient.componentDao().selectByUuid(dbSession, of(user.getHomepageParameter()).orElse(EMPTY)).orNull());
+    Optional<ComponentDto> componentOptional = ofNullable(dbClient.componentDao().selectByUuid(dbSession, of(user.getHomepageParameter()).orElse(EMPTY)).orElse(null));
     if (shouldCleanApplicationOrPortfolioHomepage(componentOptional)) {
       cleanUserHomepageInDb(dbSession, user);
       return empty();
@@ -220,6 +236,16 @@ public class CurrentAction implements UsersWsAction {
     return CurrentWsResponse.Homepage.newBuilder()
       .setType(CurrentWsResponse.HomepageType.valueOf(homepageTypes.getDefaultType().name()))
       .build();
+  }
+
+  private List<CurrentWsResponse.Setting> loadUserSettings(DbSession dbSession, UserDto user) {
+    return dbClient.userPropertiesDao().selectByUser(dbSession, user)
+      .stream()
+      .map(dto -> CurrentWsResponse.Setting.newBuilder()
+        .setKey(dto.getKey())
+        .setValue(dto.getValue())
+        .build())
+      .collect(MoreCollectors.toList());
   }
 
   private static boolean noHomepageSet(UserDto user) {

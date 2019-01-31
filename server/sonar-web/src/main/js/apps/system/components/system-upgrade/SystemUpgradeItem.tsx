@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -53,7 +53,11 @@ export default function SystemUpgradeItem({ type, systemUpgrades }: Props) {
           )}
         </DateFormatter>
         {lastUpgrade.changeLogUrl && (
-          <a className="spacer-left" href={lastUpgrade.changeLogUrl} target="_blank">
+          <a
+            className="spacer-left"
+            href={lastUpgrade.changeLogUrl}
+            rel="noopener noreferrer"
+            target="_blank">
             {translate('system.release_notes')}
           </a>
         )}

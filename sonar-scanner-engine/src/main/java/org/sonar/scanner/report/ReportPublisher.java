@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -36,7 +36,6 @@ import javax.annotation.Nullable;
 import okhttp3.HttpUrl;
 import org.apache.commons.io.FileUtils;
 import org.picocontainer.Startable;
-import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.batch.fs.internal.InputModuleHierarchy;
 import org.sonar.api.platform.Server;
 import org.sonar.api.utils.MessageException;
@@ -63,7 +62,6 @@ import static org.sonar.scanner.scan.branch.BranchType.LONG;
 import static org.sonar.scanner.scan.branch.BranchType.PULL_REQUEST;
 import static org.sonar.scanner.scan.branch.BranchType.SHORT;
 
-@ScannerSide
 public class ReportPublisher implements Startable {
 
   private static final Logger LOG = Loggers.get(ReportPublisher.class);
@@ -129,16 +127,13 @@ public class ReportPublisher implements Startable {
   }
 
   public void execute() {
-    // If this is a issues mode analysis then we should not upload reports
     String taskId = null;
-    if (!analysisMode.isIssues()) {
-      File report = generateReportFile();
-      if (properties.shouldKeepReport()) {
-        LOG.info("Analysis report generated in " + reportDir);
-      }
-      if (!analysisMode.isMediumTest()) {
-        taskId = upload(report);
-      }
+    File report = generateReportFile();
+    if (properties.shouldKeepReport()) {
+      LOG.info("Analysis report generated in " + reportDir);
+    }
+    if (!analysisMode.isMediumTest()) {
+      taskId = upload(report);
     }
     logSuccess(taskId);
   }
@@ -156,7 +151,7 @@ public class ReportPublisher implements Startable {
       File reportZip = temp.newFile("scanner-report", ".zip");
       ZipUtils.zipDir(reportDir.toFile(), reportZip);
       stopTime = System.currentTimeMillis();
-      LOG.info("Analysis reports compressed in {}ms, zip size={}", stopTime - startTime, FileUtils.byteCountToDisplaySize(FileUtils.sizeOf(reportZip)));
+      LOG.info("Analysis report compressed in {}ms, zip size={}", stopTime - startTime, FileUtils.byteCountToDisplaySize(FileUtils.sizeOf(reportZip)));
       return reportZip;
     } catch (IOException e) {
       throw new IllegalStateException("Unable to prepare analysis report", e);

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,6 +22,7 @@ package org.sonar.db.organization;
 import java.util.Objects;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
+import org.sonar.api.server.authentication.UserIdentity;
 
 public class OrganizationDto {
 
@@ -44,10 +45,25 @@ public class OrganizationDto {
 
   /** Technical unique identifier, can't be null */
   private String uuid;
-  /** Functional unique identifier, can't be null */
+
+  /**
+   * Functional unique identifier, can't be null.
+   *
+   * On personal organization (created the first time the user authenticates), the key can have the following format :
+   * - When {@link UserIdentity#getLogin()} is not null, it's a slug of the login
+   * - When {@link UserIdentity#getLogin()} is null, it's a slug of the name appended to a random number
+   *
+   * Length is set to 255 (As login length is 255, the size must be at least 255).
+   */
   private String key;
-  /** Name, can't be null */
+
+  /**
+   * Name, can't be null.
+   *
+   * Length is set to 300, as it's generated from the key when no name is provided.
+   */
   private String name;
+
   /** description can't be null */
   private String description;
   /** url can be null */
@@ -93,6 +109,7 @@ public class OrganizationDto {
     return this;
   }
 
+  @CheckForNull
   public String getDescription() {
     return description;
   }
@@ -102,6 +119,7 @@ public class OrganizationDto {
     return this;
   }
 
+  @CheckForNull
   public String getUrl() {
     return url;
   }
@@ -111,6 +129,7 @@ public class OrganizationDto {
     return this;
   }
 
+  @CheckForNull
   public String getAvatarUrl() {
     return avatarUrl;
   }

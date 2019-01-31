@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,8 +22,7 @@ package org.sonar.scanner.scan;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Optional;
-import org.sonar.api.batch.ScannerSide;
-import org.sonar.api.batch.fs.internal.InputModuleHierarchy;
+import org.sonar.api.batch.fs.internal.DefaultInputProject;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.MessageException;
 
@@ -33,7 +32,6 @@ import static org.sonar.core.config.ScannerProperties.ORGANIZATION;
 /**
  * Properties that can be passed to the scanners and are not exposed in SonarQube.
  */
-@ScannerSide
 public class ScanProperties {
   public static final String METADATA_FILE_PATH_KEY = "sonar.scanner.metadataFilePath";
   public static final String KEEP_REPORT_PROP_KEY = "sonar.scanner.keepReport";
@@ -44,11 +42,11 @@ public class ScanProperties {
   public static final String FORCE_RELOAD_KEY = "sonar.scm.forceReloadAll";
 
   private final Configuration configuration;
-  private final InputModuleHierarchy moduleHierarchy;
+  private final DefaultInputProject project;
 
-  public ScanProperties(Configuration configuration, InputModuleHierarchy moduleHierarchy) {
+  public ScanProperties(Configuration configuration, DefaultInputProject project) {
     this.configuration = configuration;
-    this.moduleHierarchy = moduleHierarchy;
+    this.project = project;
   }
 
   public boolean shouldKeepReport() {
@@ -74,9 +72,9 @@ public class ScanProperties {
       if (!metadataPath.isAbsolute()) {
         throw MessageException.of(String.format("Property '%s' must point to an absolute path: %s", METADATA_FILE_PATH_KEY, metadataFilePath.get()));
       }
-      return moduleHierarchy.root().getBaseDir().resolve(metadataPath);
+      return project.getBaseDir().resolve(metadataPath);
     } else {
-      return moduleHierarchy.root().getWorkDir().resolve(METADATA_DUMP_FILENAME);
+      return project.getWorkDir().resolve(METADATA_DUMP_FILENAME);
     }
   }
 

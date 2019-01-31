@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,7 +29,6 @@ import java.util.stream.Collectors;
 import java.util.stream.StreamSupport;
 import javax.annotation.Nonnull;
 import org.sonar.api.CoreProperties;
-import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.utils.log.Logger;
 import org.sonar.api.utils.log.Loggers;
@@ -37,7 +36,6 @@ import org.sonar.api.utils.log.Loggers;
 /**
  * Filters the plugins to be enabled during analysis
  */
-@ScannerSide
 public class ScannerPluginPredicate implements Predicate<String> {
 
   private static final Logger LOG = Loggers.get(ScannerPluginPredicate.class);

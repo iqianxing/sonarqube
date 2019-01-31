@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,10 +17,10 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-import { BranchLike } from '../../app/types';
+import { createContext } from 'react';
 
 export interface ComponentDescriptor {
-  branchLike: BranchLike | undefined;
+  branchLike: T.BranchLike | undefined;
   key: string;
   line?: number;
   name?: string;
@@ -33,7 +33,12 @@ export interface RuleDescriptor {
   organization: string;
 }
 
-export interface WorkspaceContext {
+export interface WorkspaceContextShape {
   openComponent: (component: ComponentDescriptor) => void;
   openRule: (rule: RuleDescriptor) => void;
 }
+
+export const WorkspaceContext = createContext<WorkspaceContextShape>({
+  openComponent: () => {},
+  openRule: () => {}
+});

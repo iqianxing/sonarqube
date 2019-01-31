@@ -7,31 +7,16 @@ exports[`should not render breadcrumbs with one element 1`] = `
   <OrganizationHelmet
     title="My Project"
   />
-  <React.Fragment
-    key="my-project"
+  <QualifierIcon
+    className="spacer-right"
+    qualifier="TRK"
+  />
+  <span
+    className="navbar-context-header-breadcrumb-link"
+    title="My Project"
   >
-    <QualifierIcon
-      className="spacer-right"
-      qualifier="TRK"
-    />
-    <Link
-      className="navbar-context-header-breadcrumb-link link-base-color link-no-underline"
-      onlyActiveOnIndex={false}
-      style={Object {}}
-      title="My Project"
-      to={
-        Object {
-          "pathname": "/dashboard",
-          "query": Object {
-            "branch": undefined,
-            "id": "my-project",
-          },
-        }
-      }
-    >
-      My Project
-    </Link>
-  </React.Fragment>
+    My Project
+  </span>
 </header>
 `;
 
@@ -49,57 +34,40 @@ exports[`should render alm links 1`] = `
     }
     title="My Project"
   />
-  <React.Fragment>
-    <OrganizationAvatar
-      organization={
-        Object {
-          "key": "foo",
-          "name": "The Foo Organization",
-          "projectVisibility": "public",
-        }
+  <OrganizationAvatar
+    organization={
+      Object {
+        "key": "foo",
+        "name": "The Foo Organization",
+        "projectVisibility": "public",
       }
-    />
-    <OrganizationLink
-      className="navbar-context-header-breadcrumb-link link-base-color link-no-underline spacer-left"
-      organization={
-        Object {
-          "key": "foo",
-          "name": "The Foo Organization",
-          "projectVisibility": "public",
-        }
+    }
+  />
+  <OrganizationLink
+    className="navbar-context-header-breadcrumb-link link-base-color link-no-underline spacer-left"
+    organization={
+      Object {
+        "key": "foo",
+        "name": "The Foo Organization",
+        "projectVisibility": "public",
       }
-    >
-      The Foo Organization
-    </OrganizationLink>
-    <span
-      className="slash-separator"
-    />
-  </React.Fragment>
-  <React.Fragment
-    key="my-project"
+    }
   >
-    <QualifierIcon
-      className="spacer-right"
-      qualifier="TRK"
-    />
-    <Link
-      className="navbar-context-header-breadcrumb-link link-base-color link-no-underline"
-      onlyActiveOnIndex={false}
-      style={Object {}}
-      title="My Project"
-      to={
-        Object {
-          "pathname": "/dashboard",
-          "query": Object {
-            "branch": undefined,
-            "id": "my-project",
-          },
-        }
-      }
-    >
-      My Project
-    </Link>
-  </React.Fragment>
+    The Foo Organization
+  </OrganizationLink>
+  <span
+    className="slash-separator"
+  />
+  <QualifierIcon
+    className="spacer-right"
+    qualifier="TRK"
+  />
+  <span
+    className="navbar-context-header-breadcrumb-link"
+    title="My Project"
+  >
+    My Project
+  </span>
   <a
     className="link-no-underline"
     href="https://bitbucket.org/foo"
@@ -131,56 +99,39 @@ exports[`should render organization 1`] = `
     }
     title="My Project"
   />
-  <React.Fragment>
-    <OrganizationAvatar
-      organization={
-        Object {
-          "key": "foo",
-          "name": "The Foo Organization",
-          "projectVisibility": "public",
-        }
+  <OrganizationAvatar
+    organization={
+      Object {
+        "key": "foo",
+        "name": "The Foo Organization",
+        "projectVisibility": "public",
       }
-    />
-    <OrganizationLink
-      className="navbar-context-header-breadcrumb-link link-base-color link-no-underline spacer-left"
-      organization={
-        Object {
-          "key": "foo",
-          "name": "The Foo Organization",
-          "projectVisibility": "public",
-        }
+    }
+  />
+  <OrganizationLink
+    className="navbar-context-header-breadcrumb-link link-base-color link-no-underline spacer-left"
+    organization={
+      Object {
+        "key": "foo",
+        "name": "The Foo Organization",
+        "projectVisibility": "public",
       }
-    >
-      The Foo Organization
-    </OrganizationLink>
-    <span
-      className="slash-separator"
-    />
-  </React.Fragment>
-  <React.Fragment
-    key="my-project"
+    }
   >
-    <QualifierIcon
-      className="spacer-right"
-      qualifier="TRK"
-    />
-    <Link
-      className="navbar-context-header-breadcrumb-link link-base-color link-no-underline"
-      onlyActiveOnIndex={false}
-      style={Object {}}
-      title="My Project"
-      to={
-        Object {
-          "pathname": "/dashboard",
-          "query": Object {
-            "branch": undefined,
-            "id": "my-project",
-          },
-        }
-      }
-    >
-      My Project
-    </Link>
-  </React.Fragment>
+    The Foo Organization
+  </OrganizationLink>
+  <span
+    className="slash-separator"
+  />
+  <QualifierIcon
+    className="spacer-right"
+    qualifier="TRK"
+  />
+  <span
+    className="navbar-context-header-breadcrumb-link"
+    title="My Project"
+  >
+    My Project
+  </span>
 </header>
 `;

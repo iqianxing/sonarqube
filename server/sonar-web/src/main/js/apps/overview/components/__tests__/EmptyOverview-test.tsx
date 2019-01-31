@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,20 +19,37 @@
  */
 import * as React from 'react';
 import { shallow } from 'enzyme';
-import EmptyOverview from '../EmptyOverview';
-import { BranchType } from '../../../../app/types';
+import { EmptyOverview, WarningMessage } from '../EmptyOverview';
 
-const branch = { isMain: true, name: 'b', type: BranchType.LONG };
+const branch = { isMain: true, name: 'b', type: 'LONG' };
 
-it('renders', () => {
+const component = {
+  key: 'foo',
+  analysisDate: '2016-01-01',
+  breadcrumbs: [],
+  name: 'Foo',
+  organization: 'org',
+  qualifier: 'TRK',
+  version: '0.0.1'
+};
+
+const LoggedInUser = {
+  isLoggedIn: true,
+  login: 'luke',
+  name: 'Skywalker'
+};
+
+it('renders correctly', () => {
   expect(
-    shallow(<EmptyOverview branchLikes={[]} component="abcd" showWarning={true} />)
-  ).toMatchSnapshot();
-});
-
-it('does not render warning', () => {
-  expect(
-    shallow(<EmptyOverview branchLikes={[]} component="abcd" showWarning={false} />)
+    shallow(
+      <EmptyOverview
+        branchLike={branch}
+        branchLikes={[branch]}
+        component={component}
+        currentUser={LoggedInUser}
+        onComponentChange={jest.fn()}
+      />
+    )
   ).toMatchSnapshot();
 });
 
@@ -42,8 +59,9 @@ it('should render another message when there are branches', () => {
       <EmptyOverview
         branchLike={branch}
         branchLikes={[branch, branch]}
-        component="abcd"
-        showWarning={true}
+        component={component}
+        currentUser={LoggedInUser}
+        onComponentChange={jest.fn()}
       />
     )
   ).toMatchSnapshot();
@@ -52,9 +70,47 @@ it('should render another message when there are branches', () => {
       <EmptyOverview
         branchLike={branch}
         branchLikes={[branch, branch, branch]}
-        component="abcd"
-        showWarning={true}
+        component={component}
+        currentUser={LoggedInUser}
+        onComponentChange={jest.fn()}
       />
     )
   ).toMatchSnapshot();
+});
+
+it('should not render the tutorial', () => {
+  expect(
+    shallow(
+      <EmptyOverview
+        branchLike={branch}
+        branchLikes={[branch]}
+        component={component}
+        currentUser={LoggedInUser}
+        hasAnalyses={true}
+        onComponentChange={jest.fn()}
+      />
+    )
+  ).toMatchSnapshot();
+});
+
+it('should render warning message', () => {
+  expect(shallow(<WarningMessage branchLike={branch} message="foo" />)).toMatchSnapshot();
+});
+
+it('should not render warning message', () => {
+  expect(
+    shallow(
+      <WarningMessage
+        branchLike={{
+          base: 'foo',
+          branch: 'bar',
+          key: '1',
+          title: 'PR bar'
+        }}
+        message="foo"
+      />
+    )
+      .find('FormattedMessage')
+      .exists()
+  ).toBeFalsy();
 });

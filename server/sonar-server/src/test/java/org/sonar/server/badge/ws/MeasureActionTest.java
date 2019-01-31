@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -177,7 +177,6 @@ public class MeasureActionTest {
   public static Object[][] qualityGates() {
     return new Object[][] {
       {OK, "passed", QUALITY_GATE_OK},
-      {WARN, "warning", QUALITY_GATE_WARN},
       {ERROR, "failed", QUALITY_GATE_ERROR}
     };
   }
@@ -199,6 +198,21 @@ public class MeasureActionTest {
 
     // Second call with If-None-Match must return 304
     checkWithIfNoneMatchHeader(project, metric, response);
+  }
+
+  @Test
+  public void display_deprecated_warning_quality_gate() {
+    ComponentDto project = db.components().insertPublicProject();
+    userSession.registerComponents(project);
+    MetricDto metric = createQualityGateMetric();
+    db.measures().insertLiveMeasure(project, metric, m -> m.setData(WARN.name()));
+
+    TestResponse response = ws.newRequest()
+      .setParam("project", project.getKey())
+      .setParam("metric", metric.getKey())
+      .execute();
+
+    checkSvg(response, "quality gate", "warning", QUALITY_GATE_WARN);
   }
 
   @Test
@@ -444,7 +458,7 @@ public class MeasureActionTest {
     assertThat(response.getHeader("Cache-Control")).contains("no-cache");
     assertThat(response.getHeader("Expires")).isNotNull();
     assertThat(response.getHeader("ETag")).isNull();
-    assertThat(expiresDateFormat.parse(response.getHeader("Expires"))).isBefore(new Date());
+    assertThat(expiresDateFormat.parse(response.getHeader("Expires"))).isBeforeOrEqualsTo(new Date());
     assertThat(response.getInput()).contains("<text", ">" + expectedError + "</text>");
   }
 

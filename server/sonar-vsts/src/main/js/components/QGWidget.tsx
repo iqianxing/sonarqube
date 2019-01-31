@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,14 +21,13 @@ import * as React from 'react';
 import * as classNames from 'classnames';
 import SonarCloudIcon from './SonarCloudIcon';
 import Tooltip from '../../../../../sonar-web/src/main/js/components/controls/Tooltip';
-import { MeasureComponent } from '../../../../../sonar-web/src/main/js/api/measures';
 import {
   getPathUrlAsString,
   getProjectUrl
 } from '../../../../../sonar-web/src/main/js/helpers/urls';
 
 interface Props {
-  component: MeasureComponent;
+  component: T.ComponentMeasure;
 }
 
 const QG_LEVELS: { [level: string]: string } = {
@@ -39,7 +38,8 @@ const QG_LEVELS: { [level: string]: string } = {
 };
 
 export default function QGWidget({ component }: Props) {
-  const qgMeasure = component && component.measures.find(m => m.metric === 'alert_status');
+  const qgMeasure =
+    component && component.measures && component.measures.find(m => m.metric === 'alert_status');
 
   if (!qgMeasure || !qgMeasure.value) {
     return <p>Project Quality Gate not computed.</p>;

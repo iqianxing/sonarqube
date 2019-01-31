@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,7 @@
  */
 package org.sonar.api.batch.bootstrap;
 
-import org.sonar.api.batch.ScannerSide;
+import org.sonar.api.scanner.ScannerSide;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +32,7 @@ import java.util.List;
  */
 @Deprecated
 @ScannerSide
-public class ProjectReactor implements ProjectKey {
+public class ProjectReactor {
 
   private ProjectDefinition root;
 
@@ -71,7 +71,6 @@ public class ProjectReactor implements ProjectKey {
     return null;
   }
 
-  @Override
   public String get() {
     if (root != null) {
       return root.getKeyWithBranch();

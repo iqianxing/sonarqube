@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,12 +20,11 @@
 import * as React from 'react';
 import { max } from 'd3-array';
 import LineChart from '../../../components/charts/LineChart';
-import { HistoryItem } from '../../../api/time-machine';
 
 const HEIGHT = 80;
 
 interface Props {
-  history: HistoryItem[];
+  history: Array<{ date: Date; value?: string }>;
   before?: Date;
   after?: Date;
 }

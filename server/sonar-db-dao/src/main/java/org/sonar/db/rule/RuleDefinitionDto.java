@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -40,14 +40,39 @@ public class RuleDefinitionDto {
   private Integer id;
   private String repositoryKey;
   private String ruleKey;
+
+  /**
+   * Description can be null on external rule, otherwise it should never be null
+   */
   private String description;
+
+  /**
+   * Description format can be null on external rule, otherwise it should never be null
+   */
   private RuleDto.Format descriptionFormat;
   private RuleStatus status;
   private String name;
   private String configKey;
+
+  /**
+   * Severity can be null on external rule, otherwise it should never be null
+   */
   private Integer severity;
+
   private boolean isTemplate;
+
+  /**
+   * This flag specify that this is an external rule, meaning that generated issues from this rule will be provided by the analyzer without being activated on a quality profile.
+   */
   private boolean isExternal;
+
+  /**
+   * When an external rule is defined as ad hoc, it means that it's not defined using {@link org.sonar.api.server.rule.RulesDefinition.Context#createExternalRepository(String, String)}.
+   * As the opposite, an external rule not being defined as ad hoc is declared by using {@link org.sonar.api.server.rule.RulesDefinition.Context#createExternalRepository(String, String)}.
+   * This flag is only used for external rules (it can only be set to true for when {@link #isExternal()} is true)
+   */
+  private boolean isAdHoc;
+
   private String language;
   private Integer templateId;
   private String defRemediationFunction;
@@ -73,8 +98,11 @@ public class RuleDefinitionDto {
     return key;
   }
 
-  void setKey(RuleKey key) {
+  RuleDefinitionDto setKey(RuleKey key) {
     this.key = key;
+    setRepositoryKey(key.repository());
+    setRuleKey(key.rule());
+    return this;
   }
 
   public Integer getId() {
@@ -113,20 +141,22 @@ public class RuleDefinitionDto {
     return this;
   }
 
+  @CheckForNull
   public String getDescription() {
     return description;
   }
 
-  public RuleDefinitionDto setDescription(String description) {
+  public RuleDefinitionDto setDescription(@Nullable String description) {
     this.description = description;
     return this;
   }
 
+  @CheckForNull
   public RuleDto.Format getDescriptionFormat() {
     return descriptionFormat;
   }
 
-  public RuleDefinitionDto setDescriptionFormat(RuleDto.Format descriptionFormat) {
+  public RuleDefinitionDto setDescriptionFormat(@Nullable RuleDto.Format descriptionFormat) {
     this.descriptionFormat = descriptionFormat;
     return this;
   }
@@ -187,13 +217,21 @@ public class RuleDefinitionDto {
     return this;
   }
 
-
   public boolean isExternal() {
     return isExternal;
   }
 
   public RuleDefinitionDto setIsExternal(boolean isExternal) {
     this.isExternal = isExternal;
+    return this;
+  }
+
+  public boolean isAdHoc() {
+    return isAdHoc;
+  }
+
+  public RuleDefinitionDto setIsAdHoc(boolean isAdHoc) {
+    this.isAdHoc = isAdHoc;
     return this;
   }
 

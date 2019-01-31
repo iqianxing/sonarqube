@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,8 @@ package org.sonar.scanner.repository.settings;
 
 import java.util.Map;
 
-@FunctionalInterface
 public interface SettingsLoader {
-  Map<String, String> load(String componentKey);
+  Map<String, String> loadGlobalSettings();
+
+  Map<String, String> loadProjectSettings();
 }

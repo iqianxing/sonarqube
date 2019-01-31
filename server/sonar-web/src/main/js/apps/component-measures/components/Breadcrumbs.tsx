@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,20 +21,19 @@ import * as React from 'react';
 import * as key from 'keymaster';
 import Breadcrumb from './Breadcrumb';
 import { getBreadcrumbs } from '../../../api/components';
-import { getBranchLikeQuery } from '../../../helpers/branches';
-import { BranchLike, ComponentMeasure } from '../../../app/types';
+import { getBranchLikeQuery, isSameBranchLike } from '../../../helpers/branches';
 
 interface Props {
   backToFirst: boolean;
-  branchLike?: BranchLike;
+  branchLike?: T.BranchLike;
   className?: string;
-  component: ComponentMeasure;
+  component: T.ComponentMeasure;
   handleSelect: (component: string) => void;
-  rootComponent: ComponentMeasure;
+  rootComponent: T.ComponentMeasure;
 }
 
 interface State {
-  breadcrumbs: ComponentMeasure[];
+  breadcrumbs: T.ComponentMeasure[];
 }
 
 export default class Breadcrumbs extends React.PureComponent<Props, State> {
@@ -43,13 +42,16 @@ export default class Breadcrumbs extends React.PureComponent<Props, State> {
 
   componentDidMount() {
     this.mounted = true;
-    this.fetchBreadcrumbs(this.props);
+    this.fetchBreadcrumbs();
     this.attachShortcuts();
   }
 
-  componentWillReceiveProps(nextProps: Props) {
-    if (this.props.component !== nextProps.component) {
-      this.fetchBreadcrumbs(nextProps);
+  componentDidUpdate(prevProps: Props) {
+    if (
+      this.props.component !== prevProps.component ||
+      !isSameBranchLike(prevProps.branchLike, this.props.branchLike)
+    ) {
+      this.fetchBreadcrumbs();
     }
   }
 
@@ -73,7 +75,8 @@ export default class Breadcrumbs extends React.PureComponent<Props, State> {
     key.unbind('left', 'measures-files');
   }
 
-  fetchBreadcrumbs = ({ branchLike, component, rootComponent }: Props) => {
+  fetchBreadcrumbs = () => {
+    const { branchLike, component, rootComponent } = this.props;
     const isRoot = component.key === rootComponent.key;
     if (isRoot) {
       if (this.mounted) {

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,16 +29,19 @@ import java.util.Objects;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 import javax.annotation.Nullable;
+import org.apache.commons.lang.math.RandomUtils;
 import org.sonar.api.config.Configuration;
 import org.sonar.api.platform.NewUserHandler;
 import org.sonar.api.server.ServerSide;
+import org.sonar.api.utils.System2;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.organization.OrganizationMemberDto;
 import org.sonar.db.user.GroupDto;
 import org.sonar.db.user.UserDto;
 import org.sonar.db.user.UserGroupDto;
-import org.sonar.server.authentication.LocalAuthentication;
+import org.sonar.db.user.UserPropertyDto;
+import org.sonar.server.authentication.CredentialsLocalAuthentication;
 import org.sonar.server.organization.DefaultOrganizationProvider;
 import org.sonar.server.organization.OrganizationFlags;
 import org.sonar.server.organization.OrganizationUpdater;
@@ -53,12 +56,15 @@ import static java.lang.String.format;
 import static java.util.Arrays.stream;
 import static java.util.stream.Stream.concat;
 import static org.sonar.api.CoreProperties.DEFAULT_ISSUE_ASSIGNEE;
-import static org.sonar.core.config.CorePropertyDefinitions.ONBOARDING_TUTORIAL_SHOW_TO_NEW_USERS;
+import static org.sonar.core.util.Slug.slugify;
 import static org.sonar.core.util.stream.MoreCollectors.toList;
+import static org.sonar.process.ProcessProperties.Property.ONBOARDING_TUTORIAL_SHOW_TO_NEW_USERS;
 import static org.sonar.server.ws.WsUtils.checkRequest;
 
 @ServerSide
 public class UserUpdater {
+
+  public static final String NOTIFICATIONS_READ_DATE = "notifications.readDate";
 
   private static final String SQ_AUTHORITY = "sonarqube";
 
@@ -67,7 +73,7 @@ public class UserUpdater {
   private static final String NAME_PARAM = "Name";
   private static final String EMAIL_PARAM = "Email";
 
-  private static final int LOGIN_MIN_LENGTH = 2;
+  public static final int LOGIN_MIN_LENGTH = 2;
   public static final int LOGIN_MAX_LENGTH = 255;
   public static final int EMAIL_MAX_LENGTH = 100;
   public static final int NAME_MAX_LENGTH = 200;
@@ -75,16 +81,18 @@ public class UserUpdater {
   private final NewUserNotifier newUserNotifier;
   private final DbClient dbClient;
   private final UserIndexer userIndexer;
-  private final OrganizationFlags organizationFlags;
   private final DefaultOrganizationProvider defaultOrganizationProvider;
+  private final OrganizationFlags organizationFlags;
   private final OrganizationUpdater organizationUpdater;
   private final DefaultGroupFinder defaultGroupFinder;
   private final Configuration config;
-  private final LocalAuthentication localAuthentication;
+  private final CredentialsLocalAuthentication localAuthentication;
+  private final System2 system2;
 
-  public UserUpdater(NewUserNotifier newUserNotifier, DbClient dbClient, UserIndexer userIndexer, OrganizationFlags organizationFlags,
-                     DefaultOrganizationProvider defaultOrganizationProvider, OrganizationUpdater organizationUpdater, DefaultGroupFinder defaultGroupFinder, Configuration config,
-                     LocalAuthentication localAuthentication) {
+  public UserUpdater(System2 system2, NewUserNotifier newUserNotifier, DbClient dbClient, UserIndexer userIndexer, OrganizationFlags organizationFlags,
+    DefaultOrganizationProvider defaultOrganizationProvider, OrganizationUpdater organizationUpdater, DefaultGroupFinder defaultGroupFinder, Configuration config,
+    CredentialsLocalAuthentication localAuthentication) {
+    this.system2 = system2;
     this.newUserNotifier = newUserNotifier;
     this.dbClient = dbClient;
     this.userIndexer = userIndexer;
@@ -107,20 +115,29 @@ public class UserUpdater {
     return commitUser(dbSession, disabledUser, beforeCommit, otherUsersToIndex);
   }
 
-  private void reactivateUser(DbSession dbSession, UserDto disabledUser, NewUser newUser) {
+  private void reactivateUser(DbSession dbSession, UserDto reactivatedUser, NewUser newUser) {
     UpdateUser updateUser = new UpdateUser()
-      .setLogin(newUser.login())
       .setName(newUser.name())
       .setEmail(newUser.email())
       .setScmAccounts(newUser.scmAccounts())
       .setExternalIdentity(newUser.externalIdentity());
-    if (newUser.password() != null) {
-      updateUser.setPassword(newUser.password());
+    String login = newUser.login();
+    if (login != null) {
+      updateUser.setLogin(login);
     }
-    setOnboarded(disabledUser);
-    updateDto(dbSession, updateUser, disabledUser);
-    updateUser(dbSession, disabledUser);
-    addUserToDefaultOrganizationAndDefaultGroup(dbSession, disabledUser);
+    String password = newUser.password();
+    if (password != null) {
+      updateUser.setPassword(password);
+    }
+    setOnboarded(reactivatedUser);
+    updateDto(dbSession, updateUser, reactivatedUser);
+    updateUser(dbSession, reactivatedUser);
+    boolean isOrganizationEnabled = organizationFlags.isEnabled(dbSession);
+    if (isOrganizationEnabled) {
+      setNotificationsReadDate(dbSession, reactivatedUser);
+    } else {
+      addUserToDefaultOrganizationAndDefaultGroup(dbSession, reactivatedUser);
+    }
   }
 
   public void updateAndCommit(DbSession dbSession, UserDto dto, UpdateUser updateUser, Consumer<UserDto> beforeCommit, UserDto... otherUsersToIndex) {
@@ -148,7 +165,9 @@ public class UserUpdater {
     List<String> messages = new ArrayList<>();
 
     String login = newUser.login();
-    if (validateLoginFormat(login, messages)) {
+    if (isNullOrEmpty(login)) {
+      userDto.setLogin(generateUniqueLogin(dbSession, newUser.name()));
+    } else if (validateLoginFormat(login, messages)) {
       checkLoginUniqueness(dbSession, login);
       userDto.setLogin(login);
     }
@@ -180,6 +199,18 @@ public class UserUpdater {
     return userDto;
   }
 
+  private String generateUniqueLogin(DbSession dbSession, String userName) {
+    String slugName = slugify(userName);
+    for (int i = 0; i < 10; i++) {
+      String login = slugName + RandomUtils.nextInt(100_000);
+      UserDto existingUser = dbClient.userDao().selectByLogin(dbSession, login);
+      if (existingUser == null) {
+        return login;
+      }
+    }
+    throw new IllegalStateException("Cannot create unique login for user name " + userName);
+  }
+
   private boolean updateDto(DbSession dbSession, UpdateUser update, UserDto dto) {
     List<String> messages = newArrayList();
     boolean changed = updateLogin(dbSession, update, dto, messages);
@@ -194,14 +225,18 @@ public class UserUpdater {
 
   private boolean updateLogin(DbSession dbSession, UpdateUser updateUser, UserDto userDto, List<String> messages) {
     String newLogin = updateUser.login();
-    if (updateUser.isLoginChanged() && validateLoginFormat(newLogin, messages) && !Objects.equals(userDto.getLogin(), newLogin)) {
-      checkLoginUniqueness(dbSession, newLogin);
-      dbClient.propertiesDao().selectByKeyAndMatchingValue(dbSession, DEFAULT_ISSUE_ASSIGNEE, userDto.getLogin())
-        .forEach(p -> dbClient.propertiesDao().saveProperty(p.setValue(newLogin)));
-      userDto.setLogin(newLogin);
-      return true;
+    if (!updateUser.isLoginChanged() || !validateLoginFormat(newLogin, messages) || Objects.equals(userDto.getLogin(), newLogin)) {
+      return false;
     }
-    return false;
+    checkLoginUniqueness(dbSession, newLogin);
+    dbClient.propertiesDao().selectByKeyAndMatchingValue(dbSession, DEFAULT_ISSUE_ASSIGNEE, userDto.getLogin())
+      .forEach(p -> dbClient.propertiesDao().saveProperty(p.setValue(newLogin)));
+    userDto.setLogin(newLogin);
+    if (userDto.isLocal()) {
+      userDto.setExternalLogin(newLogin);
+      userDto.setExternalId(newLogin);
+    }
+    return true;
   }
 
   private static boolean updateName(UpdateUser updateUser, UserDto userDto, List<String> messages) {
@@ -286,7 +321,7 @@ public class UserUpdater {
   }
 
   private void setOnboarded(UserDto userDto) {
-    boolean showOnboarding = config.getBoolean(ONBOARDING_TUTORIAL_SHOW_TO_NEW_USERS).orElse(false);
+    boolean showOnboarding = config.getBoolean(ONBOARDING_TUTORIAL_SHOW_TO_NEW_USERS.getKey()).orElse(false);
     userDto.setOnboarded(!showOnboarding);
   }
 
@@ -392,7 +427,12 @@ public class UserUpdater {
   private UserDto saveUser(DbSession dbSession, UserDto userDto) {
     userDto.setActive(true);
     UserDto res = dbClient.userDao().insert(dbSession, userDto);
-    addUserToDefaultOrganizationAndDefaultGroup(dbSession, userDto);
+    boolean isOrganizationEnabled = organizationFlags.isEnabled(dbSession);
+    if (isOrganizationEnabled) {
+      setNotificationsReadDate(dbSession, userDto);
+    } else {
+      addUserToDefaultOrganizationAndDefaultGroup(dbSession, userDto);
+    }
     organizationUpdater.createForUser(dbSession, userDto);
     return res;
   }
@@ -415,9 +455,6 @@ public class UserUpdater {
   }
 
   private void addUserToDefaultOrganizationAndDefaultGroup(DbSession dbSession, UserDto userDto) {
-    if (organizationFlags.isEnabled(dbSession)) {
-      return;
-    }
     addUserToDefaultOrganization(dbSession, userDto);
     addDefaultGroup(dbSession, userDto);
   }
@@ -435,5 +472,12 @@ public class UserUpdater {
       return;
     }
     dbClient.userGroupDao().insert(dbSession, new UserGroupDto().setUserId(userDto.getId()).setGroupId(defaultGroup.getId()));
+  }
+
+  private void setNotificationsReadDate(DbSession dbSession, UserDto user) {
+    dbClient.userPropertiesDao().insertOrUpdate(dbSession, new UserPropertyDto()
+      .setUserUuid(user.getUuid())
+      .setKey(NOTIFICATIONS_READ_DATE)
+      .setValue(Long.toString(system2.now())));
   }
 }

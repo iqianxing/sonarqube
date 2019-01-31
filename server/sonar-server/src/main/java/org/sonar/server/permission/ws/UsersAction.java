@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,6 +25,7 @@ import com.google.common.collect.TreeMultimap;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import org.sonar.api.server.ws.Change;
 import org.sonar.api.server.ws.Request;
 import org.sonar.api.server.ws.Response;
 import org.sonar.api.server.ws.WebService;
@@ -44,16 +45,14 @@ import org.sonarqube.ws.Permissions.UsersWsResponse;
 
 import static com.google.common.base.Strings.emptyToNull;
 import static java.util.Collections.emptyList;
-import static org.sonar.core.util.Protobuf.setNullable;
+import static java.util.Optional.ofNullable;
 import static org.sonar.db.permission.PermissionQuery.DEFAULT_PAGE_SIZE;
 import static org.sonar.db.permission.PermissionQuery.RESULTS_MAX_SIZE;
 import static org.sonar.db.permission.PermissionQuery.SEARCH_QUERY_MIN_LENGTH;
 import static org.sonar.server.permission.PermissionPrivilegeChecker.checkProjectAdmin;
-import static org.sonar.server.permission.ws.PermissionRequestValidator.validateGlobalPermission;
-import static org.sonar.server.permission.ws.PermissionRequestValidator.validateProjectPermission;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createOrganizationParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createPermissionParameter;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createProjectParameters;
+import static org.sonar.server.permission.ws.RequestValidator.validateGlobalPermission;
+import static org.sonar.server.permission.ws.WsParameters.createOrganizationParameter;
+import static org.sonar.server.permission.ws.WsParameters.createProjectParameters;
 import static org.sonar.server.ws.WsUtils.writeProtobuf;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_ORGANIZATION;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_PERMISSION;
@@ -62,14 +61,19 @@ public class UsersAction implements PermissionsWsAction {
 
   private final DbClient dbClient;
   private final UserSession userSession;
-  private final PermissionWsSupport support;
+  private final PermissionWsSupport wsSupport;
   private final AvatarResolver avatarResolver;
+  private final WsParameters wsParameters;
+  private final RequestValidator requestValidator;
 
-  public UsersAction(DbClient dbClient, UserSession userSession, PermissionWsSupport support, AvatarResolver avatarResolver) {
+  public UsersAction(DbClient dbClient, UserSession userSession, PermissionWsSupport wsSupport, AvatarResolver avatarResolver, WsParameters wsParameters,
+    RequestValidator requestValidator) {
     this.dbClient = dbClient;
     this.userSession = userSession;
-    this.support = support;
+    this.wsSupport = wsSupport;
     this.avatarResolver = avatarResolver;
+    this.wsParameters = wsParameters;
+    this.requestValidator = requestValidator;
   }
 
   @Override
@@ -85,26 +89,27 @@ public class UsersAction implements PermissionsWsAction {
         "<li>'Administer' rights on the specified project</li>" +
         "</ul>")
       .addPagingParams(DEFAULT_PAGE_SIZE, RESULTS_MAX_SIZE)
+      .setChangelog(
+        new Change("7.4", "The response list is returning all users even those without permissions, the users with permission are at the top of the list."))
       .setInternal(true)
       .setResponseExample(getClass().getResource("users-example.json"))
       .setHandler(this);
 
     action.createParam(Param.TEXT_QUERY)
       .setMinimumLength(SEARCH_QUERY_MIN_LENGTH)
-      .setDescription("Limit search to user names that contain the supplied string. <br/>" +
-        "When this parameter is not set, only users having at least one permission are returned.")
+      .setDescription("Limit search to user names that contain the supplied string. <br/>")
       .setExampleValue("eri");
 
     createOrganizationParameter(action).setSince("6.2");
-    createPermissionParameter(action).setRequired(false);
+    wsParameters.createPermissionParameter(action).setRequired(false);
     createProjectParameters(action);
   }
 
   @Override
   public void handle(Request request, Response response) throws Exception {
     try (DbSession dbSession = dbClient.openSession(false)) {
-      OrganizationDto org = support.findOrganization(dbSession, request.param(PARAM_ORGANIZATION));
-      Optional<ProjectId> projectId = support.findProjectId(dbSession, request);
+      OrganizationDto org = wsSupport.findOrganization(dbSession, request.param(PARAM_ORGANIZATION));
+      Optional<ProjectId> projectId = wsSupport.findProjectId(dbSession, request);
       checkProjectAdmin(userSession, org.getUuid(), projectId);
 
       PermissionQuery query = buildPermissionQuery(request, org, projectId);
@@ -117,7 +122,7 @@ public class UsersAction implements PermissionsWsAction {
     }
   }
 
-  private static PermissionQuery buildPermissionQuery(Request request, OrganizationDto organization, Optional<ProjectId> project) {
+  private PermissionQuery buildPermissionQuery(Request request, OrganizationDto organization, Optional<ProjectId> project) {
     String textQuery = request.param(Param.TEXT_QUERY);
     String permission = request.param(PARAM_PERMISSION);
     PermissionQuery.Builder permissionQuery = PermissionQuery.builder()
@@ -129,14 +134,12 @@ public class UsersAction implements PermissionsWsAction {
     project.ifPresent(projectId -> permissionQuery.setComponentUuid(projectId.getUuid()));
     if (permission != null) {
       if (project.isPresent()) {
-        validateProjectPermission(permission);
+        requestValidator.validateProjectPermission(permission);
       } else {
         validateGlobalPermission(permission);
       }
     }
-    if (textQuery == null) {
-      permissionQuery.withAtLeastOnePermission();
-    }
+
     return permissionQuery.build();
   }
 
@@ -149,9 +152,9 @@ public class UsersAction implements PermissionsWsAction {
       Permissions.User.Builder userResponse = response.addUsersBuilder()
         .setLogin(user.getLogin())
         .addAllPermissions(permissionsByUserId.get(user.getId()));
-      setNullable(user.getEmail(), userResponse::setEmail);
-      setNullable(emptyToNull(user.getEmail()), u -> userResponse.setAvatar(avatarResolver.create(user)));
-      setNullable(user.getName(), userResponse::setName);
+      ofNullable(user.getEmail()).ifPresent(userResponse::setEmail);
+      ofNullable(emptyToNull(user.getEmail())).ifPresent(u -> userResponse.setAvatar(avatarResolver.create(user)));
+      ofNullable(user.getName()).ifPresent(userResponse::setName);
     });
 
     response.getPagingBuilder()

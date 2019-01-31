@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -52,8 +52,7 @@ public class QualityGateConverter {
     if (condition.isOnLeakPeriod()) {
       result.addProperty("period", 1);
     }
-    condition.getWarningThreshold().ifPresent(t -> result.addProperty("warning", t));
-    condition.getErrorThreshold().ifPresent(t -> result.addProperty("error", t));
+    result.addProperty("error", condition.getErrorThreshold());
     evaluatedCondition.getValue().ifPresent(v -> result.addProperty("actual", v));
     result.addProperty(FIELD_LEVEL, evaluatedCondition.getStatus().name());
     return result;

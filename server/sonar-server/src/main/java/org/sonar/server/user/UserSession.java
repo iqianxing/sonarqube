@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
  */
 package org.sonar.server.user;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -72,7 +73,24 @@ public interface UserSession {
    * This enum supports by name only the few providers for which specific code exists.
    */
   enum IdentityProvider {
-    SONARQUBE, GITHUB, BITBUCKET, OTHER
+    SONARQUBE("sonarqube"), GITHUB("github"), BITBUCKET("bitbucket"), OTHER("other");
+
+    String key;
+
+    IdentityProvider(String key) {
+      this.key = key;
+    }
+
+    public String getKey() {
+      return key;
+    }
+
+    public static IdentityProvider getFromKey(String key) {
+      return Arrays.stream(IdentityProvider.values())
+        .filter(i -> i.getKey().equals(key))
+        .findAny()
+        .orElse(OTHER);
+    }
   }
 
   /**
@@ -189,7 +207,7 @@ public interface UserSession {
    * If the permission is not granted, then the organization permission is _not_ checked.
    *
    * @param component non-null component.
-   * @param permission project permission as defined by {@link org.sonar.core.permission.ProjectPermissions}
+   * @param permission project permission as defined by {@link org.sonar.server.permission.PermissionService}
    */
   boolean hasComponentPermission(String permission, ComponentDto component);
 

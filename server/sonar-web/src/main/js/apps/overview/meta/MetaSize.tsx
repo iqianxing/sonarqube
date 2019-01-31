@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,18 +23,17 @@ import DrilldownLink from '../../../components/shared/DrilldownLink';
 import LanguageDistributionContainer from '../../../components/charts/LanguageDistributionContainer';
 import SizeRating from '../../../components/ui/SizeRating';
 import { formatMeasure } from '../../../helpers/measures';
-import { getMetricName } from '../helpers/metrics';
+import { getMetricName } from '../utils';
 import { translate } from '../../../helpers/l10n';
-import { LightComponent, BranchLike, MeasureEnhanced } from '../../../app/types';
 
 interface Props {
-  branchLike?: BranchLike;
-  component: LightComponent;
-  measures: MeasureEnhanced[];
+  branchLike?: T.BranchLike;
+  component: T.LightComponent;
+  measures: T.MeasureEnhanced[];
 }
 
 export default class MetaSize extends React.PureComponent<Props> {
-  renderLoC = (ncloc?: MeasureEnhanced) => (
+  renderLoC = (ncloc?: T.MeasureEnhanced) => (
     <div
       className={classNames('overview-meta-size-ncloc', {
         'is-half-width': this.props.component.qualifier === 'APP'
@@ -67,7 +66,7 @@ export default class MetaSize extends React.PureComponent<Props> {
     const className =
       this.props.component.qualifier === 'TRK' ? 'overview-meta-size-lang-dist' : 'big-spacer-top';
 
-    return languageDistribution ? (
+    return languageDistribution && languageDistribution.value !== undefined ? (
       <div className={className} id="overview-language-distribution">
         <LanguageDistributionContainer distribution={languageDistribution.value} width={160} />
       </div>

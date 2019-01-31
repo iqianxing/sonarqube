@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,6 @@ import * as React from 'react';
 import { shallow } from 'enzyme';
 import BulkChangeModal from '../BulkChangeModal';
 import { waitAndUpdate } from '../../../../helpers/testUtils';
-import { Issue, IssueType } from '../../../../app/types';
 
 jest.mock('../../../../api/issues', () => ({
   searchIssueTags: () => Promise.resolve([undefined, []])
@@ -36,6 +35,7 @@ it('should display error message when no issues available', async () => {
 it('should display form when issues are present', async () => {
   const wrapper = getWrapper([
     {
+      actions: [],
       component: 'foo',
       componentLongName: 'foo',
       componentQualifier: 'foo',
@@ -55,14 +55,15 @@ it('should display form when issues are present', async () => {
       secondaryLocations: [],
       severity: 'foo',
       status: 'foo',
-      type: IssueType.Bug
+      transitions: [],
+      type: 'BUG'
     }
   ]);
   await waitAndUpdate(wrapper);
   expect(wrapper).toMatchSnapshot();
 });
 
-const getWrapper = (issues: Issue[]) => {
+const getWrapper = (issues: T.Issue[]) => {
   return shallow(
     <BulkChangeModal
       component={undefined}

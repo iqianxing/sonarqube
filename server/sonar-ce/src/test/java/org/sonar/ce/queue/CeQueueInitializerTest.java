@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,11 +19,10 @@
  */
 package org.sonar.ce.queue;
 
-import java.io.IOException;
 import org.junit.Test;
 import org.sonar.api.platform.Server;
-import org.sonar.ce.cleaning.CeCleaningScheduler;
 import org.sonar.ce.CeDistributedInformation;
+import org.sonar.ce.cleaning.CeCleaningScheduler;
 import org.sonar.ce.taskprocessor.CeProcessingScheduler;
 
 import static org.mockito.Mockito.mock;

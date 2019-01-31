@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,6 @@ import * as React from 'react';
 import { shallow } from 'enzyme';
 import { Location } from 'history';
 import { hasAdminAccess, OrganizationAccess } from '../OrganizationAccessContainer';
-import { Visibility } from '../../../../app/types';
 
 jest.mock('../../../../app/utils/handleRequiredAuthorization', () => ({ default: jest.fn() }));
 
@@ -38,14 +37,14 @@ const loggedInUser = {
   showOnboardingTutorial: false
 };
 
-const organization = {
-  canAdmin: false,
+const organization: T.Organization = {
+  actions: { admin: false },
   key: 'foo',
   name: 'Foo',
-  projectVisibility: Visibility.Public
+  projectVisibility: 'public'
 };
 
-const adminOrganization = { ...organization, canAdmin: true };
+const adminOrganization: T.Organization = { ...organization, actions: { admin: true } };
 
 describe('component', () => {
   it('should render children', () => {

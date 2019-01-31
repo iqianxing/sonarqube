@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,7 @@ export const bubbles: {
     y: string;
     size: string;
     colors?: string[];
-    yDomain?: number[];
+    yDomain?: [number, number];
   };
 } = {
   Reliability: {
@@ -46,7 +46,6 @@ export const bubbles: {
   },
   Coverage: { x: 'complexity', y: 'coverage', size: 'uncovered_lines', yDomain: [100, 0] },
   Duplications: { x: 'ncloc', y: 'duplicated_lines', size: 'duplicated_blocks' },
-  // eslint-disable-next-line camelcase
   project_overview: {
     x: 'sqale_index',
     y: 'coverage',

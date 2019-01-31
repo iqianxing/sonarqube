@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -46,8 +46,8 @@ import org.sonarqube.ws.ProjectAnalyses.Event;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
+import static java.util.Optional.ofNullable;
 import static org.apache.commons.lang.StringUtils.isNotBlank;
-import static org.sonar.core.util.Protobuf.setNullable;
 import static org.sonar.db.event.EventValidator.MAX_NAME_LENGTH;
 import static org.sonar.server.projectanalysis.ws.EventCategory.OTHER;
 import static org.sonar.server.projectanalysis.ws.EventCategory.VERSION;
@@ -140,7 +140,7 @@ public class CreateEventAction implements ProjectAnalysesWsAction {
   }
 
   private ComponentDto getProjectOrApplication(DbSession dbSession, SnapshotDto analysis) {
-    ComponentDto project = dbClient.componentDao().selectByUuid(dbSession, analysis.getComponentUuid()).orNull();
+    ComponentDto project = dbClient.componentDao().selectByUuid(dbSession, analysis.getComponentUuid()).orElse(null);
     checkState(project != null, "Project of analysis '%s' is not found", analysis.getUuid());
     checkArgument(ALLOWED_QUALIFIERS.contains(project.qualifier()) && Scopes.PROJECT.equals(project.scope()),
       "An event must be created on a project or an application");
@@ -178,7 +178,7 @@ public class CreateEventAction implements ProjectAnalysesWsAction {
       .setCategory(fromLabel(dbEvent.getCategory()).name())
       .setAnalysis(dbEvent.getAnalysisUuid())
       .setName(dbEvent.getName());
-    setNullable(dbEvent.getDescription(), wsEvent::setDescription);
+    ofNullable(dbEvent.getDescription()).ifPresent(wsEvent::setDescription);
 
     return CreateEventResponse.newBuilder().setEvent(wsEvent).build();
   }

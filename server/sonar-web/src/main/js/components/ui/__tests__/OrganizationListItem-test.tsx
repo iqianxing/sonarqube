@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,17 +20,16 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import OrganizationListItem from '../OrganizationListItem';
-import { Visibility } from '../../../app/types';
 
 it('renders', () => {
   expect(
     shallow(
       <OrganizationListItem
         organization={{
-          isAdmin: true,
+          actions: { admin: true },
           key: 'org',
           name: 'org',
-          projectVisibility: Visibility.Public
+          projectVisibility: 'public'
         }}
       />
     )

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,6 +31,8 @@ public interface BatchReportReader {
 
   CloseableIterator<ScannerReport.ActiveRule> readActiveRules();
 
+  CloseableIterator<ScannerReport.AdHocRule> readAdHocRules();
+
   CloseableIterator<ScannerReport.Measure> readComponentMeasures(int componentRef);
 
   @CheckForNull
@@ -39,7 +41,7 @@ public interface BatchReportReader {
   ScannerReport.Component readComponent(int componentRef);
 
   CloseableIterator<ScannerReport.Issue> readComponentIssues(int componentRef);
-  
+
   CloseableIterator<ScannerReport.ExternalIssue> readComponentExternalIssues(int componentRef);
 
   CloseableIterator<ScannerReport.Duplication> readComponentDuplications(int componentRef);
@@ -57,11 +59,11 @@ public interface BatchReportReader {
    */
   Optional<CloseableIterator<String>> readFileSource(int fileRef);
 
-  CloseableIterator<ScannerReport.Test> readTests(int testFileRef);
-
-  CloseableIterator<ScannerReport.CoverageDetail> readCoverageDetails(int testFileRef);
-
   CloseableIterator<ScannerReport.ContextProperty> readContextProperties();
-  
+
   Optional<CloseableIterator<ScannerReport.LineSgnificantCode>> readComponentSignificantCode(int fileRef);
+
+  Optional<ScannerReport.ChangedLines> readComponentChangedLines(int fileRef);
+
+  CloseableIterator<ScannerReport.AnalysisWarning> readAnalysisWarnings();
 }

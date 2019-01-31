@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,46 +19,50 @@
  */
 import * as React from 'react';
 import NotificationsList from './NotificationsList';
-import { Notification } from '../../../app/types';
+import SonarCloudNotifications from './SonarCloudNotifications';
 import { translate } from '../../../helpers/l10n';
+import { isSonarCloud } from '../../../helpers/system';
 
 interface Props {
-  addNotification: (n: Notification) => void;
+  addNotification: (n: T.Notification) => void;
   channels: string[];
-  notifications: Notification[];
-  removeNotification: (n: Notification) => void;
+  notifications: T.Notification[];
+  removeNotification: (n: T.Notification) => void;
   types: string[];
 }
 
 export default function GlobalNotifications(props: Props) {
   return (
-    <section className="boxed-group">
-      <h2>{translate('my_profile.overall_notifications.title')}</h2>
+    <>
+      <section className="boxed-group">
+        <h2>{translate('my_profile.overall_notifications.title')}</h2>
 
-      <div className="boxed-group-inner">
-        <table className="form">
-          <thead>
-            <tr>
-              <th />
-              {props.channels.map(channel => (
-                <th className="text-center" key={channel}>
-                  <h4>{translate('notification.channel', channel)}</h4>
-                </th>
-              ))}
-            </tr>
-          </thead>
+        <div className="boxed-group-inner">
+          <table className="data zebra">
+            <thead>
+              <tr>
+                <th />
+                {props.channels.map(channel => (
+                  <th className="text-center" key={channel}>
+                    <h4>{translate('notification.channel', channel)}</h4>
+                  </th>
+                ))}
+              </tr>
+            </thead>
 
-          <NotificationsList
-            channels={props.channels}
-            checkboxId={getCheckboxId}
-            notifications={props.notifications}
-            onAdd={props.addNotification}
-            onRemove={props.removeNotification}
-            types={props.types}
-          />
-        </table>
-      </div>
-    </section>
+            <NotificationsList
+              channels={props.channels}
+              checkboxId={getCheckboxId}
+              notifications={props.notifications}
+              onAdd={props.addNotification}
+              onRemove={props.removeNotification}
+              types={props.types}
+            />
+          </table>
+        </div>
+      </section>
+      {isSonarCloud() && <SonarCloudNotifications />}
+    </>
   );
 }
 

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,7 +26,6 @@ import org.junit.rules.ExpectedException;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.DIRECTORY;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.FILE;
-import static org.sonar.ce.task.projectanalysis.component.Component.Type.MODULE;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.PROJECT;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.PROJECT_VIEW;
 import static org.sonar.ce.task.projectanalysis.component.Component.Type.VIEW;
@@ -35,13 +34,10 @@ import static org.sonar.ce.task.projectanalysis.component.ReportComponent.DUMB_P
 public class TreeRootHolderImplTest {
 
   private static final ReportComponent SOME_REPORT_COMPONENT_TREE = ReportComponent.builder(PROJECT, 1)
-    .addChildren(
-      ReportComponent.builder(MODULE, 2)
-        .addChildren(ReportComponent.builder(DIRECTORY, 3)
-          .addChildren(
-            ReportComponent.builder(FILE, 4).build())
-          .build())
-        .build())
+    .addChildren(ReportComponent.builder(DIRECTORY, 2)
+      .addChildren(
+        ReportComponent.builder(FILE, 3).build())
+      .build())
     .build();
   private static final ViewsComponent SOME_VIEWS_COMPONENT_TREE = ViewsComponent.builder(VIEW, 1)
     .addChildren(
@@ -56,21 +52,29 @@ public class TreeRootHolderImplTest {
   private TreeRootHolderImpl underTest = new TreeRootHolderImpl();
 
   @Test
-  public void setRoot_throws_NPE_if_arg_is_null() {
+  public void setRoots_throws_NPE_if_root_is_null() {
     expectedException.expect(NullPointerException.class);
     expectedException.expectMessage("root can not be null");
 
-    underTest.setRoot(null);
+    underTest.setRoots(null, DUMB_PROJECT);
+  }
+
+  @Test
+  public void setRoots_throws_NPE_if_reportRoot_is_null() {
+    expectedException.expect(NullPointerException.class);
+    expectedException.expectMessage("root can not be null");
+
+    underTest.setRoots(DUMB_PROJECT, null);
   }
 
   @Test
   public void setRoot_throws_ISE_when_called_twice() {
-    underTest.setRoot(DUMB_PROJECT);
+    underTest.setRoots(DUMB_PROJECT, DUMB_PROJECT);
 
     expectedException.expect(IllegalStateException.class);
     expectedException.expectMessage("root can not be set twice in holder");
 
-    underTest.setRoot(DUMB_PROJECT);
+    underTest.setRoots(null, DUMB_PROJECT);
   }
 
   @Test
@@ -89,25 +93,25 @@ public class TreeRootHolderImplTest {
 
   @Test
   public void getComponentByRef_returns_any_report_component_in_the_tree() {
-    underTest.setRoot(SOME_REPORT_COMPONENT_TREE);
+    underTest.setRoots(SOME_REPORT_COMPONENT_TREE, DUMB_PROJECT);
 
-    for (int i = 1; i <= 4; i++) {
+    for (int i = 1; i <= 3; i++) {
       assertThat(underTest.getComponentByRef(i).getReportAttributes().getRef()).isEqualTo(i);
     }
   }
 
   @Test
   public void getOptionalComponentByRef_returns_any_report_component_in_the_tree() {
-    underTest.setRoot(SOME_REPORT_COMPONENT_TREE);
+    underTest.setRoots(SOME_REPORT_COMPONENT_TREE, DUMB_PROJECT);
 
-    for (int i = 1; i <= 4; i++) {
+    for (int i = 1; i <= 3; i++) {
       assertThat(underTest.getOptionalComponentByRef(i).get().getReportAttributes().getRef()).isEqualTo(i);
     }
   }
 
   @Test
   public void getComponentByRef_throws_IAE_if_holder_does_not_contain_specified_component() {
-    underTest.setRoot(SOME_REPORT_COMPONENT_TREE);
+    underTest.setRoots(SOME_REPORT_COMPONENT_TREE, DUMB_PROJECT);
 
     expectedException.expect(IllegalArgumentException.class);
     expectedException.expectMessage("Component with ref '6' can't be found");
@@ -117,14 +121,14 @@ public class TreeRootHolderImplTest {
 
   @Test
   public void getOptionalComponentByRef_returns_empty_if_holder_does_not_contain_specified_component() {
-    underTest.setRoot(SOME_REPORT_COMPONENT_TREE);
+    underTest.setRoots(SOME_REPORT_COMPONENT_TREE, DUMB_PROJECT);
 
     assertThat(underTest.getOptionalComponentByRef(6)).isEmpty();
   }
 
   @Test
   public void getComponentByRef_throws_IAE_if_holder_contains_View_tree() {
-    underTest.setRoot(SOME_VIEWS_COMPONENT_TREE);
+    underTest.setRoots(SOME_VIEWS_COMPONENT_TREE, DUMB_PROJECT);
 
     expectedException.expect(IllegalArgumentException.class);
     expectedException.expectMessage("Component with ref '1' can't be found");
@@ -133,9 +137,15 @@ public class TreeRootHolderImplTest {
   }
 
   @Test
-  public void verify_setRoot_getRoot() {
-    underTest.setRoot(DUMB_PROJECT);
-    assertThat(underTest.getRoot()).isSameAs(DUMB_PROJECT);
+  public void verify_setRoots_getRoot() {
+    underTest.setRoots(SOME_REPORT_COMPONENT_TREE, DUMB_PROJECT);
+    assertThat(underTest.getRoot()).isSameAs(SOME_REPORT_COMPONENT_TREE);
+  }
+
+  @Test
+  public void verify_setRoots_getReportRoot() {
+    underTest.setRoots(SOME_REPORT_COMPONENT_TREE, DUMB_PROJECT);
+    assertThat(underTest.getReportTreeRoot()).isSameAs(DUMB_PROJECT);
   }
 
   @Test
@@ -147,8 +157,8 @@ public class TreeRootHolderImplTest {
 
   @Test
   public void getSize_counts_number_of_components() {
-    underTest.setRoot(SOME_REPORT_COMPONENT_TREE);
-    assertThat(underTest.getSize()).isEqualTo(4);
+    underTest.setRoots(SOME_REPORT_COMPONENT_TREE, DUMB_PROJECT);
+    assertThat(underTest.getSize()).isEqualTo(3);
   }
 
   private void expectNotInitialized_ISE() {

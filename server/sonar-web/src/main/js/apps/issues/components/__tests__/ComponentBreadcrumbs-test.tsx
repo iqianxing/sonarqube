@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,6 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import ComponentBreadcrumbs from '../ComponentBreadcrumbs';
-import { ShortLivingBranch, BranchType } from '../../../../app/types';
 
 const baseIssue = {
   component: 'comp',
@@ -35,12 +34,7 @@ const baseIssue = {
 it('renders', () => {
   expect(
     shallow(
-      <ComponentBreadcrumbs
-        branchLike={undefined}
-        component={undefined}
-        issue={baseIssue}
-        organization={undefined}
-      />
+      <ComponentBreadcrumbs component={undefined} issue={baseIssue} organization={undefined} />
     )
   ).toMatchSnapshot();
 });
@@ -48,33 +42,6 @@ it('renders', () => {
 it('renders with sub-project', () => {
   const issue = { ...baseIssue, subProject: 'sub-proj', subProjectName: 'sub-proj-name' };
   expect(
-    shallow(
-      <ComponentBreadcrumbs
-        branchLike={undefined}
-        component={undefined}
-        issue={issue}
-        organization={undefined}
-      />
-    )
-  ).toMatchSnapshot();
-});
-
-it('renders with branch', () => {
-  const issue = { ...baseIssue, subProject: 'sub-proj', subProjectName: 'sub-proj-name' };
-  const shortBranch: ShortLivingBranch = {
-    isMain: false,
-    mergeBranch: '',
-    name: 'feature',
-    type: BranchType.SHORT
-  };
-  expect(
-    shallow(
-      <ComponentBreadcrumbs
-        branchLike={shortBranch}
-        component={undefined}
-        issue={issue}
-        organization={undefined}
-      />
-    )
+    shallow(<ComponentBreadcrumbs component={undefined} issue={issue} organization={undefined} />)
   ).toMatchSnapshot();
 });

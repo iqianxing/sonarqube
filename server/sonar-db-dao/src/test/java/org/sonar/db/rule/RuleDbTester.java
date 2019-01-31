@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -94,7 +94,8 @@ public class RuleDbTester {
   }
 
   public RuleParamDto insertRuleParam(RuleDefinitionDto rule) {
-    return insertRuleParam(rule, p -> {});
+    return insertRuleParam(rule, p -> {
+    });
   }
 
   @SafeVarargs
@@ -116,15 +117,6 @@ public class RuleDbTester {
     return ruleDto;
   }
 
-  public RuleDto updateRule(RuleDto ruleDto) {
-    update(ruleDto.getDefinition());
-    RuleMetadataDto metadata = ruleDto.getMetadata();
-    if (metadata.getOrganizationUuid() != null) {
-      db.getDbClient().ruleDao().insertOrUpdate(db.getSession(), metadata.setRuleId(ruleDto.getId()));
-      db.commit();
-    }
-    return ruleDto;
-  }
   /**
    * Create and persist a rule with random values.
    */
@@ -153,7 +145,6 @@ public class RuleDbTester {
     db.getDbClient().ruleDao().insert(db.getSession(), deprecatedRuleKeyDto);
     return deprecatedRuleKeyDto;
   }
-
 
   public RuleParamDto insertRuleParam(RuleDto rule) {
     RuleParamDto param = new RuleParamDto();

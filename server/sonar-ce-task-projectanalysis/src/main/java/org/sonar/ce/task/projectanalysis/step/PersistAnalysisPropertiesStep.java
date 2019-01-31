@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,10 +24,12 @@ import java.util.List;
 import org.sonar.ce.task.projectanalysis.analysis.AnalysisMetadataHolder;
 import org.sonar.ce.task.projectanalysis.batch.BatchReportReader;
 import org.sonar.ce.task.step.ComputationStep;
+import org.sonar.core.util.CloseableIterator;
 import org.sonar.core.util.UuidFactory;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.component.AnalysisPropertyDto;
+import org.sonar.scanner.protocol.output.ScannerReport;
 
 import static org.sonar.core.config.CorePropertyDefinitions.SONAR_ANALYSIS;
 
@@ -38,6 +40,7 @@ import static org.sonar.core.config.CorePropertyDefinitions.SONAR_ANALYSIS;
 public class PersistAnalysisPropertiesStep implements ComputationStep {
 
   private static final String SONAR_PULL_REQUEST = "sonar.pullrequest.";
+  private static final String SCM_REVISION_ID = "sonar.analysis.scm_revision_id";
 
   private final DbClient dbClient;
   private final AnalysisMetadataHolder analysisMetadataHolder;
@@ -54,18 +57,26 @@ public class PersistAnalysisPropertiesStep implements ComputationStep {
 
   @Override
   public void execute(ComputationStep.Context context) {
-    final List<AnalysisPropertyDto> analysisPropertyDtos = new ArrayList<>();
-    reportReader.readContextProperties().forEachRemaining(
-      contextProperty -> {
-        String propertyKey = contextProperty.getKey();
-        if (propertyKey.startsWith(SONAR_ANALYSIS) || propertyKey.startsWith(SONAR_PULL_REQUEST)) {
-          analysisPropertyDtos.add(new AnalysisPropertyDto()
-            .setUuid(uuidFactory.create())
-            .setKey(propertyKey)
-            .setValue(contextProperty.getValue())
-            .setSnapshotUuid(analysisMetadataHolder.getUuid()));
-        }
-      });
+    List<AnalysisPropertyDto> analysisPropertyDtos = new ArrayList<>();
+    try (CloseableIterator<ScannerReport.ContextProperty> it = reportReader.readContextProperties()) {
+      it.forEachRemaining(
+        contextProperty -> {
+          String propertyKey = contextProperty.getKey();
+          if (propertyKey.startsWith(SONAR_ANALYSIS) || propertyKey.startsWith(SONAR_PULL_REQUEST)) {
+            analysisPropertyDtos.add(new AnalysisPropertyDto()
+              .setUuid(uuidFactory.create())
+              .setKey(propertyKey)
+              .setValue(contextProperty.getValue())
+              .setSnapshotUuid(analysisMetadataHolder.getUuid()));
+          }
+        });
+    }
+
+    analysisMetadataHolder.getScmRevisionId().ifPresent(scmRevisionId -> analysisPropertyDtos.add(new AnalysisPropertyDto()
+      .setUuid(uuidFactory.create())
+      .setKey(SCM_REVISION_ID)
+      .setValue(scmRevisionId)
+      .setSnapshotUuid(analysisMetadataHolder.getUuid())));
 
     if (analysisPropertyDtos.isEmpty()) {
       return;

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,14 +23,14 @@ import Filter from './Filter';
 import FilterHeader from './FilterHeader';
 import SearchableFilterFooter from './SearchableFilterFooter';
 import SearchableFilterOption from './SearchableFilterOption';
-import { getLanguageByKey, Languages } from '../../../store/languages/reducer';
+import { getLanguageByKey } from '../../../store/languages';
 import { translate } from '../../../helpers/l10n';
 import { Facet } from '../types';
 import { RawQuery } from '../../../helpers/query';
 
 interface Props {
   facet?: Facet;
-  languages: Languages;
+  languages: T.Languages;
   maxFacetValue?: number;
   onQueryChange: (change: RawQuery) => void;
   organization?: { key: string };

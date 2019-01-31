@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -38,7 +38,7 @@ public final class DepthTraversalTypeAwareCrawler implements ComponentCrawler {
     try {
       visitImpl(component);
     } catch (RuntimeException e) {
-      VisitException.rethrowOrWrap(e, "Visit of Component {key=%s,uuid=%s,type=%s} failed", component.getKey(), component.getUuid(), component.getType());
+      VisitException.rethrowOrWrap(e, "Visit of Component {key=%s,uuid=%s,type=%s} failed", component.getDbKey(), component.getUuid(), component.getType());
     }
   }
 
@@ -68,9 +68,6 @@ public final class DepthTraversalTypeAwareCrawler implements ComponentCrawler {
     switch (component.getType()) {
       case PROJECT:
         this.visitor.visitProject(component);
-        break;
-      case MODULE:
-        this.visitor.visitModule(component);
         break;
       case DIRECTORY:
         this.visitor.visitDirectory(component);

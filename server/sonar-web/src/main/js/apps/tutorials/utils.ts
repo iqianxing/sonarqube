@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -37,4 +37,8 @@ export function isLanguageConfigured(config?: LanguageConfig) {
   const isOtherConfigured = language === 'other' && projectKey != null;
 
   return isJavaConfigured || isDotNetConfigured || isCFamilyConfigured || isOtherConfigured;
+}
+
+export function quote(os: string): ((s: string) => string) {
+  return os === 'win' ? (s: string) => `"${s}"` : (s: string) => s;
 }

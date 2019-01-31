@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,49 +19,28 @@
  */
 import * as React from 'react';
 import { shallow } from 'enzyme';
-import { FormikProps } from 'formik';
 import ValidationModal from '../ValidationModal';
 
 it('should render correctly', () => {
-  const { wrapper, inner } = getWrapper();
-  expect(wrapper).toMatchSnapshot();
-  expect(inner).toMatchSnapshot();
-});
-
-interface Values {
-  field: string;
-}
-
-function getWrapper(props = {}) {
   const wrapper = shallow(
-    <ValidationModal
+    <ValidationModal<{ field: string }>
       confirmButtonText="confirm"
       header="title"
       initialValues={{ field: 'foo' }}
       isInitialValid={true}
       onClose={jest.fn()}
-      onSubmit={jest.fn(() => Promise.resolve())}
-      validate={(values: Values) => ({ field: values.field.length < 2 && 'Too small' })}
-      {...props}>
-      {(props: FormikProps<Values>) => (
-        <form onSubmit={props.handleSubmit}>
-          <input
-            name="field"
-            onBlur={props.handleBlur}
-            onChange={props.handleChange}
-            type="text"
-            value={props.values.field}
-          />
-        </form>
+      onSubmit={jest.fn()}
+      validate={jest.fn()}>
+      {props => (
+        <input
+          name="field"
+          onBlur={props.handleBlur}
+          onChange={props.handleChange}
+          type="text"
+          value={props.values.field}
+        />
       )}
     </ValidationModal>
   );
-  return {
-    wrapper,
-    inner: wrapper
-      .childAt(0)
-      .dive()
-      .dive()
-      .dive()
-  };
-}
+  expect(wrapper).toMatchSnapshot();
+});

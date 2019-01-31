@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,8 +23,11 @@ import { Link } from 'react-router';
 import { highlightMarks, cutWords, DocumentationEntry } from '../utils';
 
 export interface SearchResult {
-  page: DocumentationEntry;
+  exactMatch?: boolean;
   highlights: { [field: string]: [number, number][] };
+  longestTerm: string;
+  page: DocumentationEntry;
+  query: string;
 }
 
 interface Props {
@@ -36,7 +39,7 @@ export default function SearchResultEntry({ active, result }: Props) {
   return (
     <Link
       className={classNames('list-group-item', { active })}
-      to={'/documentation/' + result.page.relativeName}>
+      to={'/documentation' + result.page.url}>
       <SearchResultTitle result={result} />
       <SearchResultText result={result} />
     </Link>
@@ -67,9 +70,36 @@ export function SearchResultTitle({ result }: { result: SearchResult }) {
 
 export function SearchResultText({ result }: { result: SearchResult }) {
   const textHighlights = result.highlights.text;
-  if (textHighlights && textHighlights.length > 0) {
-    const { text } = result.page;
-    const tokens = highlightMarks(text, textHighlights.map(h => ({ from: h[0], to: h[0] + h[1] })));
+  const { text } = result.page;
+  let tokens: {
+    text: string;
+    marked: boolean;
+  }[] = [];
+
+  if (result.exactMatch) {
+    const pageText = result.page.text.toLowerCase();
+    const highlights: { from: number; to: number }[] = [];
+    let start = 0;
+    let index = pageText.indexOf(result.query, start);
+    let loopCount = 0;
+
+    while (index > -1 && loopCount < 10) {
+      loopCount++;
+      highlights.push({ from: index, to: index + result.query.length });
+      start = index + 1;
+      index = pageText.indexOf(result.query, start);
+    }
+
+    if (highlights.length) {
+      tokens = highlightMarks(text, highlights);
+    }
+  }
+
+  if (tokens.length === 0 && textHighlights && textHighlights.length > 0) {
+    tokens = highlightMarks(text, textHighlights.map(h => ({ from: h[0], to: h[0] + h[1] })));
+  }
+
+  if (tokens.length) {
     return (
       <div className="note">
         <SearchResultTokens tokens={cutWords(tokens)} />

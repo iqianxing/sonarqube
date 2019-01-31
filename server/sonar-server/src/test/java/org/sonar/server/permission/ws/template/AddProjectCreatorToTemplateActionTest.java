@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,13 +22,20 @@ package org.sonar.server.permission.ws.template;
 import java.util.Optional;
 import org.junit.Before;
 import org.junit.Test;
+import org.sonar.api.resources.Qualifiers;
+import org.sonar.api.resources.ResourceTypes;
 import org.sonar.api.utils.System2;
 import org.sonar.api.web.UserRole;
+import org.sonar.db.component.ResourceTypesRule;
 import org.sonar.db.permission.template.PermissionTemplateCharacteristicDto;
 import org.sonar.db.permission.template.PermissionTemplateDto;
 import org.sonar.server.exceptions.ForbiddenException;
 import org.sonar.server.exceptions.NotFoundException;
+import org.sonar.server.permission.PermissionService;
+import org.sonar.server.permission.PermissionServiceImpl;
 import org.sonar.server.permission.ws.BasePermissionWsTest;
+import org.sonar.server.permission.ws.RequestValidator;
+import org.sonar.server.permission.ws.WsParameters;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.spy;
@@ -43,10 +50,14 @@ public class AddProjectCreatorToTemplateActionTest extends BasePermissionWsTest<
 
   private System2 system = spy(System2.INSTANCE);
   private PermissionTemplateDto template;
+  private ResourceTypes resourceTypes = new ResourceTypesRule().setRootQualifiers(Qualifiers.PROJECT);
+  private PermissionService permissionService = new PermissionServiceImpl(resourceTypes);
+  private WsParameters wsParameters = new WsParameters(permissionService);
+  private RequestValidator requestValidator = new RequestValidator(permissionService);
 
   @Override
   protected AddProjectCreatorToTemplateAction buildWsAction() {
-    return new AddProjectCreatorToTemplateAction(db.getDbClient(), newPermissionWsSupport(), userSession, system);
+    return new AddProjectCreatorToTemplateAction(db.getDbClient(), newPermissionWsSupport(), userSession, system, wsParameters, requestValidator);
   }
 
   @Before

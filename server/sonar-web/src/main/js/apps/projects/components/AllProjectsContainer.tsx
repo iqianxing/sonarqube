@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,28 +18,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import { connect } from 'react-redux';
-import { CurrentUser, Organization } from '../../../app/types';
 import { lazyLoad } from '../../../components/lazyLoad';
-import { getCurrentUser, areThereCustomOrganizations } from '../../../store/rootReducer';
-import { RawQuery } from '../../../helpers/query';
+import { getCurrentUser, areThereCustomOrganizations, Store } from '../../../store/rootReducer';
 
-interface StateProps {
-  currentUser: CurrentUser;
-  organizationsEnabled: boolean;
-}
-
-interface OwnProps {
-  isFavorite: boolean;
-  location: { pathname: string; query: RawQuery };
-  organization: Organization | undefined;
-  storageOptionsSuffix?: string;
-}
-
-const stateToProps = (state: any) => ({
+const stateToProps = (state: Store) => ({
   currentUser: getCurrentUser(state),
   organizationsEnabled: areThereCustomOrganizations(state)
 });
 
-export default connect<StateProps, {}, OwnProps>(stateToProps)(
-  lazyLoad(() => import('./AllProjects'))
-);
+export default connect(stateToProps)(lazyLoad(() => import('./AllProjects')));

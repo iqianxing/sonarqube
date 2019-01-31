@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,43 +18,47 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import { differenceBy } from 'lodash';
+import { ComponentContext } from './ComponentContext';
 import ComponentContainerNotFound from './ComponentContainerNotFound';
 import ComponentNav from './nav/component/ComponentNav';
-import { Component, BranchLike } from '../types';
-import handleRequiredAuthorization from '../utils/handleRequiredAuthorization';
 import { getBranches, getPullRequests } from '../../api/branches';
-import { Task, getTasksForComponent, PendingTask } from '../../api/ce';
+import { getTasksForComponent, getAnalysisStatus } from '../../api/ce';
 import { getComponentData } from '../../api/components';
+import { getMeasures } from '../../api/measures';
 import { getComponentNavigation } from '../../api/nav';
-import { fetchOrganizations } from '../../store/rootActions';
+import { fetchOrganization, requireAuthorization } from '../../store/rootActions';
 import { STATUSES } from '../../apps/background-tasks/constants';
 import {
   isPullRequest,
   isBranch,
   isMainBranch,
   isLongLivingBranch,
-  isShortLivingBranch
+  isShortLivingBranch,
+  getBranchLikeQuery
 } from '../../helpers/branches';
+import { isSonarCloud } from '../../helpers/system';
+import { withRouter, Router, Location } from '../../components/hoc/withRouter';
 
 interface Props {
-  children: any;
-  fetchOrganizations: (organizations: string[]) => void;
-  location: {
-    query: { branch?: string; id: string; pullRequest?: string };
-  };
+  children: React.ReactElement<any>;
+  fetchOrganization: (organization: string) => void;
+  location: Pick<Location, 'query'>;
+  requireAuthorization: (router: Pick<Router, 'replace'>) => void;
+  router: Pick<Router, 'replace'>;
 }
 
 interface State {
-  branchLike?: BranchLike;
-  branchLikes: BranchLike[];
-  component?: Component;
-  currentTask?: Task;
+  branchLike?: T.BranchLike;
+  branchLikes: T.BranchLike[];
+  branchMeasures?: T.Measure[];
+  component?: T.Component;
+  currentTask?: T.Task;
   isPending: boolean;
   loading: boolean;
-  tasksInProgress?: PendingTask[];
+  tasksInProgress?: T.Task[];
+  warnings: string[];
 }
 
 const FETCH_STATUS_WAIT_TIME = 3000;
@@ -62,100 +66,136 @@ const FETCH_STATUS_WAIT_TIME = 3000;
 export class ComponentContainer extends React.PureComponent<Props, State> {
   watchStatusTimer?: number;
   mounted = false;
-
-  static contextTypes = {
-    organizationsEnabled: PropTypes.bool
-  };
-
-  constructor(props: Props) {
-    super(props);
-    this.state = { branchLikes: [], isPending: false, loading: true };
-  }
+  state: State = { branchLikes: [], isPending: false, loading: true, warnings: [] };
 
   componentDidMount() {
     this.mounted = true;
     this.fetchComponent();
   }
 
-  componentWillReceiveProps(nextProps: Props) {
+  componentDidUpdate(prevProps: Props) {
     if (
-      nextProps.location.query.id !== this.props.location.query.id ||
-      nextProps.location.query.branch !== this.props.location.query.branch ||
-      nextProps.location.query.pullRequest !== this.props.location.query.pullRequest
+      prevProps.location.query.id !== this.props.location.query.id ||
+      prevProps.location.query.branch !== this.props.location.query.branch ||
+      prevProps.location.query.pullRequest !== this.props.location.query.pullRequest
     ) {
-      this.fetchComponent(nextProps);
+      this.fetchComponent();
     }
   }
 
   componentWillUnmount() {
     this.mounted = false;
+    window.clearTimeout(this.watchStatusTimer);
   }
 
-  addQualifier = (component: Component) => ({
+  addQualifier = (component: T.Component) => ({
     ...component,
     qualifier: component.breadcrumbs[component.breadcrumbs.length - 1].qualifier
   });
 
-  fetchComponent(props = this.props) {
-    const { branch, id: key, pullRequest } = props.location.query;
+  fetchComponent() {
+    const { branch, id: key, pullRequest } = this.props.location.query;
     this.setState({ loading: true });
 
-    const onError = (error: any) => {
+    const onError = (response?: Response) => {
       if (this.mounted) {
-        if (error.response && error.response.status === 403) {
-          handleRequiredAuthorization();
+        if (response && response.status === 403) {
+          this.props.requireAuthorization(this.props.router);
         } else {
-          this.setState({ loading: false });
+          this.setState({ component: undefined, loading: false });
         }
       }
     };
 
     Promise.all([
-      getComponentNavigation({ componentKey: key, branch, pullRequest }),
+      getComponentNavigation({ component: key, branch, pullRequest }),
       getComponentData({ component: key, branch, pullRequest })
-    ]).then(([nav, data]) => {
-      const component = this.addQualifier({ ...nav, ...data });
+    ])
+      .then(([nav, data]) => {
+        const component = this.addQualifier({ ...nav, ...data });
 
-      if (this.context.organizationsEnabled) {
-        this.props.fetchOrganizations([component.organization]);
-      }
-
-      this.fetchBranches(component).then(({ branchLike, branchLikes }) => {
-        if (this.mounted) {
-          this.setState({ branchLike, branchLikes, component, loading: false });
-          this.fetchStatus(component);
+        if (isSonarCloud()) {
+          this.props.fetchOrganization(component.organization);
         }
-      }, onError);
-    }, onError);
+        return component;
+      })
+      .then(this.fetchBranches)
+      .then(this.fetchBranchMeasures)
+      .then(({ branchLike, branchLikes, component, branchMeasures }) => {
+        if (this.mounted) {
+          this.setState({
+            branchLike,
+            branchLikes,
+            branchMeasures,
+            component,
+            loading: false
+          });
+          this.fetchStatus(component);
+          this.fetchWarnings(component, branchLike);
+        }
+      })
+      .catch(onError);
   }
 
   fetchBranches = (
-    component: Component
-  ): Promise<{ branchLike?: BranchLike; branchLikes: BranchLike[] }> => {
+    component: T.Component
+  ): Promise<{
+    branchLike?: T.BranchLike;
+    branchLikes: T.BranchLike[];
+    component: T.Component;
+  }> => {
     const application = component.breadcrumbs.find(({ qualifier }) => qualifier === 'APP');
     if (application) {
       return getBranches(application.key).then(branchLikes => {
         return {
           branchLike: this.getCurrentBranchLike(branchLikes),
-          branchLikes
+          branchLikes,
+          component
         };
       });
     }
     const project = component.breadcrumbs.find(({ qualifier }) => qualifier === 'TRK');
-    return project
-      ? Promise.all([getBranches(project.key), getPullRequests(project.key)]).then(
-          ([branches, pullRequests]) => {
-            const branchLikes = [...branches, ...pullRequests];
-            return {
-              branchLike: this.getCurrentBranchLike(branchLikes),
-              branchLikes
-            };
-          }
-        )
-      : Promise.resolve({ branchLikes: [] });
+    if (project) {
+      return Promise.all([getBranches(project.key), getPullRequests(project.key)]).then(
+        ([branches, pullRequests]) => {
+          const branchLikes = [...branches, ...pullRequests];
+          const branchLike = this.getCurrentBranchLike(branchLikes);
+          return { branchLike, branchLikes, component };
+        }
+      );
+    }
+
+    return Promise.resolve({ branchLikes: [], component });
   };
 
-  fetchStatus = (component: Component) => {
+  fetchBranchMeasures = ({
+    branchLike,
+    branchLikes,
+    component
+  }: {
+    branchLike: T.BranchLike;
+    branchLikes: T.BranchLike[];
+    component: T.Component;
+  }): Promise<{
+    branchLike?: T.BranchLike;
+    branchLikes: T.BranchLike[];
+    branchMeasures?: T.Measure[];
+    component: T.Component;
+  }> => {
+    const project = component.breadcrumbs.find(({ qualifier }) => qualifier === 'TRK');
+    if (project && (isShortLivingBranch(branchLike) || isPullRequest(branchLike))) {
+      return getMeasures({
+        component: project.key,
+        metricKeys: 'new_coverage,new_duplicated_lines_density',
+        ...getBranchLikeQuery(branchLike)
+      }).then(measures => {
+        return { branchLike, branchLikes, branchMeasures: measures, component };
+      });
+    }
+    return Promise.resolve({ branchLike, branchLikes, component });
+  };
+
+  fetchStatus = (component: T.Component) => {
     getTasksForComponent(component.key).then(
       ({ current, queue }) => {
         if (this.mounted) {
@@ -208,14 +248,28 @@ export class ComponentContainer extends React.PureComponent<Props, State> {
     );
   };
 
-  getCurrentBranchLike = (branchLikes: BranchLike[]) => {
+  fetchWarnings = (component: T.Component, branchLike?: T.BranchLike) => {
+    if (component.qualifier === 'TRK') {
+      getAnalysisStatus({
+        component: component.key,
+        ...getBranchLikeQuery(branchLike)
+      }).then(
+        ({ component }) => {
+          this.setState({ warnings: component.warnings });
+        },
+        () => {}
+      );
+    }
+  };
+
+  getCurrentBranchLike = (branchLikes: T.BranchLike[]) => {
     const { query } = this.props.location;
     return query.pullRequest
       ? branchLikes.find(b => isPullRequest(b) && b.key === query.pullRequest)
       : branchLikes.find(b => isBranch(b) && (query.branch ? b.name === query.branch : b.isMain));
   };
 
-  getCurrentTask = (current: Task, branchLike?: BranchLike) => {
+  getCurrentTask = (current: T.Task, branchLike?: T.BranchLike) => {
     if (!current) {
       return undefined;
     }
@@ -225,13 +279,13 @@ export class ComponentContainer extends React.PureComponent<Props, State> {
       : undefined;
   };
 
-  getPendingTasks = (pendingTasks: PendingTask[], branchLike?: BranchLike) => {
+  getPendingTasks = (pendingTasks: T.Task[], branchLike?: T.BranchLike) => {
     return pendingTasks.filter(task => this.isSameBranch(task, branchLike));
   };
 
   isSameBranch = (
-    task: Pick<PendingTask, 'branch' | 'branchType' | 'pullRequest'>,
-    branchLike?: BranchLike
+    task: Pick<T.Task, 'branch' | 'branchType' | 'pullRequest'>,
+    branchLike?: T.BranchLike
   ) => {
     if (branchLike && !isMainBranch(branchLike)) {
       if (isPullRequest(branchLike)) {
@@ -244,11 +298,11 @@ export class ComponentContainer extends React.PureComponent<Props, State> {
     return !task.branch && !task.pullRequest;
   };
 
-  handleComponentChange = (changes: Partial<Component>) => {
+  handleComponentChange = (changes: Partial<T.Component>) => {
     if (this.mounted) {
       this.setState(state => {
         if (state.component) {
-          const newComponent: Component = { ...state.component, ...changes };
+          const newComponent: T.Component = { ...state.component, ...changes };
           return { component: newComponent };
         }
         return null;
@@ -258,14 +312,16 @@ export class ComponentContainer extends React.PureComponent<Props, State> {
 
   handleBranchesChange = () => {
     if (this.mounted && this.state.component) {
-      this.fetchBranches(this.state.component).then(
-        ({ branchLike, branchLikes }) => {
-          if (this.mounted) {
-            this.setState({ branchLike, branchLikes });
-          }
-        },
-        () => {}
-      );
+      this.fetchBranches(this.state.component)
+        .then(this.fetchBranchMeasures)
+        .then(
+          ({ branchLike, branchLikes, branchMeasures }) => {
+            if (this.mounted) {
+              this.setState({ branchLike, branchLikes, branchMeasures });
+            }
+          },
+          () => {}
+        );
     }
   };
 
@@ -285,12 +341,15 @@ export class ComponentContainer extends React.PureComponent<Props, State> {
           !['FIL', 'UTS'].includes(component.qualifier) && (
             <ComponentNav
               branchLikes={branchLikes}
+              branchMeasures={this.state.branchMeasures}
               component={component}
               currentBranchLike={branchLike}
               currentTask={currentTask}
+              currentTaskOnSameBranch={currentTask && this.isSameBranch(currentTask, branchLike)}
               isInProgress={isInProgress}
               isPending={isPending}
               location={this.props.location}
+              warnings={this.state.warnings}
             />
           )}
         {loading ? (
@@ -298,24 +357,28 @@ export class ComponentContainer extends React.PureComponent<Props, State> {
             <i className="spinner" />
           </div>
         ) : (
-          React.cloneElement(this.props.children, {
-            branchLike,
-            branchLikes,
-            component,
-            isInProgress,
-            isPending,
-            onBranchesChange: this.handleBranchesChange,
-            onComponentChange: this.handleComponentChange
-          })
+          <ComponentContext.Provider value={{ branchLike, component }}>
+            {React.cloneElement(this.props.children, {
+              branchLike,
+              branchLikes,
+              component,
+              isInProgress,
+              isPending,
+              onBranchesChange: this.handleBranchesChange,
+              onComponentChange: this.handleComponentChange
+            })}
+          </ComponentContext.Provider>
         )}
       </div>
     );
   }
 }
 
-const mapDispatchToProps = { fetchOrganizations };
+const mapDispatchToProps = { fetchOrganization, requireAuthorization };
 
-export default connect<any, any, any>(
-  null,
-  mapDispatchToProps
-)(ComponentContainer);
+export default withRouter(
+  connect(
+    null,
+    mapDispatchToProps
+  )(ComponentContainer)
+);

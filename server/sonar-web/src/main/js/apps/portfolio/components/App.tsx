@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -33,17 +33,16 @@ import { getMeasures } from '../../../api/measures';
 import { getChildren } from '../../../api/components';
 import { translate } from '../../../helpers/l10n';
 import { fetchMetrics } from '../../../store/rootActions';
-import { getMetrics } from '../../../store/rootReducer';
-import { Metric, Component } from '../../../app/types';
+import { getMetrics, Store } from '../../../store/rootReducer';
 import '../styles.css';
 import PrivacyBadgeContainer from '../../../components/common/PrivacyBadgeContainer';
 
 interface OwnProps {
-  component: Component;
+  component: T.Component;
 }
 
 interface StateToProps {
-  metrics: { [key: string]: Metric };
+  metrics: { [key: string]: T.Metric };
 }
 
 interface DispatchToProps {
@@ -82,7 +81,7 @@ export class App extends React.PureComponent<Props, State> {
   fetchData() {
     this.setState({ loading: true });
     Promise.all([
-      getMeasures({ componentKey: this.props.component.key, metricKeys: PORTFOLIO_METRICS.join() }),
+      getMeasures({ component: this.props.component.key, metricKeys: PORTFOLIO_METRICS.join() }),
       getChildren(this.props.component.key, SUB_COMPONENTS_METRICS, { ps: 20, s: 'qualifier' })
     ]).then(
       ([measures, subComponents]) => {
@@ -220,11 +219,11 @@ export class App extends React.PureComponent<Props, State> {
 
 const mapDispatchToProps: DispatchToProps = { fetchMetrics };
 
-const mapStateToProps = (state: any): StateToProps => ({
+const mapStateToProps = (state: Store): StateToProps => ({
   metrics: getMetrics(state)
 });
 
-export default connect<StateToProps, DispatchToProps, Props>(
+export default connect(
   mapStateToProps,
   mapDispatchToProps
 )(App);

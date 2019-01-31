@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,7 +17,6 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-import { RuleInheritance } from '../../app/types';
 import {
   RawQuery,
   parseAsString,
@@ -38,7 +37,7 @@ export interface Query {
   activationSeverities: string[];
   availableSince: Date | undefined;
   compareToProfile: string | undefined;
-  inheritance: RuleInheritance | undefined;
+  inheritance: T.RuleInheritance | undefined;
   languages: string[];
   profile: string | undefined;
   repositories: string[];
@@ -62,7 +61,7 @@ export type Facets = { [F in FacetKey]?: Facet };
 export type OpenFacets = { [F in FacetKey]?: boolean };
 
 export interface Activation {
-  inherit: string;
+  inherit: T.RuleInheritance;
   severity: string;
 }
 
@@ -93,7 +92,6 @@ export function parseQuery(query: RawQuery): Query {
 }
 
 export function serializeQuery(query: Query): RawQuery {
-  /* eslint-disable camelcase */
   return cleanQuery({
     activation: serializeOptionalBoolean(query.activation),
     active_severities: serializeStringArray(query.activationSeverities),
@@ -111,7 +109,6 @@ export function serializeQuery(query: Query): RawQuery {
     tags: serializeStringArray(query.tags),
     types: serializeStringArray(query.types)
   });
-  /* eslint-enable camelcase */
 }
 
 export function areQueriesEqual(a: RawQuery, b: RawQuery) {
@@ -143,18 +140,14 @@ export function getOpen(query: RawQuery) {
   return query.open;
 }
 
-function parseAsInheritance(value?: string): RuleInheritance | undefined {
-  if (value === RuleInheritance.Inherited) {
-    return RuleInheritance.Inherited;
-  } else if (value === RuleInheritance.NotInherited) {
-    return RuleInheritance.NotInherited;
-  } else if (value === RuleInheritance.Overridden) {
-    return RuleInheritance.Overridden;
+function parseAsInheritance(value?: string): T.RuleInheritance | undefined {
+  if (value === 'INHERITED' || value === 'NONE' || value === 'OVERRIDES') {
+    return value;
   } else {
     return undefined;
   }
 }
 
-function serializeInheritance(value: RuleInheritance | undefined): string | undefined {
+function serializeInheritance(value: T.RuleInheritance | undefined): string | undefined {
   return value;
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -30,6 +30,18 @@ public class NoOpNewExternalIssue implements NewExternalIssue {
 
   @Override
   public NewExternalIssue forRule(RuleKey ruleKey) {
+    // no op
+    return this;
+  }
+
+  @Override
+  public NewExternalIssue engineId(String engineId) {
+    // no op
+    return this;
+  }
+
+  @Override
+  public NewExternalIssue ruleId(String ruleId) {
     // no op
     return this;
   }

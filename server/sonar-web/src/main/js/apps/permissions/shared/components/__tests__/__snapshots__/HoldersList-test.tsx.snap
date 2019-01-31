@@ -13,13 +13,35 @@ exports[`should display users and groups 1`] = `
           className="nowrap bordered-bottom"
         />
         <PermissionHeader
-          key="bar"
+          key="foo"
           onSelectPermission={[MockFunction]}
           permission={
             Object {
-              "description": "foo",
-              "key": "bar",
-              "name": "bar",
+              "description": "",
+              "key": "foo",
+              "name": "Foo",
+            }
+          }
+          selectedPermission="bar"
+        />
+        <PermissionHeader
+          key="admin"
+          onSelectPermission={[MockFunction]}
+          permission={
+            Object {
+              "category": "admin",
+              "permissions": Array [
+                Object {
+                  "description": "",
+                  "key": "bar",
+                  "name": "Bar",
+                },
+                Object {
+                  "description": "",
+                  "key": "baz",
+                  "name": "Baz",
+                },
+              ],
             }
           }
           selectedPermission="bar"
@@ -28,40 +50,30 @@ exports[`should display users and groups 1`] = `
     </thead>
     <tbody>
       <UserHolder
-        key="user-foobar"
-        onToggle={[MockFunction]}
-        permissions={
-          Array [
-            "bar",
-          ]
-        }
-        permissionsOrder={
-          Array [
-            "bar",
-          ]
-        }
-        selectedPermission="bar"
-        user={
-          Object {
-            "login": "foobar",
-            "name": "Foobar",
-            "permissions": Array [
-              "bar",
-            ],
-          }
-        }
-      />
-      <UserHolder
         key="user-barbaz"
-        onToggle={[MockFunction]}
+        onToggle={[Function]}
         permissions={
           Array [
-            "bar",
-          ]
-        }
-        permissionsOrder={
-          Array [
-            "bar",
+            Object {
+              "description": "",
+              "key": "foo",
+              "name": "Foo",
+            },
+            Object {
+              "category": "admin",
+              "permissions": Array [
+                Object {
+                  "description": "",
+                  "key": "bar",
+                  "name": "Bar",
+                },
+                Object {
+                  "description": "",
+                  "key": "baz",
+                  "name": "Baz",
+                },
+              ],
+            },
           ]
         }
         selectedPermission="bar"
@@ -69,6 +81,82 @@ exports[`should display users and groups 1`] = `
           Object {
             "login": "barbaz",
             "name": "Barbaz",
+            "permissions": Array [
+              "bar",
+            ],
+          }
+        }
+      />
+      <GroupHolder
+        group={
+          Object {
+            "id": "barbaz",
+            "name": "Barbaz",
+            "permissions": Array [
+              "bar",
+            ],
+          }
+        }
+        key="group-barbaz"
+        onToggle={[Function]}
+        permissions={
+          Array [
+            Object {
+              "description": "",
+              "key": "foo",
+              "name": "Foo",
+            },
+            Object {
+              "category": "admin",
+              "permissions": Array [
+                Object {
+                  "description": "",
+                  "key": "bar",
+                  "name": "Bar",
+                },
+                Object {
+                  "description": "",
+                  "key": "baz",
+                  "name": "Baz",
+                },
+              ],
+            },
+          ]
+        }
+        selectedPermission="bar"
+      />
+      <UserHolder
+        key="user-foobar"
+        onToggle={[Function]}
+        permissions={
+          Array [
+            Object {
+              "description": "",
+              "key": "foo",
+              "name": "Foo",
+            },
+            Object {
+              "category": "admin",
+              "permissions": Array [
+                Object {
+                  "description": "",
+                  "key": "bar",
+                  "name": "Bar",
+                },
+                Object {
+                  "description": "",
+                  "key": "baz",
+                  "name": "Baz",
+                },
+              ],
+            },
+          ]
+        }
+        selectedPermission="bar"
+        user={
+          Object {
+            "login": "foobar",
+            "name": "Foobar",
             "permissions": Array [
               "bar",
             ],
@@ -86,42 +174,111 @@ exports[`should display users and groups 1`] = `
           }
         }
         key="group-foobar"
-        onToggle={[MockFunction]}
+        onToggle={[Function]}
         permissions={
           Array [
-            "bar",
-          ]
-        }
-        permissionsOrder={
-          Array [
-            "bar",
+            Object {
+              "description": "",
+              "key": "foo",
+              "name": "Foo",
+            },
+            Object {
+              "category": "admin",
+              "permissions": Array [
+                Object {
+                  "description": "",
+                  "key": "bar",
+                  "name": "Bar",
+                },
+                Object {
+                  "description": "",
+                  "key": "baz",
+                  "name": "Baz",
+                },
+              ],
+            },
           ]
         }
         selectedPermission="bar"
       />
+      <tr>
+        <td
+          className="divider"
+          colSpan={20}
+        />
+      </tr>
+      <tr />
       <GroupHolder
         group={
           Object {
-            "id": "barbaz",
-            "name": "Barbaz",
-            "permissions": Array [
-              "bar",
-            ],
+            "id": "abc",
+            "name": "abc",
+            "permissions": Array [],
           }
         }
-        key="group-barbaz"
-        onToggle={[MockFunction]}
+        key="group-abc"
+        onToggle={[Function]}
         permissions={
           Array [
-            "bar",
-          ]
-        }
-        permissionsOrder={
-          Array [
-            "bar",
+            Object {
+              "description": "",
+              "key": "foo",
+              "name": "Foo",
+            },
+            Object {
+              "category": "admin",
+              "permissions": Array [
+                Object {
+                  "description": "",
+                  "key": "bar",
+                  "name": "Bar",
+                },
+                Object {
+                  "description": "",
+                  "key": "baz",
+                  "name": "Baz",
+                },
+              ],
+            },
           ]
         }
         selectedPermission="bar"
+      />
+      <UserHolder
+        key="user-bcd"
+        onToggle={[Function]}
+        permissions={
+          Array [
+            Object {
+              "description": "",
+              "key": "foo",
+              "name": "Foo",
+            },
+            Object {
+              "category": "admin",
+              "permissions": Array [
+                Object {
+                  "description": "",
+                  "key": "bar",
+                  "name": "Bar",
+                },
+                Object {
+                  "description": "",
+                  "key": "baz",
+                  "name": "Baz",
+                },
+              ],
+            },
+          ]
+        }
+        selectedPermission="bar"
+        user={
+          Object {
+            "login": "bcd",
+            "name": "bcd",
+            "permissions": Array [],
+          }
+        }
       />
     </tbody>
   </table>

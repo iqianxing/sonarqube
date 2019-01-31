@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,13 +21,13 @@ import * as React from 'react';
 import * as classNames from 'classnames';
 import { isDarkColor } from '../../helpers/colors';
 import { getBaseUrl } from '../../helpers/urls';
-import { IdentityProvider } from '../../app/types';
 import './IdentityProviderLink.css';
 
 interface Props {
   children: React.ReactNode;
   className?: string;
-  identityProvider: IdentityProvider;
+  identityProvider: T.IdentityProvider;
+  onClick?: () => void;
   small?: boolean;
   url: string | undefined;
 }
@@ -36,6 +36,7 @@ export default function IdentityProviderLink({
   children,
   className,
   identityProvider,
+  onClick,
   small,
   url
 }: Props) {
@@ -49,6 +50,7 @@ export default function IdentityProviderLink({
         className
       )}
       href={url}
+      onClick={onClick}
       style={{ backgroundColor: identityProvider.backgroundColor }}>
       <img
         alt={identityProvider.name}

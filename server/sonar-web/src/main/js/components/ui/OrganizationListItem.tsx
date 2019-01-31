@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,15 +19,15 @@
  */
 import * as React from 'react';
 import OrganizationLink from './OrganizationLink';
-import { Organization } from '../../app/types';
 import OrganizationAvatar from '../common/OrganizationAvatar';
 import { translate } from '../../helpers/l10n';
 
 interface Props {
-  organization: Organization;
+  organization: T.Organization;
 }
 
 export default function OrganizationListItem({ organization }: Props) {
+  const { actions = {} } = organization;
   return (
     <li>
       <OrganizationLink className="display-flex-center" organization={organization}>
@@ -35,9 +35,7 @@ export default function OrganizationListItem({ organization }: Props) {
           <OrganizationAvatar organization={organization} small={true} />
           <span className="spacer-left">{organization.name}</span>
         </div>
-        {organization.isAdmin && (
-          <span className="outline-badge spacer-left">{translate('admin')}</span>
-        )}
+        {actions.admin && <span className="outline-badge spacer-left">{translate('admin')}</span>}
       </OrganizationLink>
     </li>
   );

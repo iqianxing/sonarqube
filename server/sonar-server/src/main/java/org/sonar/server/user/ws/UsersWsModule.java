@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,15 +19,24 @@
  */
 package org.sonar.server.user.ws;
 
+import org.sonar.api.config.Configuration;
 import org.sonar.core.platform.Module;
+import org.sonar.process.ProcessProperties;
 
 public class UsersWsModule extends Module {
+  private final Configuration configuration;
+
+  public UsersWsModule(Configuration configuration) {
+    this.configuration = configuration;
+  }
+
   @Override
   protected void configureModule() {
     add(
       UsersWs.class,
       CreateAction.class,
       UpdateAction.class,
+      UpdateLoginAction.class,
       DeactivateAction.class,
       ChangePasswordAction.class,
       CurrentAction.class,
@@ -36,8 +45,13 @@ public class UsersWsModule extends Module {
       IdentityProvidersAction.class,
       UserPropertiesWs.class,
       UserJsonWriter.class,
-      SkipOnboardingTutorialAction.class,
       SetHomepageAction.class,
-      HomepageTypesImpl.class);
+      HomepageTypesImpl.class,
+      SetSettingAction.class);
+
+    if (configuration.getBoolean(ProcessProperties.Property.SONARCLOUD_ENABLED.getKey()).orElse(false)) {
+      // onboarding tutorial is available only in SonarCloud
+      add(SkipOnboardingTutorialAction.class);
+    }
   }
 }

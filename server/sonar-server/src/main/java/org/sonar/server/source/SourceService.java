@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -65,7 +65,7 @@ public class SourceService {
   private <E> Optional<Iterable<E>> getLines(DbSession dbSession, String fileUuid, int from, int toInclusive, Function<DbFileSources.Line, E> function) {
     verifyLine(from);
     checkArgument(toInclusive >= from, String.format("Line number must greater than or equal to %d, got %d", from, toInclusive));
-    FileSourceDto dto = dbClient.fileSourceDao().selectSourceByFileUuid(dbSession, fileUuid);
+    FileSourceDto dto = dbClient.fileSourceDao().selectByFileUuid(dbSession, fileUuid);
     if (dto == null) {
       return Optional.empty();
     }

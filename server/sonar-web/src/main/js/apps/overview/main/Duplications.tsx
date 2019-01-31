@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,7 @@
 import * as React from 'react';
 import enhance, { ComposedProps } from './enhance';
 import DrilldownLink from '../../../components/shared/DrilldownLink';
-import { getMetricName } from '../helpers/metrics';
+import { getMetricName } from '../utils';
 import { formatMeasure, getPeriodValue } from '../../../helpers/measures';
 import { translate } from '../../../helpers/l10n';
 import DuplicationsRating from '../../../components/ui/DuplicationsRating';

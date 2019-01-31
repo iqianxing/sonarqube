@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -142,7 +142,7 @@ public abstract class ServletFilter implements Filter {
     public static class Builder {
       private static final String WILDCARD_CHAR = "*";
       private static final Collection<String> STATIC_RESOURCES = unmodifiableList(asList(
-        "*.css", "*.css.map", "*.ico", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.svg", "*.js", "*.js.map", "*.pdf",
+        "*.css", "*.css.map", "*.ico", "*.png", "*.jpg", "*.jpeg", "*.gif", "*.svg", "*.js", "*.js.map", "*.pdf", "/json/*",
         "/static/*", "/robots.txt", "/favicon.ico", "/apple-touch-icon*", "/mstile*"));
 
       private final Set<String> inclusions = new LinkedHashSet<>();

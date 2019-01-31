@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -475,7 +475,7 @@ public class WebServiceTest {
     }).define(context);
 
     assertThat(logTester.logs(LoggerLevel.WARN))
-      .contains("Description is not set on action api/rule/list");
+      .contains("Description is not set on action api/rule/list");
   }
 
   @Test
@@ -488,7 +488,7 @@ public class WebServiceTest {
     }).define(context);
 
     assertThat(logTester.logs(LoggerLevel.WARN))
-      .contains("Description is not set on action api/rule/list");
+      .contains("Description is not set on action api/rule/list");
   }
 
   static class MetricWs implements WebService {

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,18 +19,18 @@
  */
 import { Dispatch } from 'redux';
 import { getOrganizations } from '../../../api/organizations';
-import { receiveMyOrganizations } from '../../../store/organizations/duck';
+import { receiveMyOrganizations } from '../../../store/organizations';
 import { getValues } from '../../../api/settings';
-import { receiveValues } from '../../settings/store/values/actions';
+import { receiveValues } from '../../settings/store/values';
 
-export const fetchMyOrganizations = () => (dispatch: Dispatch<any>) => {
+export const fetchMyOrganizations = () => (dispatch: Dispatch) => {
   return getOrganizations({ member: true }).then(({ organizations }) => {
     return dispatch(receiveMyOrganizations(organizations));
   });
 };
 
-export const fetchIfAnyoneCanCreateOrganizations = () => (dispatch: Dispatch<any>) => {
+export const fetchIfAnyoneCanCreateOrganizations = () => (dispatch: Dispatch) => {
   return getValues({ keys: 'sonar.organizations.anyoneCanCreate' }).then(values => {
-    dispatch(receiveValues(values, undefined));
+    dispatch(receiveValues(values));
   });
 };

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,8 @@
 package org.sonar.server.permission.ws.template;
 
 import java.util.Collections;
+import javax.annotation.CheckForNull;
+import javax.annotation.Nullable;
 import org.sonar.api.server.ws.Request;
 import org.sonar.api.server.ws.Response;
 import org.sonar.api.server.ws.WebService;
@@ -32,13 +34,10 @@ import org.sonar.server.permission.ws.PermissionWsSupport;
 import org.sonar.server.permission.ws.PermissionsWsAction;
 import org.sonar.server.user.UserSession;
 
-import javax.annotation.CheckForNull;
-import javax.annotation.Nullable;
-
 import static org.sonar.server.permission.PermissionPrivilegeChecker.checkGlobalAdmin;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createProjectParameters;
-import static org.sonar.server.permission.ws.PermissionsWsParametersBuilder.createTemplateParameters;
 import static org.sonar.server.permission.ws.ProjectWsRef.newWsProjectRef;
+import static org.sonar.server.permission.ws.WsParameters.createProjectParameters;
+import static org.sonar.server.permission.ws.WsParameters.createTemplateParameters;
 import static org.sonar.server.permission.ws.template.WsTemplateRef.newTemplateRef;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_ORGANIZATION;
 import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_PROJECT_ID;

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -76,6 +76,7 @@ public class CreateAction implements CustomMeasuresWsAction {
         "The project id or the project key must be provided (only project and module custom measures can be created). The metric id or the metric key must be provided.<br/>" +
         "Requires 'Administer' permission on the project.")
       .setSince("5.2")
+      .setDeprecatedSince("7.4")
       .setPost(true)
       .setHandler(this);
 

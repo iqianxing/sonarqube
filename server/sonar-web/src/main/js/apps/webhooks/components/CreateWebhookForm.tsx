@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,16 +19,15 @@
  */
 import * as React from 'react';
 import { FormikProps } from 'formik';
+import { isWebUri } from 'valid-url';
 import ValidationModal from '../../../components/controls/ValidationModal';
 import InputValidationField from '../../../components/controls/InputValidationField';
-import { Webhook } from '../../../app/types';
-import { isUrl } from '../../../helpers/urls';
 import { translate } from '../../../helpers/l10n';
 
 interface Props {
   onClose: () => void;
   onDone: (data: { name: string; url: string }) => Promise<void>;
-  webhook?: Webhook;
+  webhook?: T.Webhook;
 }
 
 interface Values {
@@ -53,7 +52,7 @@ export default class CreateWebhookForm extends React.PureComponent<Props> {
       errors.url = translate('webhooks.url.required');
     } else if (!url.startsWith('http://') && !url.startsWith('https://')) {
       errors.url = translate('webhooks.url.bad_protocol');
-    } else if (!isUrl(url)) {
+    } else if (!isWebUri(url)) {
       errors.url = translate('webhooks.url.bad_format');
     }
     return errors;
@@ -101,7 +100,7 @@ export default class CreateWebhookForm extends React.PureComponent<Props> {
               name="name"
               onBlur={handleBlur}
               onChange={handleChange}
-              touched={touched.name !== ''}
+              touched={touched.name}
               type="text"
               value={values.name}
             />
@@ -120,7 +119,7 @@ export default class CreateWebhookForm extends React.PureComponent<Props> {
               name="url"
               onBlur={handleBlur}
               onChange={handleChange}
-              touched={touched.url !== ''}
+              touched={touched.url}
               type="text"
               value={values.url}
             />

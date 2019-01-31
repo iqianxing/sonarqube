@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -46,6 +46,11 @@ public class ComponentIssuesRepositoryImplTest {
     sut.setIssues(FILE_1, Arrays.asList(DUMB_ISSUE));
 
     assertThat(sut.getIssues(FILE_1)).containsOnly(DUMB_ISSUE);
+  }
+
+  @Test
+  public void no_issues_on_dir() {
+    assertThat(sut.getIssues(builder(Component.Type.DIRECTORY, 1).build())).isEmpty();
   }
 
   @Test

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
  */
 import * as ReactRedux from 'react-redux';
 import * as ReactRouter from 'react-router';
+import { FormattedMessage } from 'react-intl';
 import throwGlobalError from '../../utils/throwGlobalError';
 import addGlobalSuccessMessage from '../../utils/addGlobalSuccessMessage';
 import Suggestions from '../embed-docs-modal/Suggestions';
@@ -58,6 +59,11 @@ import BranchIcon from '../../../components/icons-components/BranchIcon';
 import LongLivingBranchIcon from '../../../components/icons-components/LongLivingBranchIcon';
 import PullRequestIcon from '../../../components/icons-components/PullRequestIcon';
 import ActionsDropdown, { ActionsDropdownItem } from '../../../components/controls/ActionsDropdown';
+import ConfirmButton from '../../../components/controls/ConfirmButton';
+import SimpleModal from '../../../components/controls/SimpleModal';
+import SearchSelect from '../../../components/controls/SearchSelect';
+import RadioToggle from '../../../components/controls/RadioToggle';
+import { Alert } from '../../../components/ui/Alert';
 
 const exposeLibraries = () => {
   const global = window as any;
@@ -69,6 +75,7 @@ const exposeLibraries = () => {
   global.SonarComponents = {
     ActionsDropdown,
     ActionsDropdownItem,
+    Alert,
     AlertErrorIcon,
     AlertSuccessIcon,
     AlertWarnIcon,
@@ -77,6 +84,7 @@ const exposeLibraries = () => {
     Checkbox,
     CheckIcon,
     ClearIcon,
+    ConfirmButton,
     CoverageRating,
     DateFormatter,
     DateFromNow,
@@ -87,6 +95,7 @@ const exposeLibraries = () => {
     DuplicationsRating,
     EditButton,
     Favorite,
+    FormattedMessage,
     HelpIcon,
     HelpTooltip,
     HomePageSelect,
@@ -97,12 +106,15 @@ const exposeLibraries = () => {
     Modal,
     PullRequestIcon,
     QualifierIcon,
+    RadioToggle,
     Rating,
     ReloadButton,
     ResetButtonLink,
     SearchBox,
+    SearchSelect,
     Select,
     SelectList,
+    SimpleModal,
     SubmitButton,
     Suggestions,
     Tooltip

@@ -1,0 +1,119 @@
+/*
+ * SonarQube
+ * Copyright (C) 2009-2019 SonarSource SA
+ * mailto:info AT sonarsource DOT com
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 3 of the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public License
+ * along with this program; if not, write to the Free Software Foundation,
+ * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
+ */
+.card-plan {
+  display: flex;
+  flex-direction: column;
+  width: 450px;
+  height: 210px;
+  background-color: #fff;
+  border: solid 1px var(--barBorderColor);
+  border-radius: 3px;
+  box-sizing: border-box;
+  margin-right: calc(2 * var(--gridSize));
+  transition: all 0.2s ease;
+}
+
+.card-plan.animated {
+  height: 0;
+  border-width: 0;
+  overflow: hidden;
+}
+
+.card-plan.animated.open {
+  height: 210px;
+  border-width: 1px;
+}
+
+.card-plan.highlight {
+  box-shadow: var(--defaultShadow);
+}
+
+.card-plan:last-child {
+  margin-right: 0;
+}
+
+.card-plan:focus {
+  outline: none;
+}
+
+.card-plan-actionable {
+  cursor: pointer;
+}
+
+.card-plan-actionable:not(.disabled):hover {
+  box-shadow: var(--defaultShadow);
+  transform: translateY(-2px);
+}
+
+.card-plan-actionable.selected {
+  border-color: var(--darkBlue);
+}
+
+.card-plan-actionable.selected .card-plan-recommended {
+  border: solid 1px var(--darkBlue);
+  border-top: none;
+}
+
+.card-plan-actionable.disabled {
+  cursor: not-allowed;
+  background-color: var(--disableGrayBg);
+  border-color: var(--disableGrayBorder);
+}
+
+.card-plan-actionable.disabled h2,
+.card-plan-actionable.disabled ul {
+  color: var(--disableGrayText);
+}
+
+.card-plan-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: calc(2 * var(--gridSize)) calc(2 * var(--gridSize)) 0;
+}
+
+.card-plan-price {
+  font-size: var(--bigFontSize);
+}
+
+.card-plan-body {
+  flex-grow: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 0 calc(2 * var(--gridSize)) calc(2 * var(--gridSize));
+}
+
+.card-plan-body .alert {
+  margin-bottom: 0;
+}
+
+.card-plan-recommended {
+  position: relative;
+  padding: 6px calc(var(--gridSize) * 2);
+  left: -1px;
+  bottom: -1px;
+  width: 450px;
+  color: #fff;
+  background-color: var(--blue);
+  border-radius: 0 0 3px 3px;
+  box-sizing: border-box;
+  font-size: var(--smallFontSize);
+}

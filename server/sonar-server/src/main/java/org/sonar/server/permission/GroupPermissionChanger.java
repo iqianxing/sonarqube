@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,15 +21,15 @@ package org.sonar.server.permission;
 
 import java.util.List;
 import java.util.Optional;
-import org.sonar.core.permission.ProjectPermissions;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
 import org.sonar.db.permission.GroupPermissionDto;
 
+import static org.sonar.api.web.UserRole.PUBLIC_PERMISSIONS;
 import static org.sonar.core.permission.GlobalPermissions.SYSTEM_ADMIN;
 import static org.sonar.server.permission.PermissionChange.Operation.ADD;
 import static org.sonar.server.permission.PermissionChange.Operation.REMOVE;
-import static org.sonar.server.permission.ws.PermissionRequestValidator.validateNotAnyoneAndAdminPermission;
+import static org.sonar.server.permission.ws.RequestValidator.validateNotAnyoneAndAdminPermission;
 import static org.sonar.server.ws.WsUtils.checkRequest;
 
 public class GroupPermissionChanger {
@@ -69,7 +69,7 @@ public class GroupPermissionChanger {
   private static boolean isAttemptToAddPublicPermissionToPublicComponent(GroupPermissionChange change, ProjectId projectId) {
     return !projectId.isPrivate()
       && change.getOperation() == ADD
-      && ProjectPermissions.PUBLIC_PERMISSIONS.contains(change.getPermission());
+      && PUBLIC_PERMISSIONS.contains(change.getPermission());
   }
 
   private static boolean isAttemptToRemovePermissionFromAnyoneOnPrivateComponent(GroupPermissionChange change, ProjectId projectId) {
@@ -99,7 +99,7 @@ public class GroupPermissionChanger {
   private static boolean isAttemptToRemovePublicPermissionFromPublicComponent(GroupPermissionChange change, ProjectId projectId) {
     return !projectId.isPrivate()
       && change.getOperation() == REMOVE
-      && ProjectPermissions.PUBLIC_PERMISSIONS.contains(change.getPermission());
+      && PUBLIC_PERMISSIONS.contains(change.getPermission());
   }
 
   private boolean addPermission(DbSession dbSession, GroupPermissionChange change) {

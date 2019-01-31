@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,22 +18,12 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import { connect } from 'react-redux';
-import { Location } from 'history';
 import UsersApp from './UsersApp';
-import { areThereCustomOrganizations, getCurrentUser } from '../../store/rootReducer';
+import { areThereCustomOrganizations, getCurrentUser, Store } from '../../store/rootReducer';
 
-interface OwnProps {
-  location: Location;
-}
-
-interface StateToProps {
-  currentUser: { isLoggedIn: boolean; login?: string };
-  organizationsEnabled: boolean;
-}
-
-const mapStateToProps = (state: any) => ({
+const mapStateToProps = (state: Store) => ({
   currentUser: getCurrentUser(state),
   organizationsEnabled: areThereCustomOrganizations(state)
 });
 
-export default connect<StateToProps, {}, OwnProps>(mapStateToProps)(UsersApp);
+export default connect(mapStateToProps)(UsersApp);

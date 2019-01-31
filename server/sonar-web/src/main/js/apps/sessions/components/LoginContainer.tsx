@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,18 +23,14 @@ import Login from './Login';
 import LoginSonarCloud from './LoginSonarCloud';
 import { doLogin } from '../../../store/rootActions';
 import { getIdentityProviders } from '../../../api/users';
-import { IdentityProvider } from '../../../app/types';
-import { getBaseUrl } from '../../../helpers/urls';
+import { getReturnUrl } from '../../../helpers/urls';
 import { isSonarCloud } from '../../../helpers/system';
 
 interface OwnProps {
   location: {
     hash?: string;
     pathName: string;
-    query: {
-      advanced?: string;
-      return_to?: string; // eslint-disable-line camelcase
-    };
+    query: { advanced?: string; return_to?: string };
   };
 }
 
@@ -45,7 +41,7 @@ interface DispatchToProps {
 type Props = OwnProps & DispatchToProps;
 
 interface State {
-  identityProviders?: IdentityProvider[];
+  identityProviders?: T.IdentityProvider[];
 }
 
 class LoginContainer extends React.PureComponent<Props, State> {
@@ -71,14 +67,8 @@ class LoginContainer extends React.PureComponent<Props, State> {
     this.mounted = false;
   }
 
-  getReturnUrl = () => {
-    const { location } = this.props;
-    const queryReturnTo = location.query['return_to'];
-    return queryReturnTo ? `${queryReturnTo}${location.hash}` : `${getBaseUrl()}/`;
-  };
-
   handleSuccessfulLogin = () => {
-    window.location.href = this.getReturnUrl();
+    window.location.href = getReturnUrl(this.props.location);
   };
 
   handleSubmit = (login: string, password: string) => {
@@ -97,7 +87,7 @@ class LoginContainer extends React.PureComponent<Props, State> {
         <LoginSonarCloud
           identityProviders={identityProviders}
           onSubmit={this.handleSubmit}
-          returnTo={this.getReturnUrl()}
+          returnTo={getReturnUrl(location)}
           showForm={location.query['advanced'] !== undefined}
         />
       );
@@ -107,7 +97,7 @@ class LoginContainer extends React.PureComponent<Props, State> {
       <Login
         identityProviders={identityProviders}
         onSubmit={this.handleSubmit}
-        returnTo={this.getReturnUrl()}
+        returnTo={getReturnUrl(location)}
       />
     );
   }
@@ -116,7 +106,7 @@ class LoginContainer extends React.PureComponent<Props, State> {
 const mapStateToProps = null;
 const mapDispatchToProps = { doLogin: doLogin as any };
 
-export default connect<{}, DispatchToProps, OwnProps>(
+export default connect(
   mapStateToProps,
   mapDispatchToProps
 )(LoginContainer);

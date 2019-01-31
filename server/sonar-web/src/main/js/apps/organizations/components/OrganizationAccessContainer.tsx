@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,13 +20,13 @@
 import * as React from 'react';
 import { connect } from 'react-redux';
 import { RouterState } from 'react-router';
-import { getCurrentUser, getOrganizationByKey } from '../../../store/rootReducer';
+import { getCurrentUser, getOrganizationByKey, Store } from '../../../store/rootReducer';
 import handleRequiredAuthorization from '../../../app/utils/handleRequiredAuthorization';
-import { Organization, CurrentUser, isLoggedIn } from '../../../app/types';
+import { isLoggedIn } from '../../../helpers/users';
 
 interface StateToProps {
-  currentUser: CurrentUser;
-  organization?: Organization;
+  currentUser: T.CurrentUser;
+  organization?: T.Organization;
 }
 
 interface OwnProps extends RouterState {
@@ -63,21 +63,20 @@ export class OrganizationAccess extends React.PureComponent<Props> {
   }
 }
 
-const mapStateToProps = (state: any, ownProps: OwnProps) => ({
+const mapStateToProps = (state: Store, ownProps: OwnProps) => ({
   currentUser: getCurrentUser(state),
   organization: getOrganizationByKey(state, ownProps.params.organizationKey)
 });
 
-const OrganizationAccessContainer = connect<StateToProps, {}, OwnProps>(mapStateToProps)(
-  OrganizationAccess
-);
+const OrganizationAccessContainer = connect(mapStateToProps)(OrganizationAccess);
 
 export function hasAdminAccess({
   currentUser,
   organization
 }: Pick<StateToProps, 'currentUser' | 'organization'>) {
-  const isAdmin = isLoggedIn(currentUser) && organization && organization.canAdmin;
-  return Boolean(isAdmin);
+  return Boolean(
+    isLoggedIn(currentUser) && organization && organization.actions && organization.actions.admin
+  );
 }
 
 export function OrganizationAdminAccess(props: OwnProps) {

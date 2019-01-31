@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,8 +19,8 @@
  */
 package org.sonar.ce.task.projectanalysis.formula;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
+import java.util.Optional;
 import org.junit.Rule;
 import org.junit.Test;
 import org.sonar.api.measures.CoreMetrics;
@@ -32,8 +32,6 @@ import org.sonar.ce.task.projectanalysis.measure.Measure;
 import org.sonar.ce.task.projectanalysis.measure.MeasureRepositoryRule;
 import org.sonar.ce.task.projectanalysis.metric.Metric;
 import org.sonar.ce.task.projectanalysis.metric.MetricRepositoryRule;
-import org.sonar.ce.task.projectanalysis.period.Period;
-import org.sonar.ce.task.projectanalysis.period.PeriodHolderRule;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.guava.api.Assertions.assertThat;
@@ -86,8 +84,6 @@ public class ViewsFormulaExecutorComponentVisitorTest {
     .add(CoreMetrics.NEW_COVERAGE);
   @Rule
   public MeasureRepositoryRule measureRepository = MeasureRepositoryRule.create(treeRootHolder, metricRepository);
-  @Rule
-  public PeriodHolderRule periodsHolder = new PeriodHolderRule().setPeriod(new Period("some mode", null, 95l, "u1"));
 
   @Test
   public void verify_aggregation_on_value() {
@@ -213,7 +209,6 @@ public class ViewsFormulaExecutorComponentVisitorTest {
     @Override
     public Optional<Measure> createMeasure(FakeCounter counter, CreateMeasureContext context) {
       // verify the context which is passed to the method
-      assertThat(context.getPeriod()).isEqualTo(periodsHolder.getPeriod());
       assertThat(context.getComponent()).isNotNull();
       assertThat(context.getMetric()).isSameAs(metricRepository.getByKey(NCLOC_KEY));
 
@@ -236,7 +231,6 @@ public class ViewsFormulaExecutorComponentVisitorTest {
     @Override
     public Optional<Measure> createMeasure(FakeCounter counter, CreateMeasureContext context) {
       // verify the context which is passed to the method
-      assertThat(context.getPeriod()).isEqualTo(periodsHolder.getPeriod());
       assertThat(context.getComponent()).isNotNull();
       assertThat(context.getMetric())
         .isIn(metricRepository.getByKey(NEW_LINES_TO_COVER_KEY), metricRepository.getByKey(NEW_COVERAGE_KEY));
@@ -289,7 +283,6 @@ public class ViewsFormulaExecutorComponentVisitorTest {
     @Override
     public Optional<Measure> createMeasure(FakeVariationCounter counter, CreateMeasureContext context) {
       // verify the context which is passed to the method
-      assertThat(context.getPeriod()).isEqualTo(periodsHolder.getPeriod());
       assertThat(context.getComponent()).isNotNull();
       assertThat(context.getMetric()).isSameAs(metricRepository.getByKey(NEW_COVERAGE_KEY));
 
@@ -300,7 +293,7 @@ public class ViewsFormulaExecutorComponentVisitorTest {
             .setVariation(measureVariations.getValue())
             .createNoValue());
       }
-      return Optional.absent();
+      return Optional.empty();
     }
 
     @Override
@@ -322,7 +315,7 @@ public class ViewsFormulaExecutorComponentVisitorTest {
       verifyLeafContext(context);
 
       Optional<Measure> measureOptional = context.getMeasure(NEW_LINES_TO_COVER_KEY);
-      if (!measureOptional.isPresent() || !context.hasPeriod()) {
+      if (!measureOptional.isPresent()) {
         return;
       }
       this.values.increment((int) measureOptional.get().getVariation());
@@ -332,7 +325,6 @@ public class ViewsFormulaExecutorComponentVisitorTest {
 
   private FormulaExecutorComponentVisitor formulaExecutorComponentVisitor(Formula formula) {
     return FormulaExecutorComponentVisitor.newBuilder(metricRepository, measureRepository)
-      .withVariationSupport(periodsHolder)
       .buildFor(ImmutableList.of(formula));
   }
 
@@ -361,7 +353,6 @@ public class ViewsFormulaExecutorComponentVisitorTest {
 
   private void verifyLeafContext(CounterInitializationContext context) {
     assertThat(context.getLeaf().getChildren()).isEmpty();
-    assertThat(context.getPeriod()).isEqualTo(periodsHolder.getPeriod());
   }
 
 }

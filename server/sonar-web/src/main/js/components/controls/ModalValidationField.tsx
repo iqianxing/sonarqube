@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,7 +28,7 @@ interface Props {
   dirty: boolean;
   error: string | undefined;
   label?: React.ReactNode;
-  touched: boolean;
+  touched: boolean | undefined;
 }
 
 export default function ModalValidationField(props: Props) {
@@ -39,7 +39,7 @@ export default function ModalValidationField(props: Props) {
   return (
     <div className="modal-validation-field">
       {props.label}
-      {props.children({ className: classNames({ 'has-error': showError, 'is-valid': isValid }) })}
+      {props.children({ className: classNames({ 'is-invalid': showError, 'is-valid': isValid }) })}
       {showError && <AlertErrorIcon className="little-spacer-top" />}
       {isValid && <AlertSuccessIcon className="little-spacer-top" />}
       {showError && <p className="text-danger">{error}</p>}

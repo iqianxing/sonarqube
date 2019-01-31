@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,20 +19,56 @@
  */
 import * as React from 'react';
 import { getLinkName } from '../../projectLinks/utils';
-import { ProjectLink } from '../../../app/types';
 import ProjectLinkIcon from '../../../components/icons-components/ProjectLinkIcon';
+import isValidUri from '../../../app/utils/isValidUri';
+import ClearIcon from '../../../components/icons-components/ClearIcon';
 
 interface Props {
-  link: ProjectLink;
+  link: T.ProjectLink;
 }
 
-export default function MetaLink({ link }: Props) {
-  return (
-    <li>
-      <a className="link-with-icon" href={link.url} rel="nofollow" target="_blank">
-        <ProjectLinkIcon className="little-spacer-right" type={link.type} />
-        {getLinkName(link)}
-      </a>
-    </li>
-  );
+interface State {
+  expanded: boolean;
+}
+
+export default class MetaLink extends React.PureComponent<Props, State> {
+  state = {
+    expanded: false
+  };
+
+  handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
+    event.preventDefault();
+    this.setState(s => ({ expanded: !s.expanded }));
+  };
+
+  render() {
+    const { link } = this.props;
+    return (
+      <li>
+        <a
+          className="link-with-icon"
+          href={link.url}
+          onClick={!isValidUri(link.url) ? this.handleClick : undefined}
+          rel="nofollow noreferrer noopener"
+          target="_blank">
+          <ProjectLinkIcon className="little-spacer-right" type={link.type} />
+          {getLinkName(link)}
+        </a>
+        {this.state.expanded && (
+          <div className="little-spacer-top copy-paste-link">
+            <input
+              className="overview-key"
+              onClick={(event: React.MouseEvent<HTMLInputElement>) => event.currentTarget.select()}
+              readOnly={true}
+              type="text"
+              value={link.url}
+            />
+            <a className="close" href="#" onClick={this.handleClick}>
+              <ClearIcon />
+            </a>
+          </div>
+        )}
+      </li>
+    );
+  }
 }

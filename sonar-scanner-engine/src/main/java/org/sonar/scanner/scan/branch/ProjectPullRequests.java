@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -32,16 +32,11 @@ import javax.annotation.concurrent.Immutable;
  */
 @Immutable
 public class ProjectPullRequests {
-
+  private static final BinaryOperator<PullRequestInfo> PICK_MOST_RECENT_ANALYSIS = (a, b) -> a.getAnalysisDate() < b.getAnalysisDate() ? b : a;
   private final Map<String, PullRequestInfo> pullRequestsByBranchName;
 
   public ProjectPullRequests(List<PullRequestInfo> pullRequestInfos) {
-    BinaryOperator<PullRequestInfo> mergeFunction = pickMostRecentAnalysis();
-    this.pullRequestsByBranchName = pullRequestInfos.stream().collect(Collectors.toMap(PullRequestInfo::getBranch, Function.identity(), mergeFunction));
-  }
-
-  private static BinaryOperator<PullRequestInfo> pickMostRecentAnalysis() {
-    return (a, b) -> a.getAnalysisDate() < b.getAnalysisDate() ? b : a;
+    this.pullRequestsByBranchName = pullRequestInfos.stream().collect(Collectors.toMap(PullRequestInfo::getBranch, Function.identity(), PICK_MOST_RECENT_ANALYSIS));
   }
 
   @CheckForNull

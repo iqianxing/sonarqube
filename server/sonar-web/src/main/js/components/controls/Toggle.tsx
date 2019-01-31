@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 import * as React from 'react';
 import * as classNames from 'classnames';
 import { Button } from '../ui/buttons';
+import CheckIcon from '../icons-components/CheckIcon';
 import './styles.css';
 
 export interface Props {
@@ -47,7 +48,9 @@ export default class Toggle extends React.PureComponent<Props> {
 
     return (
       <Button className={className} name={this.props.name} onClick={this.handleClick}>
-        <div className="boolean-toggle-handle" />
+        <div className="boolean-toggle-handle">
+          <CheckIcon size={12} />
+        </div>
       </Button>
     );
   }

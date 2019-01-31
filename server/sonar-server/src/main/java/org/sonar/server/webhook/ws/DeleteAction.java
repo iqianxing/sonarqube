@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -63,7 +63,7 @@ public class DeleteAction implements WebhooksWsAction {
     action.createParam(KEY_PARAM)
       .setRequired(true)
       .setMaximumLength(KEY_PARAM_MAXIMUN_LENGTH)
-      .setDescription("The key of the webhook to be deleted,"+
+      .setDescription("The key of the webhook to be deleted, "+
         "auto-generated value can be obtained through api/webhooks/create or api/webhooks/list")
       .setExampleValue(KEY_PROJECT_EXAMPLE_001);
 
@@ -91,7 +91,7 @@ public class DeleteAction implements WebhooksWsAction {
 
       String projectUuid = webhookDto.getProjectUuid();
       if (projectUuid != null) {
-        Optional<ComponentDto> optionalDto = ofNullable(dbClient.componentDao().selectByUuid(dbSession, projectUuid).orNull());
+        Optional<ComponentDto> optionalDto = ofNullable(dbClient.componentDao().selectByUuid(dbSession, projectUuid).orElse(null));
         ComponentDto componentDto = checkStateWithOptional(optionalDto, "the requested project '%s' was not found", projectUuid);
         webhookSupport.checkPermission(componentDto);
         deleteWebhook(dbSession, webhookDto);

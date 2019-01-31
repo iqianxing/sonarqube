@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,7 +19,7 @@
  */
 package org.sonar.ce.task.projectanalysis.formula.coverage;
 
-import com.google.common.base.Optional;
+import java.util.Optional;
 import org.sonar.ce.task.projectanalysis.formula.Counter;
 import org.sonar.ce.task.projectanalysis.formula.CreateMeasureContext;
 import org.sonar.ce.task.projectanalysis.formula.Formula;
@@ -41,7 +41,7 @@ public abstract class CoverageFormula<T extends ElementsAndCoveredElementsCounte
     if (elements > 0L) {
       return Optional.of(newMeasureBuilder().create(calculateCoverage(coveredElements, elements), context.getMetric().getDecimalScale()));
     }
-    return Optional.absent();
+    return Optional.empty();
   }
 
 }

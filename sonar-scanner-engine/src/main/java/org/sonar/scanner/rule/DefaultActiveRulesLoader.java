@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -45,7 +45,7 @@ import static org.sonar.api.utils.DateUtils.dateToLong;
 import static org.sonar.api.utils.DateUtils.parseDateTime;
 
 public class DefaultActiveRulesLoader implements ActiveRulesLoader {
-  private static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,internalKey,templateKey,params,actives,createdAt&activation=true";
+  private static final String RULES_SEARCH_URL = "/api/rules/search.protobuf?f=repo,name,severity,lang,internalKey,templateKey,params,actives,createdAt,updatedAt&activation=true";
   private static final String RULES_SEARCH_NO_HOTSPOT_URL;
 
   static {
@@ -70,7 +70,7 @@ public class DefaultActiveRulesLoader implements ActiveRulesLoader {
     List<LoadedActiveRule> ruleList = new LinkedList<>();
     int page = 1;
     int pageSize = 500;
-    int loaded = 0;
+    long loaded = 0;
 
     while (true) {
       GetRequest getRequest = new GetRequest(getUrl(qualityProfileKey, page, pageSize));
@@ -127,6 +127,7 @@ public class DefaultActiveRulesLoader implements ActiveRulesLoader {
       loadedRule.setName(r.getName());
       loadedRule.setSeverity(active.getSeverity());
       loadedRule.setCreatedAt(dateToLong(parseDateTime(active.getCreatedAt())));
+      loadedRule.setUpdatedAt(dateToLong(parseDateTime(active.getUpdatedAt())));
       loadedRule.setLanguage(r.getLang());
       loadedRule.setInternalKey(r.getInternalKey());
       if (r.hasTemplateKey()) {

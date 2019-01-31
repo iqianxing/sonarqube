@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -47,6 +47,7 @@ import org.sonar.db.qualityprofile.OrgQProfileDto;
 import org.sonar.db.user.GroupDto;
 import org.sonar.db.user.UserDto;
 import org.sonar.db.user.UserGroupDto;
+import org.sonar.server.permission.PermissionService;
 import org.sonar.server.qualityprofile.BuiltInQProfile;
 import org.sonar.server.qualityprofile.BuiltInQProfileRepository;
 import org.sonar.server.qualityprofile.QProfileName;
@@ -76,10 +77,11 @@ public class OrganizationUpdaterImpl implements OrganizationUpdater {
   private final BuiltInQProfileRepository builtInQProfileRepository;
   private final DefaultGroupCreator defaultGroupCreator;
   private final UserIndexer userIndexer;
+  private final PermissionService permissionService;
 
   public OrganizationUpdaterImpl(DbClient dbClient, System2 system2, UuidFactory uuidFactory,
     OrganizationValidation organizationValidation, Configuration config, UserIndexer userIndexer,
-    BuiltInQProfileRepository builtInQProfileRepository, DefaultGroupCreator defaultGroupCreator) {
+    BuiltInQProfileRepository builtInQProfileRepository, DefaultGroupCreator defaultGroupCreator, PermissionService permissionService) {
     this.dbClient = dbClient;
     this.system2 = system2;
     this.uuidFactory = uuidFactory;
@@ -88,10 +90,11 @@ public class OrganizationUpdaterImpl implements OrganizationUpdater {
     this.userIndexer = userIndexer;
     this.builtInQProfileRepository = builtInQProfileRepository;
     this.defaultGroupCreator = defaultGroupCreator;
+    this.permissionService = permissionService;
   }
 
   @Override
-  public OrganizationDto create(DbSession dbSession, UserDto userCreator, NewOrganization newOrganization) throws KeyConflictException {
+  public OrganizationDto create(DbSession dbSession, UserDto userCreator, NewOrganization newOrganization, Consumer<OrganizationDto> beforeCommit) throws KeyConflictException {
     validate(newOrganization);
     String key = newOrganization.getKey();
     if (organizationKeyIsUsed(dbSession, key)) {
@@ -100,16 +103,16 @@ public class OrganizationUpdaterImpl implements OrganizationUpdater {
 
     QualityGateDto builtInQualityGate = dbClient.qualityGateDao().selectBuiltIn(dbSession);
     OrganizationDto organization = insertOrganization(dbSession, newOrganization, builtInQualityGate);
+    beforeCommit.accept(organization);
     insertOrganizationMember(dbSession, organization, userCreator.getId());
     dbClient.qualityGateDao().associate(dbSession, uuidFactory.create(), organization, builtInQualityGate);
     GroupDto ownerGroup = insertOwnersGroup(dbSession, organization);
     GroupDto defaultGroup = defaultGroupCreator.create(dbSession, organization.getUuid());
     insertDefaultTemplateOnGroups(dbSession, organization, ownerGroup, defaultGroup);
+    addCurrentUserToGroup(dbSession, ownerGroup, userCreator.getId());
+    addCurrentUserToGroup(dbSession, defaultGroup, userCreator.getId());
     try (DbSession batchDbSession = dbClient.openSession(true)) {
       insertQualityProfiles(dbSession, batchDbSession, organization);
-      addCurrentUserToGroup(dbSession, ownerGroup, userCreator.getId());
-      addCurrentUserToGroup(dbSession, defaultGroup, userCreator.getId());
-
       batchDbSession.commit();
 
       // Elasticsearch is updated when DB session is committed
@@ -140,7 +143,7 @@ public class OrganizationUpdaterImpl implements OrganizationUpdater {
     insertOrganizationMember(dbSession, organization, newUser.getId());
     GroupDto defaultGroup = defaultGroupCreator.create(dbSession, organization.getUuid());
     dbClient.qualityGateDao().associate(dbSession, uuidFactory.create(), organization, builtInQualityGate);
-    OrganizationPermission.all()
+    permissionService.getAllOrganizationPermissions()
       .forEach(p -> insertUserPermissions(dbSession, newUser, organization, p));
     insertPersonalOrgDefaultTemplate(dbSession, organization, defaultGroup);
     try (DbSession batchDbSession = dbClient.openSession(true)) {
@@ -321,7 +324,7 @@ public class OrganizationUpdaterImpl implements OrganizationUpdater {
       .setOrganizationUuid(organization.getUuid())
       .setName(OWNERS_GROUP_NAME)
       .setDescription(format(OWNERS_GROUP_DESCRIPTION_PATTERN, organization.getName())));
-    OrganizationPermission.all().forEach(p -> addPermissionToGroup(dbSession, group, p));
+    permissionService.getAllOrganizationPermissions().forEach(p -> addPermissionToGroup(dbSession, group, p));
     return group;
   }
 

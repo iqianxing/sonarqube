@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -28,7 +28,6 @@ it('renders correctly', () => {
       <OnboardingModal
         currentUser={{ isLoggedIn: true }}
         onClose={jest.fn()}
-        onOpenOrganizationOnboarding={jest.fn()}
         onOpenProjectOnboarding={jest.fn()}
         onOpenTeamOnboarding={jest.fn()}
       />
@@ -38,26 +37,21 @@ it('renders correctly', () => {
 
 it('should correctly open the different tutorials', () => {
   const onClose = jest.fn();
-  const onOpenOrganizationOnboarding = jest.fn();
   const onOpenProjectOnboarding = jest.fn();
   const onOpenTeamOnboarding = jest.fn();
-  const push = jest.fn();
   const wrapper = shallow(
     <OnboardingModal
       currentUser={{ isLoggedIn: true }}
       onClose={onClose}
-      onOpenOrganizationOnboarding={onOpenOrganizationOnboarding}
       onOpenProjectOnboarding={onOpenProjectOnboarding}
       onOpenTeamOnboarding={onOpenTeamOnboarding}
-    />,
-    { context: { router: { push } } }
+    />
   );
 
   click(wrapper.find('ResetButtonLink'));
   expect(onClose).toHaveBeenCalled();
 
   wrapper.find('Button').forEach(button => click(button));
-  expect(onOpenOrganizationOnboarding).toHaveBeenCalled();
   expect(onOpenProjectOnboarding).toHaveBeenCalled();
   expect(onOpenTeamOnboarding).toHaveBeenCalled();
 });

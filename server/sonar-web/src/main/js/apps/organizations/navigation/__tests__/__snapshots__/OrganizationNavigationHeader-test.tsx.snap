@@ -31,7 +31,9 @@ exports[`renders dropdown 1`] = `
       <OrganizationListItem
         organization={
           Object {
-            "isAdmin": true,
+            "actions": Object {
+              "admin": true,
+            },
             "key": "org1",
             "name": "org1",
             "projectVisibility": "public",
@@ -41,7 +43,9 @@ exports[`renders dropdown 1`] = `
       <OrganizationListItem
         organization={
           Object {
-            "isAdmin": false,
+            "actions": Object {
+              "admin": false,
+            },
             "key": "org2",
             "name": "org2",
             "projectVisibility": "public",
@@ -61,4 +65,43 @@ exports[`renders dropdown 1`] = `
     />
   </a>
 </Dropdown>
+`;
+
+exports[`renders with alm integration 1`] = `
+<header
+  className="navbar-context-header"
+>
+  <OrganizationAvatar
+    organization={
+      Object {
+        "alm": Object {
+          "key": "github",
+          "url": "https://github.com/foo",
+        },
+        "key": "foo",
+        "name": "Foo",
+        "projectVisibility": "public",
+      }
+    }
+  />
+  <span
+    className="spacer-left"
+  >
+    Foo
+  </span>
+  <a
+    className="link-no-underline"
+    href="https://github.com/foo"
+    rel="noopener noreferrer"
+    target="_blank"
+  >
+    <img
+      alt="github"
+      className="text-text-top spacer-left"
+      height={16}
+      src="/images/sonarcloud/github.svg"
+      width={16}
+    />
+  </a>
+</header>
 `;

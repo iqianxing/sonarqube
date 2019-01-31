@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,13 +19,12 @@
  */
 import * as React from 'react';
 import { getPermissionTemplates, bulkApplyTemplate } from '../../api/permissions';
-import { PermissionTemplate } from '../../app/types';
 import { translate, translateWithParameters } from '../../helpers/l10n';
-import AlertWarnIcon from '../../components/icons-components/AlertWarnIcon';
 import Modal from '../../components/controls/Modal';
 import Select from '../../components/controls/Select';
 import { Button, ResetButtonLink } from '../../components/ui/buttons';
 import { toNotSoISOString } from '../../helpers/dates';
+import { Alert } from '../../components/ui/Alert';
 
 export interface Props {
   analyzedBefore: Date | undefined;
@@ -42,7 +41,7 @@ interface State {
   done: boolean;
   loading: boolean;
   permissionTemplate?: string;
-  permissionTemplates?: PermissionTemplate[];
+  permissionTemplates?: T.PermissionTemplate[];
   submitting: boolean;
 }
 
@@ -119,8 +118,7 @@ export default class BulkApplyTemplateModal extends React.PureComponent<Props, S
   };
 
   renderWarning = () => (
-    <div className="alert alert-warning modal-alert">
-      <AlertWarnIcon className="spacer-right" />
+    <Alert variant="warning">
       {this.props.selection.length
         ? translateWithParameters(
             'permission_templates.bulk_apply_permission_template.apply_to_selected',
@@ -130,7 +128,7 @@ export default class BulkApplyTemplateModal extends React.PureComponent<Props, S
             'permission_templates.bulk_apply_permission_template.apply_to_all',
             this.props.total
           )}
-    </div>
+    </Alert>
   );
 
   renderSelect = () => (
@@ -161,9 +159,7 @@ export default class BulkApplyTemplateModal extends React.PureComponent<Props, S
 
         <div className="modal-body">
           {done && (
-            <div className="alert alert-success">
-              {translate('projects_role.apply_template.success')}
-            </div>
+            <Alert variant="success">{translate('projects_role.apply_template.success')}</Alert>
           )}
 
           {loading && <i className="spinner" />}

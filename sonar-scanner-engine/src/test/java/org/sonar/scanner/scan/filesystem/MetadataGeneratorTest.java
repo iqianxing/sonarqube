@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,15 +31,14 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.sonar.api.batch.bootstrap.ProjectDefinition;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
-import org.sonar.api.batch.fs.internal.DefaultInputModule;
 import org.sonar.api.batch.fs.internal.FileMetadata;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
+import org.sonar.api.notifications.AnalysisWarnings;
 import org.sonar.api.utils.PathUtils;
+import org.sonar.scanner.issue.ignore.IgnoreIssuesFilter;
 import org.sonar.scanner.issue.ignore.pattern.IssueExclusionPatternInitializer;
-import org.sonar.scanner.issue.ignore.pattern.PatternMatcher;
 import org.sonar.scanner.issue.ignore.scanner.IssueExclusionsLoader;
 
 import static org.apache.commons.codec.digest.DigestUtils.md5Hex;
@@ -63,9 +62,9 @@ public class MetadataGeneratorTest {
   public void setUp() throws IOException {
     MockitoAnnotations.initMocks(this);
     metadata = new FileMetadata();
-    IssueExclusionsLoader issueExclusionsLoader = new IssueExclusionsLoader(mock(IssueExclusionPatternInitializer.class), mock(PatternMatcher.class));
-    generator = new MetadataGenerator(new DefaultInputModule(ProjectDefinition.create().setKey("module").setBaseDir(temp.newFolder()).setWorkDir(temp.newFolder())),
-      statusDetection, metadata, issueExclusionsLoader);
+    IssueExclusionsLoader issueExclusionsLoader = new IssueExclusionsLoader(mock(IssueExclusionPatternInitializer.class), mock(IgnoreIssuesFilter.class),
+      mock(AnalysisWarnings.class));
+    generator = new MetadataGenerator(statusDetection, metadata, issueExclusionsLoader);
   }
 
   @Test
@@ -94,7 +93,7 @@ public class MetadataGeneratorTest {
     DefaultInputFile inputFile = new TestInputFileBuilder("struts", relativePath)
       .setModuleBaseDir(baseDir)
       .build();
-    generator.setMetadata(inputFile, StandardCharsets.US_ASCII);
+    generator.setMetadata("module", inputFile, StandardCharsets.US_ASCII);
     return inputFile;
   }
 
@@ -107,7 +106,8 @@ public class MetadataGeneratorTest {
     assertThat(inputFile.lines()).isEqualTo(3);
     assertThat(inputFile.nonBlankLines()).isEqualTo(3);
     assertThat(inputFile.hash()).isEqualTo(md5Hex("foo\nbar\nbaz"));
-    assertThat(inputFile.originalLineOffsets()).containsOnly(0, 4, 9);
+    assertThat(inputFile.originalLineStartOffsets()).containsOnly(0, 4, 9);
+    assertThat(inputFile.originalLineEndOffsets()).containsOnly(3, 7, 12);
   }
 
   @Test

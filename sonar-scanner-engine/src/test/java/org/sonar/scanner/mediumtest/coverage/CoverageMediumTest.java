@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,14 +31,19 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.measures.CoreMetrics;
+import org.sonar.api.utils.log.LogTester;
+import org.sonar.api.utils.log.LoggerLevel;
 import org.sonar.scanner.mediumtest.ScannerMediumTester;
-import org.sonar.scanner.mediumtest.TaskResult;
+import org.sonar.scanner.mediumtest.AnalysisResult;
 import org.sonar.xoo.XooPlugin;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 public class CoverageMediumTest {
+
+  @Rule
+  public LogTester logTester = new LogTester();
 
   @Rule
   public TemporaryFolder temp = new TemporaryFolder();
@@ -60,14 +65,10 @@ public class CoverageMediumTest {
     FileUtils.write(xooFile, "function foo() {\n  if (a && b) {\nalert('hello');\n}\n}", StandardCharsets.UTF_8);
     FileUtils.write(xooUtCoverageFile, "2:2:2:1\n3:1", StandardCharsets.UTF_8);
 
-    TaskResult result = tester.newTask()
+    AnalysisResult result = tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
-        .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
         .put("sonar.projectKey", "com.foo.project")
-        .put("sonar.projectName", "Foo Project")
-        .put("sonar.projectVersion", "1.0-SNAPSHOT")
-        .put("sonar.projectDescription", "Description of Foo Project")
         .put("sonar.sources", "src")
         .build())
       .execute();
@@ -99,14 +100,10 @@ public class CoverageMediumTest {
     File xooItCoverageFile = new File(srcDir, "sample.xoo.itcoverage");
     FileUtils.write(xooItCoverageFile, "2:2:2:1\n3:1\n5:0", StandardCharsets.UTF_8);
 
-    TaskResult result = tester.newTask()
+    AnalysisResult result = tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
-        .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
         .put("sonar.projectKey", "com.foo.project")
-        .put("sonar.projectName", "Foo Project")
-        .put("sonar.projectVersion", "1.0-SNAPSHOT")
-        .put("sonar.projectDescription", "Description of Foo Project")
         .put("sonar.sources", "src")
         .build())
       .execute();
@@ -129,7 +126,7 @@ public class CoverageMediumTest {
   }
 
   @Test
-  public void exclusions() throws IOException {
+  public void exclusionsForSimpleProject() throws IOException {
 
     File baseDir = temp.getRoot();
     File srcDir = new File(baseDir, "src");
@@ -140,14 +137,10 @@ public class CoverageMediumTest {
     FileUtils.write(xooFile, "function foo() {\n  if (a && b) {\nalert('hello');\n}\n}", StandardCharsets.UTF_8);
     FileUtils.write(xooUtCoverageFile, "2:2:2:1\n3:1", StandardCharsets.UTF_8);
 
-    TaskResult result = tester.newTask()
+    AnalysisResult result = tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
-        .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
         .put("sonar.projectKey", "com.foo.project")
-        .put("sonar.projectName", "Foo Project")
-        .put("sonar.projectVersion", "1.0-SNAPSHOT")
-        .put("sonar.projectDescription", "Description of Foo Project")
         .put("sonar.sources", "src")
         .put("sonar.coverage.exclusions", "**/sample.xoo")
         .build())
@@ -163,6 +156,128 @@ public class CoverageMediumTest {
   }
 
   @Test
+  public void warn_user_for_outdated_inherited_scanner_side_exclusions_for_multi_module_project() throws IOException {
+
+    File baseDir = temp.getRoot();
+    File baseDirModuleA = new File(baseDir, "moduleA");
+    File baseDirModuleB = new File(baseDir, "moduleB");
+    File srcDirA = new File(baseDirModuleA, "src");
+    srcDirA.mkdirs();
+    File srcDirB = new File(baseDirModuleB, "src");
+    srcDirB.mkdirs();
+
+    File xooFileA = new File(srcDirA, "sampleA.xoo");
+    File xooUtCoverageFileA = new File(srcDirA, "sampleA.xoo.coverage");
+    FileUtils.write(xooFileA, "function foo() {\n  if (a && b) {\nalert('hello');\n}\n}", StandardCharsets.UTF_8);
+    FileUtils.write(xooUtCoverageFileA, "2:2:2:1\n3:1", StandardCharsets.UTF_8);
+
+    File xooFileB = new File(srcDirB, "sampleB.xoo");
+    File xooUtCoverageFileB = new File(srcDirB, "sampleB.xoo.coverage");
+    FileUtils.write(xooFileB, "function foo() {\n  if (a && b) {\nalert('hello');\n}\n}", StandardCharsets.UTF_8);
+    FileUtils.write(xooUtCoverageFileB, "2:2:2:1\n3:1", StandardCharsets.UTF_8);
+
+    AnalysisResult result = tester.newAnalysis()
+      .properties(ImmutableMap.<String, String>builder()
+        .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
+        .put("sonar.projectKey", "com.foo.project")
+        .put("sonar.sources", "src")
+        .put("sonar.modules", "moduleA,moduleB")
+        .put("sonar.coverage.exclusions", "src/sampleA.xoo")
+        .build())
+      .execute();
+
+    InputFile fileA = result.inputFile("moduleA/src/sampleA.xoo");
+    assertThat(result.coverageFor(fileA, 2)).isNull();
+
+    InputFile fileB = result.inputFile("moduleB/src/sampleB.xoo");
+    assertThat(result.coverageFor(fileB, 2)).isNotNull();
+
+    assertThat(logTester.logs(LoggerLevel.WARN)).contains("Specifying module-relative paths at project level in the property 'sonar.coverage.exclusions' is deprecated. " +
+      "To continue matching files like 'moduleA/src/sampleA.xoo', update this property so that patterns refer to project-relative paths.");
+  }
+
+  @Test
+  public void module_level_exclusions_override_parent_for_multi_module_project() throws IOException {
+
+    File baseDir = temp.getRoot();
+    File baseDirModuleA = new File(baseDir, "moduleA");
+    File baseDirModuleB = new File(baseDir, "moduleB");
+    File srcDirA = new File(baseDirModuleA, "src");
+    srcDirA.mkdirs();
+    File srcDirB = new File(baseDirModuleB, "src");
+    srcDirB.mkdirs();
+
+    File xooFileA = new File(srcDirA, "sampleA.xoo");
+    File xooUtCoverageFileA = new File(srcDirA, "sampleA.xoo.coverage");
+    FileUtils.write(xooFileA, "function foo() {\n  if (a && b) {\nalert('hello');\n}\n}", StandardCharsets.UTF_8);
+    FileUtils.write(xooUtCoverageFileA, "2:2:2:1\n3:1", StandardCharsets.UTF_8);
+
+    File xooFileB = new File(srcDirB, "sampleB.xoo");
+    File xooUtCoverageFileB = new File(srcDirB, "sampleB.xoo.coverage");
+    FileUtils.write(xooFileB, "function foo() {\n  if (a && b) {\nalert('hello');\n}\n}", StandardCharsets.UTF_8);
+    FileUtils.write(xooUtCoverageFileB, "2:2:2:1\n3:1", StandardCharsets.UTF_8);
+
+    AnalysisResult result = tester.newAnalysis()
+      .properties(ImmutableMap.<String, String>builder()
+        .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
+        .put("sonar.projectKey", "com.foo.project")
+        .put("sonar.sources", "src")
+        .put("sonar.modules", "moduleA,moduleB")
+        .put("sonar.coverage.exclusions", "**/*.xoo")
+        .put("moduleA.sonar.coverage.exclusions", "**/*.nothing")
+        .build())
+      .execute();
+
+    InputFile fileA = result.inputFile("moduleA/src/sampleA.xoo");
+    assertThat(result.coverageFor(fileA, 2)).isNotNull();
+
+    InputFile fileB = result.inputFile("moduleB/src/sampleB.xoo");
+    assertThat(result.coverageFor(fileB, 2)).isNull();
+  }
+
+  @Test
+  public void warn_user_for_outdated_server_side_exclusions_for_multi_module_project() throws IOException {
+
+    File baseDir = temp.getRoot();
+    File baseDirModuleA = new File(baseDir, "moduleA");
+    File baseDirModuleB = new File(baseDir, "moduleB");
+    File srcDirA = new File(baseDirModuleA, "src");
+    srcDirA.mkdirs();
+    File srcDirB = new File(baseDirModuleB, "src");
+    srcDirB.mkdirs();
+
+    File xooFileA = new File(srcDirA, "sample.xoo");
+    File xooUtCoverageFileA = new File(srcDirA, "sample.xoo.coverage");
+    FileUtils.write(xooFileA, "function foo() {\n  if (a && b) {\nalert('hello');\n}\n}", StandardCharsets.UTF_8);
+    FileUtils.write(xooUtCoverageFileA, "2:2:2:1\n3:1", StandardCharsets.UTF_8);
+
+    File xooFileB = new File(srcDirB, "sample.xoo");
+    File xooUtCoverageFileB = new File(srcDirB, "sample.xoo.coverage");
+    FileUtils.write(xooFileB, "function foo() {\n  if (a && b) {\nalert('hello');\n}\n}", StandardCharsets.UTF_8);
+    FileUtils.write(xooUtCoverageFileB, "2:2:2:1\n3:1", StandardCharsets.UTF_8);
+
+    tester.addProjectServerSettings("sonar.coverage.exclusions", "src/sample.xoo");
+
+    AnalysisResult result = tester.newAnalysis()
+      .properties(ImmutableMap.<String, String>builder()
+        .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
+        .put("sonar.projectKey", "com.foo.project")
+        .put("sonar.sources", "src")
+        .put("sonar.modules", "moduleA,moduleB")
+        .build())
+      .execute();
+
+    InputFile fileA = result.inputFile("moduleA/src/sample.xoo");
+    assertThat(result.coverageFor(fileA, 2)).isNull();
+
+    InputFile fileB = result.inputFile("moduleB/src/sample.xoo");
+    assertThat(result.coverageFor(fileB, 2)).isNull();
+
+    assertThat(logTester.logs(LoggerLevel.WARN)).contains("Specifying module-relative paths at project level in the property 'sonar.coverage.exclusions' is deprecated. " +
+      "To continue matching files like 'moduleA/src/sample.xoo', update this property so that patterns refer to project-relative paths.");
+  }
+
+  @Test
   public void fallbackOnExecutableLines() throws IOException {
 
     File baseDir = temp.getRoot();
@@ -174,14 +289,10 @@ public class CoverageMediumTest {
     FileUtils.write(xooFile, "function foo() {\n  if (a && b) {\nalert('hello');\n}\n}", StandardCharsets.UTF_8);
     FileUtils.write(measuresFile, "executable_lines_data:2=1;3=1;4=0", StandardCharsets.UTF_8);
 
-    TaskResult result = tester.newTask()
+    AnalysisResult result = tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
-        .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
         .put("sonar.projectKey", "com.foo.project")
-        .put("sonar.projectName", "Foo Project")
-        .put("sonar.projectVersion", "1.0-SNAPSHOT")
-        .put("sonar.projectDescription", "Description of Foo Project")
         .put("sonar.sources", "src")
         .build())
       .execute();
@@ -222,9 +333,8 @@ public class CoverageMediumTest {
     FileUtils.write(xooFile2, "function foo() {\n  if (a && b) {\nalert('hello');\n}\n}", StandardCharsets.UTF_8);
     FileUtils.write(measuresFile2, "executable_lines_data:2=1;3=1;4=0", StandardCharsets.UTF_8);
 
-    TaskResult result = tester.newTask()
+    AnalysisResult result = tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
-        .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
         .put("sonar.projectKey", "com.foo.project")
         .put("sonar.modules", "module1")
@@ -251,14 +361,14 @@ public class CoverageMediumTest {
 
     Map<String, List<org.sonar.scanner.protocol.output.ScannerReport.Measure>> allMeasures = result.allMeasures();
 
-    assertThat(allMeasures.get("com.foo.project:module1:src/sample1.xoo")).extracting("metricKey", "intValue.value")
+    assertThat(allMeasures.get("com.foo.project:module1/src/sample1.xoo")).extracting("metricKey", "intValue.value")
       .contains(tuple(CoreMetrics.LINES_TO_COVER_KEY, 2),
         tuple(CoreMetrics.UNCOVERED_LINES_KEY, 2));
 
-    assertThat(allMeasures.get("com.foo.project:module1:src/sample1.xoo")).extracting("metricKey").doesNotContain(CoreMetrics.CONDITIONS_TO_COVER_KEY,
+    assertThat(allMeasures.get("com.foo.project:module1/src/sample1.xoo")).extracting("metricKey").doesNotContain(CoreMetrics.CONDITIONS_TO_COVER_KEY,
       CoreMetrics.UNCOVERED_CONDITIONS_KEY);
 
-    assertThat(allMeasures.get("com.foo.project:module1:src/sample2.xoo")).extracting("metricKey").doesNotContain(CoreMetrics.LINES_TO_COVER_KEY,
+    assertThat(allMeasures.get("com.foo.project:module1/src/sample2.xoo")).extracting("metricKey").doesNotContain(CoreMetrics.LINES_TO_COVER_KEY,
       CoreMetrics.CONDITIONS_TO_COVER_KEY,
       CoreMetrics.UNCOVERED_CONDITIONS_KEY, CoreMetrics.UNCOVERED_LINES_KEY);
   }

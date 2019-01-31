@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,6 +24,7 @@ import { Facet } from '../types';
 import Level from '../../../components/ui/Level';
 import { translate } from '../../../helpers/l10n';
 import { RawQuery } from '../../../helpers/query';
+import HelpTooltip from '../../../components/controls/HelpTooltip';
 
 export interface Props {
   className?: string;
@@ -58,5 +59,15 @@ function getFacetValueForOption(facet: Facet, option: string) {
 }
 
 function renderOption(option: string, selected: boolean) {
-  return <Level level={option} muted={!selected} small={true} />;
+  return (
+    <>
+      <Level level={option} muted={!selected} small={true} />
+      {option === 'WARN' && (
+        <HelpTooltip
+          className="little-spacer-left"
+          overlay={translate('projects.facets.quality_gate.warning_help')}
+        />
+      )}
+    </>
+  );
 }

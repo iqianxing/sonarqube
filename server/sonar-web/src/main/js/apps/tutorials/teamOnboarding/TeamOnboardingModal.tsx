@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,6 +23,7 @@ import { Link } from 'react-router';
 import Modal from '../../../components/controls/Modal';
 import { translate } from '../../../helpers/l10n';
 import { ResetButtonLink } from '../../../components/ui/buttons';
+import { Alert } from '../../../components/ui/Alert';
 
 interface Props {
   onFinish: () => void;
@@ -41,9 +42,7 @@ export default class TeamOnboardingModal extends React.PureComponent<Props> {
           <h2>{header}</h2>
         </header>
         <div className="modal-body">
-          <div className="alert alert-info modal-alert">
-            {translate('onboarding.team.work_in_progress')}
-          </div>
+          <Alert variant="info">{translate('onboarding.team.work_in_progress')}</Alert>
           <p className="spacer-top big-spacer-bottom">{translate('onboarding.team.first_step')}</p>
           <p className="spacer-top big-spacer-bottom">
             <FormattedMessage
@@ -51,7 +50,9 @@ export default class TeamOnboardingModal extends React.PureComponent<Props> {
               id="onboarding.team.how_to_join"
               values={{
                 link: (
-                  <Link onClick={this.props.onFinish} to="/documentation/organizations/manage-team">
+                  <Link
+                    onClick={this.props.onFinish}
+                    to="/documentation/organizations/manage-team/">
                     {translate('as_explained_here')}
                   </Link>
                 )

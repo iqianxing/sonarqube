@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,8 +20,6 @@
 import * as React from 'react';
 import { Link } from 'react-router';
 import * as classNames from 'classnames';
-import * as PropTypes from 'prop-types';
-import { BranchLike, Component, Extension } from '../../../types';
 import Dropdown from '../../../../components/controls/Dropdown';
 import NavBarTabs from '../../../../components/nav/NavBarTabs';
 import {
@@ -32,6 +30,8 @@ import {
 } from '../../../../helpers/branches';
 import { translate } from '../../../../helpers/l10n';
 import DropdownIcon from '../../../../components/icons-components/DropdownIcon';
+import { withAppState } from '../../../../components/withAppState';
+import { isSonarCloud } from '../../../../helpers/system';
 
 const SETTINGS_URLS = [
   '/project/admin',
@@ -50,16 +50,13 @@ const SETTINGS_URLS = [
 ];
 
 interface Props {
-  branchLike: BranchLike | undefined;
-  component: Component;
+  appState: Pick<T.AppState, 'branchesEnabled'>;
+  branchLike: T.BranchLike | undefined;
+  component: T.Component;
   location?: any;
 }
 
-export default class ComponentNavMenu extends React.PureComponent<Props> {
-  static contextTypes = {
-    branchesEnabled: PropTypes.bool.isRequired
-  };
-
+export class ComponentNavMenu extends React.PureComponent<Props> {
   isProject() {
     return this.props.component.qualifier === 'TRK';
   }
@@ -138,7 +135,7 @@ export default class ComponentNavMenu extends React.PureComponent<Props> {
 
   renderIssuesLink() {
     const { location = { pathname: '' } } = this.props;
-    const isIssuesActive = location.pathname.startsWith('project/issues');
+    const isIssuesActive = location.pathname.startsWith('/project/issues');
     return (
       <li>
         <Link
@@ -152,12 +149,6 @@ export default class ComponentNavMenu extends React.PureComponent<Props> {
   }
 
   renderComponentMeasuresLink() {
-    const { branchLike } = this.props;
-
-    if (isShortLivingBranch(branchLike) || isPullRequest(branchLike)) {
-      return null;
-    }
-
     return (
       <li>
         <Link
@@ -191,16 +182,13 @@ export default class ComponentNavMenu extends React.PureComponent<Props> {
   }
 
   renderSecurityReports() {
-    const { branchLike, component } = this.props;
-
-    if (component.qualifier === 'BRC' || component.qualifier === 'DIR') {
-      return null;
-    }
+    const { branchLike } = this.props;
 
     if (isShortLivingBranch(branchLike) || isPullRequest(branchLike)) {
       return null;
     }
 
+    const { location = { pathname: '' } } = this.props;
     const isActive = location.pathname.startsWith('/project/security_reports');
     return (
       <Dropdown overlay={this.renderSecurityReportsLink()} tagName="li">
@@ -288,7 +276,7 @@ export default class ComponentNavMenu extends React.PureComponent<Props> {
 
   renderBranchesLink() {
     if (
-      !this.context.branchesEnabled ||
+      !this.props.appState.branchesEnabled ||
       !this.isProject() ||
       !this.getConfiguration().showSettings
     ) {
@@ -337,7 +325,7 @@ export default class ComponentNavMenu extends React.PureComponent<Props> {
   }
 
   renderCustomMeasuresLink() {
-    if (!this.getConfiguration().showManualMeasures) {
+    if (isSonarCloud() || !this.getConfiguration().showManualMeasures) {
       return null;
     }
     return (
@@ -448,7 +436,7 @@ export default class ComponentNavMenu extends React.PureComponent<Props> {
     );
   }
 
-  renderExtension = ({ key, name }: Extension, isAdmin: boolean) => {
+  renderExtension = ({ key, name }: T.Extension, isAdmin: boolean) => {
     const pathname = isAdmin ? `/project/admin/extension/${key}` : `/project/extension/${key}`;
     const query = { id: this.props.component.key, qualifier: this.props.component.qualifier };
     return (
@@ -510,3 +498,5 @@ export default class ComponentNavMenu extends React.PureComponent<Props> {
     );
   }
 }
+
+export default withAppState(ComponentNavMenu);

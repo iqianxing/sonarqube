@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,13 +20,12 @@
 import * as React from 'react';
 import { sortBy } from 'lodash';
 import WebhookItem from './WebhookItem';
-import { Webhook } from '../../../app/types';
 import { translate } from '../../../helpers/l10n';
 
 interface Props {
   onDelete: (webhook: string) => Promise<void>;
   onUpdate: (data: { webhook: string; name: string; url: string }) => Promise<void>;
-  webhooks: Webhook[];
+  webhooks: T.Webhook[];
 }
 
 export default class WebhooksList extends React.PureComponent<Props> {

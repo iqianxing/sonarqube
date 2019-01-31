@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,6 @@ package org.sonar.scanner.scan.filesystem;
 
 import java.util.SortedSet;
 import org.sonar.api.batch.ScannerSide;
-import org.sonar.api.batch.fs.InputDir;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.InputModule;
 import org.sonar.api.batch.fs.internal.DefaultFileSystem;
@@ -43,7 +42,7 @@ public class ModuleInputComponentStore extends DefaultFileSystem.Cache {
   @Override
   public Iterable<InputFile> inputFiles() {
     if (strategy.isGlobal()) {
-      return inputComponentStore.allFiles();
+      return inputComponentStore.inputFiles();
     } else {
       return inputComponentStore.filesByModule(moduleKey);
     }
@@ -52,38 +51,24 @@ public class ModuleInputComponentStore extends DefaultFileSystem.Cache {
   @Override
   public InputFile inputFile(String relativePath) {
     if (strategy.isGlobal()) {
-      return inputComponentStore.getFile(relativePath);
+      return inputComponentStore.inputFile(relativePath);
     } else {
       return inputComponentStore.getFile(moduleKey, relativePath);
     }
   }
 
   @Override
-  public InputDir inputDir(String relativePath) {
-    if (strategy.isGlobal()) {
-      return inputComponentStore.getDir(relativePath);
-    } else {
-      return inputComponentStore.getDir(moduleKey, relativePath);
-    }
-  }
-
-  @Override
   public SortedSet<String> languages() {
     if (strategy.isGlobal()) {
-      return inputComponentStore.getLanguages();
+      return inputComponentStore.languages();
     } else {
-      return inputComponentStore.getLanguages(moduleKey);
+      return inputComponentStore.languages(moduleKey);
     }
   }
 
   @Override
   protected void doAdd(InputFile inputFile) {
-    inputComponentStore.put(inputFile);
-  }
-
-  @Override
-  protected void doAdd(InputDir inputDir) {
-    inputComponentStore.put(inputDir);
+    inputComponentStore.put(moduleKey, inputFile);
   }
 
   @Override

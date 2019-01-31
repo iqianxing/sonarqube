@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,11 +24,11 @@ import ProfilesListHeader from './ProfilesListHeader';
 import DocTooltip from '../../../components/docs/DocTooltip';
 import { translate, translateWithParameters } from '../../../helpers/l10n';
 import { Profile } from '../types';
+import { Alert } from '../../../components/ui/Alert';
 
 interface Props {
   languages: Array<{ key: string; name: string }>;
   location: { query: { [p: string]: string } };
-  onRequestFail: (reason: any) => void;
   organization: string | null;
   profiles: Profile[];
   updateProfiles: () => Promise<void>;
@@ -39,7 +39,6 @@ export default class ProfilesList extends React.PureComponent<Props> {
     return profiles.map(profile => (
       <ProfilesListRow
         key={profile.key}
-        onRequestFail={this.props.onRequestFail}
         organization={this.props.organization}
         profile={profile}
         updateProfiles={this.props.updateProfiles}
@@ -111,7 +110,9 @@ export default class ProfilesList extends React.PureComponent<Props> {
         />
 
         {Object.keys(profilesToShow).length === 0 && (
-          <div className="alert alert-warning spacer-top">{translate('no_results')}</div>
+          <Alert className="spacer-top" variant="warning">
+            {translate('no_results')}
+          </Alert>
         )}
 
         {languagesToShow.map(languageKey =>

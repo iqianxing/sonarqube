@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,7 +34,7 @@ import org.sonar.server.user.UserSession;
 import org.sonarqube.ws.ProjectLinks.Link;
 import org.sonarqube.ws.ProjectLinks.SearchWsResponse;
 
-import static org.sonar.core.util.Protobuf.setNullable;
+import static java.util.Optional.ofNullable;
 import static org.sonar.core.util.Uuids.UUID_EXAMPLE_01;
 import static org.sonar.server.projectlink.ws.ProjectLinksWs.checkProject;
 import static org.sonar.server.projectlink.ws.ProjectLinksWsParameters.ACTION_SEARCH;
@@ -110,7 +110,7 @@ public class SearchAction implements ProjectLinksWsAction {
       .setId(String.valueOf(link.getUuid()))
       .setType(link.getType())
       .setUrl(link.getHref());
-    setNullable(link.getName(), builder::setName);
+    ofNullable(link.getName()).ifPresent(builder::setName);
     return builder.build();
   }
 

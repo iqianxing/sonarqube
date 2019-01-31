@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,42 +21,40 @@ import * as React from 'react';
 import { connect } from 'react-redux';
 import { Link } from 'react-router';
 import ComponentNavBranch from './ComponentNavBranch';
-import { Component, Organization, BranchLike, Breadcrumb } from '../../../types';
 import QualifierIcon from '../../../../components/icons-components/QualifierIcon';
-import { getOrganizationByKey, areThereCustomOrganizations } from '../../../../store/rootReducer';
+import { getOrganizationByKey, Store } from '../../../../store/rootReducer';
 import OrganizationAvatar from '../../../../components/common/OrganizationAvatar';
 import OrganizationHelmet from '../../../../components/common/OrganizationHelmet';
 import OrganizationLink from '../../../../components/ui/OrganizationLink';
 import { sanitizeAlmId } from '../../../../helpers/almIntegrations';
-import { collapsePath, limitComponentName } from '../../../../helpers/path';
 import { getProjectUrl, getBaseUrl } from '../../../../helpers/urls';
 import { isSonarCloud } from '../../../../helpers/system';
+import { isMainBranch } from '../../../../helpers/branches';
 
 interface StateProps {
-  organization?: Organization;
-  shouldOrganizationBeDisplayed: boolean;
+  organization?: T.Organization;
 }
 
 interface OwnProps {
-  branchLikes: BranchLike[];
-  component: Component;
-  currentBranchLike: BranchLike | undefined;
+  branchLikes: T.BranchLike[];
+  component: T.Component;
+  currentBranchLike: T.BranchLike | undefined;
   location?: any;
 }
 
-interface Props extends StateProps, OwnProps {}
+type Props = StateProps & OwnProps;
 
 export function ComponentNavHeader(props: Props) {
-  const { component, organization, shouldOrganizationBeDisplayed } = props;
+  const { component, organization } = props;
 
   return (
     <header className="navbar-context-header">
       <OrganizationHelmet
-        organization={organization && shouldOrganizationBeDisplayed ? organization : undefined}
+        organization={organization && isSonarCloud() ? organization : undefined}
         title={component.name}
       />
       {organization &&
-        shouldOrganizationBeDisplayed && (
+        isSonarCloud() && (
           <>
             <OrganizationAvatar organization={organization} />
             <OrganizationLink
@@ -67,19 +65,22 @@ export function ComponentNavHeader(props: Props) {
             <span className="slash-separator" />
           </>
         )}
-      {renderBreadcrumbs(component.breadcrumbs)}
+      {renderBreadcrumbs(
+        component.breadcrumbs,
+        props.currentBranchLike !== undefined && !isMainBranch(props.currentBranchLike)
+      )}
       {isSonarCloud() &&
-        component.almRepoUrl && (
+        component.alm && (
           <a
             className="link-no-underline"
-            href={component.almRepoUrl}
+            href={component.alm.url}
             rel="noopener noreferrer"
             target="_blank">
             <img
-              alt={sanitizeAlmId(component.almId)}
+              alt={sanitizeAlmId(component.alm.key)}
               className="text-text-top spacer-left"
               height={16}
-              src={`${getBaseUrl()}/images/sonarcloud/${sanitizeAlmId(component.almId)}.svg`}
+              src={`${getBaseUrl()}/images/sonarcloud/${sanitizeAlmId(component.alm.key)}.svg`}
               width={16}
             />
           </a>
@@ -97,30 +98,32 @@ export function ComponentNavHeader(props: Props) {
   );
 }
 
-function renderBreadcrumbs(breadcrumbs: Breadcrumb[]) {
+function renderBreadcrumbs(breadcrumbs: T.Breadcrumb[], shouldLinkLast: boolean) {
   const lastItem = breadcrumbs[breadcrumbs.length - 1];
   return breadcrumbs.map((item, index) => {
-    const isPath = item.qualifier === 'DIR';
-    const itemName = isPath ? collapsePath(item.name, 15) : limitComponentName(item.name);
-
     return (
       <React.Fragment key={item.key}>
         {index === 0 && <QualifierIcon className="spacer-right" qualifier={lastItem.qualifier} />}
-        <Link
-          className="navbar-context-header-breadcrumb-link link-base-color link-no-underline"
-          title={item.name}
-          to={getProjectUrl(item.key)}>
-          {itemName}
-        </Link>
+        {shouldLinkLast || index < breadcrumbs.length - 1 ? (
+          <Link
+            className="navbar-context-header-breadcrumb-link link-base-color link-no-underline"
+            title={item.name}
+            to={getProjectUrl(item.key)}>
+            {item.name}
+          </Link>
+        ) : (
+          <span className="navbar-context-header-breadcrumb-link" title={item.name}>
+            {item.name}
+          </span>
+        )}
         {index < breadcrumbs.length - 1 && <span className="slash-separator" />}
       </React.Fragment>
     );
   });
 }
 
-const mapStateToProps = (state: any, ownProps: OwnProps): StateProps => ({
-  organization: getOrganizationByKey(state, ownProps.component.organization),
-  shouldOrganizationBeDisplayed: areThereCustomOrganizations(state)
+const mapStateToProps = (state: Store, ownProps: OwnProps): StateProps => ({
+  organization: getOrganizationByKey(state, ownProps.component.organization)
 });
 
 export default connect(mapStateToProps)(ComponentNavHeader);

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,6 +19,7 @@
  */
 package org.sonar.server.project;
 
+import java.util.List;
 import java.util.Objects;
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
@@ -31,20 +32,18 @@ public class Project {
   private final String key;
   private final String name;
   private final String description;
+  private final List<String> tags;
 
-  public Project(String uuid, String key, String name) {
-    this(uuid, key, name, null);
-  }
-
-  public Project(String uuid, String key, String name, @Nullable String description) {
+  public Project(String uuid, String key, String name, @Nullable String description, List<String> tags) {
     this.uuid = uuid;
     this.key = key;
     this.name = name;
     this.description = description;
+    this.tags = tags;
   }
 
   public static Project from(ComponentDto project) {
-    return new Project(project.uuid(), project.getDbKey(), project.name(), project.description());
+    return new Project(project.uuid(), project.getKey(), project.name(), project.description(), project.getTags());
   }
 
   /**
@@ -67,6 +66,10 @@ public class Project {
 
   public String getDescription() {
     return description;
+  }
+
+  public List<String> getTags() {
+    return tags;
   }
 
   @Override

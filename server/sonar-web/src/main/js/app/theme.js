@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,10 +27,12 @@ module.exports = {
   lightBlue: '#cae3f2',
   darkBlue: '#236a97',
   green: '#00aa00',
+  lineCoverageGreen: '#b4dd78',
   lightGreen: '#b0d513',
   yellow: '#eabe06',
   orange: '#ed7d20',
   red: '#d4333f',
+  lineCoverageRed: '#a4030f',
   purple: '#9139d4',
 
   gray94: '#efefef',
@@ -51,9 +53,35 @@ module.exports = {
   secondFontColor: '#777',
 
   leakColor: '#fbf3d5',
+  leakColorHover: '#f0e7c4',
   leakBorderColor: '#eae3c7',
 
+  globalNavBarBg: '#262626',
+
   snippetFontColor: '#f0f0f0',
+
+  // alerts
+  warningIconColor: '#e2bf41',
+
+  alertBorderError: '#ebccd1',
+  alertBackgroundError: '#f2dede',
+  alertTextError: '#862422',
+  alertIconError: '#b81723',
+
+  alertBorderWarning: '#faebcc',
+  alertBackgroundWarning: '#fcf8e3',
+  alertTextWarning: '#6f4f17',
+  alertIconWarning: '#db781a',
+
+  alertBorderSuccess: '#d6e9c6',
+  alertBackgroundSuccess: '#dff0d8',
+  alertTextSuccess: '#215821',
+  alertIconSuccess: '#6d9867',
+
+  alertBorderInfo: '#b1dff3',
+  alertBackgroundInfo: '#d9edf7',
+  alertTextInfo: '#0e516f',
+  alertIconInfo: '#0271b9',
 
   // sizes
   grid,
@@ -66,6 +94,7 @@ module.exports = {
   bigFontSize: '16px',
   hugeFontSize: '24px',
 
+  largeControlHeight: `${4 * grid}px`,
   controlHeight: `${3 * grid}px`,
   smallControlHeight: `${2.5 * grid}px`,
   tinyControlHeight: `${2 * grid}px`,
@@ -77,6 +106,8 @@ module.exports = {
 
   contextNavHeightRaw: 9 * grid,
 
+  maxPageWidth: '1320px',
+  minPageWidth: '1080px',
   pagePadding: '20px',
 
   // different
@@ -111,15 +142,23 @@ module.exports = {
   popupZIndex: '5000',
 
   // sonarcloud
-  sonarcloudOrange: '#f60',
-  sonarcloudOrangeDark: '#e65c00',
+  sonarcloudOrange500: '#fd6a00',
+  sonarcloudOrange600: '#e26003',
+  sonarcloudOrange700: '#db5700',
+
   sonarcloudBlack100: '#ffffff',
   sonarcloudBlack200: '#f9f9fb',
+  sonarcloudBlack250: '#e6e8ea',
   sonarcloudBlack300: '#cfd3d7',
   sonarcloudBlack500: '#8a8c8f',
   sonarcloudBlack700: '#434447',
   sonarcloudBlack800: '#2d3032',
   sonarcloudBlack900: '#070706',
+
+  sonarcloudBlue500: '#4c9bd6',
+  sonarcloudBlue600: '#327bb3',
+  sonarcloudBlue900: '#0b3c62',
+
   sonarcloudBorderGray: 'rgba(207, 211, 215, 0.5)',
   sonarcloudFontFamily:
     "Roboto, Oxygen, Ubuntu, Cantarell, 'Open Sans', 'Helvetica Neue', sans-serif"

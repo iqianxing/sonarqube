@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,73 +18,71 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import Helmet from 'react-helmet';
-import { Link } from 'react-router';
+import { Link, withRouter, WithRouterProps } from 'react-router';
+import { maxBy } from 'lodash';
+import Domain from './Domain';
 import Menu from './Menu';
 import Search from './Search';
-import Domain from './Domain';
-import { Domain as DomainType, fetchWebApi } from '../../../api/web-api';
 import ScreenPositionHelper from '../../../components/common/ScreenPositionHelper';
-import { getActionKey, isDomainPathActive, Query, serializeQuery, parseQuery } from '../utils';
-import { scrollToElement } from '../../../helpers/scrolling';
-import { translate } from '../../../helpers/l10n';
 import Suggestions from '../../../app/components/embed-docs-modal/Suggestions';
-import { RawQuery } from '../../../helpers/query';
+import { fetchWebApi } from '../../../api/web-api';
+import {
+  getActionKey,
+  isDomainPathActive,
+  Query,
+  serializeQuery,
+  parseQuery,
+  parseVersion
+} from '../utils';
+import { translate } from '../../../helpers/l10n';
+import { addSideBarClass, removeSideBarClass } from '../../../helpers/pages';
+import { scrollToElement } from '../../../helpers/scrolling';
 import '../styles/web-api.css';
 
-interface Props {
-  location: { pathname: string; query: RawQuery };
-  params: { splat?: string };
-}
+type Props = WithRouterProps;
 
 interface State {
-  domains: DomainType[];
+  domains: T.WebApi.Domain[];
 }
 
-export default class WebApiApp extends React.PureComponent<Props, State> {
+class WebApiApp extends React.PureComponent<Props, State> {
   mounted = false;
-
-  static contextTypes = {
-    router: PropTypes.object.isRequired
-  };
-
-  constructor(props: Props) {
-    super(props);
-    this.state = { domains: [] };
-  }
+  state: State = { domains: [] };
 
   componentDidMount() {
     this.mounted = true;
     this.fetchList();
-    const footer = document.getElementById('footer');
-    if (footer) {
-      footer.classList.add('page-footer-with-sidebar');
-    }
+    addSideBarClass();
   }
 
   componentDidUpdate() {
-    this.toggleInternalInitially();
+    this.enforceFlags();
     this.scrollToAction();
   }
 
   componentWillUnmount() {
     this.mounted = false;
-    const footer = document.getElementById('footer');
-    if (footer) {
-      footer.classList.remove('page-footer-with-sidebar');
-    }
+    removeSideBarClass();
   }
 
   fetchList() {
     fetchWebApi().then(
       domains => {
         if (this.mounted) {
-          this.setState({ domains });
+          this.setState({ domains: this.parseDomains(domains) });
         }
       },
       () => {}
     );
+  }
+
+  parseDomains(domains: any[]): T.WebApi.Domain[] {
+    return domains.map(domain => {
+      const deprecated = getLatestDeprecatedAction(domain);
+      const internal = !domain.actions.find((action: any) => !action.internal);
+      return { ...domain, deprecatedSince: deprecated && deprecated.deprecatedSince, internal };
+    });
   }
 
   scrollToAction = () => {
@@ -99,24 +97,23 @@ export default class WebApiApp extends React.PureComponent<Props, State> {
 
   updateQuery = (newQuery: Partial<Query>) => {
     const query = serializeQuery({ ...parseQuery(this.props.location.query), ...newQuery });
-    this.context.router.push({ pathname: this.props.location.pathname, query });
+    this.props.router.push({ pathname: this.props.location.pathname, query });
   };
 
-  toggleInternalInitially() {
+  enforceFlags() {
     const splat = this.props.params.splat || '';
     const { domains } = this.state;
     const query = parseQuery(this.props.location.query);
 
-    if (!query.internal && splat) {
-      const domain = domains.find(domain => domain.path.startsWith(splat));
-      if (domain) {
-        let action;
-        if (domain.path !== splat) {
-          action = domain.actions.find(action => getActionKey(domain.path, action.key) === splat);
-        }
-        if (domain.internal || (action && action.internal)) {
-          this.updateQuery({ internal: true });
-        }
+    const domain = domains.find(domain => splat.startsWith(domain.path));
+    if (domain) {
+      const action = domain.actions.find(action => getActionKey(domain.path, action.key) === splat);
+      const internal = Boolean(!query.internal && (domain.internal || (action && action.internal)));
+      const deprecated = Boolean(
+        !query.deprecated && (domain.deprecatedSince || (action && action.deprecatedSince))
+      );
+      if (internal || deprecated) {
+        this.updateQuery({ internal, deprecated });
       }
     }
   }
@@ -125,28 +122,29 @@ export default class WebApiApp extends React.PureComponent<Props, State> {
     this.updateQuery({ search });
   };
 
-  handleToggleInternal = () => {
+  toggleFlag(flag: 'deprecated' | 'internal', domainFlag: 'deprecatedSince' | 'internal') {
     const splat = this.props.params.splat || '';
-    const { router } = this.context;
     const { domains } = this.state;
     const domain = domains.find(domain => isDomainPathActive(domain.path, splat));
     const query = parseQuery(this.props.location.query);
-    const internal = !query.internal;
+    const value = !query[flag];
 
-    if (domain && domain.internal && !internal) {
-      router.push({
+    if (domain && domain[domainFlag] && !value) {
+      this.props.router.push({
         pathname: '/web_api',
-        query: { ...serializeQuery(query), internal: false }
+        query: serializeQuery({ ...query, [flag]: false })
       });
-      return;
+    } else {
+      this.updateQuery({ [flag]: value });
     }
+  }
 
-    this.updateQuery({ internal });
+  handleToggleInternal = () => {
+    this.toggleFlag('internal', 'internal');
   };
 
   handleToggleDeprecated = () => {
-    const query = parseQuery(this.props.location.query);
-    this.updateQuery({ deprecated: !query.deprecated });
+    this.toggleFlag('deprecated', 'deprecatedSince');
   };
 
   render() {
@@ -193,4 +191,21 @@ export default class WebApiApp extends React.PureComponent<Props, State> {
       </div>
     );
   }
+}
+
+export default withRouter(WebApiApp);
+
+/** Checks if all actions are deprecated, and returns the latest deprecated one */
+function getLatestDeprecatedAction(domain: Pick<T.WebApi.Domain, 'actions'>) {
+  const noVersion = { major: 0, minor: 0 };
+  const allActionsDeprecated = domain.actions.every(
+    ({ deprecatedSince }) => deprecatedSince !== undefined
+  );
+  const latestDeprecation =
+    allActionsDeprecated &&
+    maxBy(domain.actions, action => {
+      const version = (action.deprecatedSince && parseVersion(action.deprecatedSince)) || noVersion;
+      return version.major * 1024 + version.minor;
+    });
+  return latestDeprecation || undefined;
 }

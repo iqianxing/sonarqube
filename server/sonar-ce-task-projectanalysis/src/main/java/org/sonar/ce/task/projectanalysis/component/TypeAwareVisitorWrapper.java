@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -33,23 +33,18 @@ public class TypeAwareVisitorWrapper implements VisitorWrapper {
   }
 
   @Override
-  public void beforeComponent(Component component){
+  public void beforeComponent(Component component) {
     // Nothing to do
   }
 
   @Override
-  public void afterComponent(Component component){
+  public void afterComponent(Component component) {
     // Nothing to do
   }
 
   @Override
   public void visitProject(Component tree) {
     delegate.visitProject(tree);
-  }
-
-  @Override
-  public void visitModule(Component tree) {
-    delegate.visitModule(tree);
   }
 
   @Override

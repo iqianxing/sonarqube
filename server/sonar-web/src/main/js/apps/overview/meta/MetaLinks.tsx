@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,15 +21,14 @@ import * as React from 'react';
 import MetaLink from './MetaLink';
 import { orderLinks } from '../../projectLinks/utils';
 import { getProjectLinks } from '../../../api/projectLinks';
-import { LightComponent, ProjectLink } from '../../../app/types';
 import { translate } from '../../../helpers/l10n';
 
 interface Props {
-  component: LightComponent;
+  component: T.LightComponent;
 }
 
 interface State {
-  links?: ProjectLink[];
+  links?: T.ProjectLink[];
 }
 
 export default class MetaLinks extends React.PureComponent<Props, State> {

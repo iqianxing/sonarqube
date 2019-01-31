@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,7 +34,7 @@ import org.sonar.db.DbSession;
 import org.sonar.db.DbTester;
 import org.sonar.db.user.GroupDto;
 import org.sonar.db.user.UserDto;
-import org.sonar.server.authentication.LocalAuthentication;
+import org.sonar.server.authentication.CredentialsLocalAuthentication;
 import org.sonar.server.es.EsTester;
 import org.sonar.server.exceptions.ForbiddenException;
 import org.sonar.server.organization.DefaultOrganizationProvider;
@@ -44,7 +44,6 @@ import org.sonar.server.organization.TestOrganizationFlags;
 import org.sonar.server.tester.UserSessionRule;
 import org.sonar.server.user.NewUserNotifier;
 import org.sonar.server.user.UserUpdater;
-import org.sonar.server.user.index.UserIndex;
 import org.sonar.server.user.index.UserIndexDefinition;
 import org.sonar.server.user.index.UserIndexer;
 import org.sonar.server.user.ws.CreateAction.CreateRequest;
@@ -56,13 +55,13 @@ import org.sonarqube.ws.Users.CreateWsResponse.User;
 
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
+import static java.util.Optional.ofNullable;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.elasticsearch.index.query.QueryBuilders.boolQuery;
 import static org.elasticsearch.index.query.QueryBuilders.termQuery;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.sonar.core.util.Protobuf.setNullable;
 import static org.sonar.db.user.UserTesting.newUserDto;
 import static org.sonar.server.user.index.UserIndexDefinition.FIELD_EMAIL;
 import static org.sonar.server.user.index.UserIndexDefinition.FIELD_LOGIN;
@@ -84,16 +83,15 @@ public class CreateActionTest {
   @Rule
   public ExpectedException expectedException = ExpectedException.none();
 
-  private UserIndex index = new UserIndex(es.client(), System2.INSTANCE);
   private UserIndexer userIndexer = new UserIndexer(db.getDbClient(), es.client());
   private GroupDto defaultGroupInDefaultOrg;
   private DefaultOrganizationProvider defaultOrganizationProvider = TestDefaultOrganizationProvider.from(db);
   private TestOrganizationFlags organizationFlags = TestOrganizationFlags.standalone();
   private OrganizationUpdater organizationUpdater = mock(OrganizationUpdater.class);
-  private LocalAuthentication localAuthentication = new LocalAuthentication(db.getDbClient());
+  private CredentialsLocalAuthentication localAuthentication = new CredentialsLocalAuthentication(db.getDbClient());
   private WsActionTester tester = new WsActionTester(new CreateAction(
     db.getDbClient(),
-    new UserUpdater(mock(NewUserNotifier.class), db.getDbClient(), userIndexer, organizationFlags, defaultOrganizationProvider,
+    new UserUpdater(system2, mock(NewUserNotifier.class), db.getDbClient(), userIndexer, organizationFlags, defaultOrganizationProvider,
       organizationUpdater, new DefaultGroupFinder(db.getDbClient()), settings.asConfig(), localAuthentication),
     userSessionRule));
 
@@ -303,6 +301,19 @@ public class CreateActionTest {
   }
 
   @Test
+  public void fail_when_login_is_too_short() {
+    logInAsSystemAdministrator();
+
+    expectedException.expect(IllegalArgumentException.class);
+    expectedException.expectMessage("'login' length (1) is shorter than the minimum authorized (2)");
+    call(CreateRequest.builder()
+      .setLogin("a")
+      .setName("John")
+      .setPassword("1234")
+      .build());
+  }
+
+  @Test
   public void fail_when_missing_name() {
     logInAsSystemAdministrator();
 
@@ -358,7 +369,7 @@ public class CreateActionTest {
   }
 
   @Test
-  public void throw_ForbiddenException_if_not_system_administrator() throws Exception {
+  public void throw_ForbiddenException_if_not_system_administrator() {
     userSessionRule.logIn().setNonSystemAdministrator();
 
     expectedException.expect(ForbiddenException.class);
@@ -399,11 +410,11 @@ public class CreateActionTest {
 
   private CreateWsResponse call(CreateRequest createRequest) {
     TestRequest request = tester.newRequest();
-    setNullable(createRequest.getLogin(), e -> request.setParam("login", e));
-    setNullable(createRequest.getName(), e -> request.setParam("name", e));
-    setNullable(createRequest.getEmail(), e -> request.setParam("email", e));
-    setNullable(createRequest.getPassword(), e -> request.setParam("password", e));
-    setNullable(createRequest.getScmAccounts(), e -> request.setMultiParam("scmAccount", e));
+    ofNullable(createRequest.getLogin()).ifPresent(e4 -> request.setParam("login", e4));
+    ofNullable(createRequest.getName()).ifPresent(e3 -> request.setParam("name", e3));
+    ofNullable(createRequest.getEmail()).ifPresent(e2 -> request.setParam("email", e2));
+    ofNullable(createRequest.getPassword()).ifPresent(e1 -> request.setParam("password", e1));
+    ofNullable(createRequest.getScmAccounts()).ifPresent(e -> request.setMultiParam("scmAccount", e));
     request.setParam("local", createRequest.isLocal() ? "true" : "false");
     return request.executeProtobuf(CreateWsResponse.class);
   }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -66,7 +66,8 @@ public class UpdateAction implements CustomMeasuresWsAction {
       .setDescription("Update a custom measure. Value and/or description must be provided<br />" +
         "Requires 'Administer System' permission or 'Administer' permission on the project.")
       .setHandler(this)
-      .setSince("5.2");
+      .setSince("5.2")
+      .setDeprecatedSince("7.4");
 
     action.createParam(PARAM_ID)
       .setRequired(true)

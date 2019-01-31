@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,7 +17,7 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
-import { isBitbucket, isGithub, isVSTS, sanitizeAlmId } from '../almIntegrations';
+import { isBitbucket, isGithub, isPersonal, isVSTS, sanitizeAlmId } from '../almIntegrations';
 
 it('#isBitbucket', () => {
   expect(isBitbucket('bitbucket')).toBeTruthy();
@@ -33,6 +33,15 @@ it('#isGithub', () => {
 it('#isVSTS', () => {
   expect(isVSTS('microsoft')).toBeTruthy();
   expect(isVSTS('github')).toBeFalsy();
+});
+
+it('#isPersonal', () => {
+  expect(
+    isPersonal({ key: 'foo', name: 'Foo', personal: true, privateRepos: 0, publicRepos: 3 })
+  ).toBeTruthy();
+  expect(
+    isPersonal({ key: 'foo', name: 'Foo', personal: false, privateRepos: 0, publicRepos: 3 })
+  ).toBeFalsy();
 });
 
 it('#sanitizeAlmId', () => {

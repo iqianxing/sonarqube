@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -99,13 +99,6 @@ public class ComputeQProfileMeasureStep implements ComputationStep {
     @Override
     public void visitProject(Component project, Path<QProfiles> path) {
       addMeasure(project, path.current());
-    }
-
-    @Override
-    public void visitModule(Component module, Path<QProfiles> path) {
-      QProfiles qProfiles = path.current();
-      addMeasure(module, path.current());
-      path.parent().add(qProfiles);
     }
 
     private void addMeasure(Component component, QProfiles qProfiles) {

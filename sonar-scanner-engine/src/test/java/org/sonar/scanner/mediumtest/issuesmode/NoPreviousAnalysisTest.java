@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,7 +29,7 @@ import org.junit.rules.TemporaryFolder;
 import org.sonar.api.CoreProperties;
 import org.sonar.api.utils.log.LogTester;
 import org.sonar.scanner.mediumtest.ScannerMediumTester;
-import org.sonar.scanner.mediumtest.TaskResult;
+import org.sonar.scanner.mediumtest.AnalysisResult;
 import org.sonar.xoo.XooPlugin;
 import org.sonar.xoo.rule.XooRulesDefinition;
 
@@ -53,10 +53,10 @@ public class NoPreviousAnalysisTest {
 
   @Test
   public void testIssueTrackingWithIssueOnEmptyFile() throws Exception {
-    File projectDir = copyProject("/mediumtest/xoo/sample");
+    File projectDir = copyProject("test-resources/mediumtest/xoo/sample");
 
-    TaskResult result = tester
-      .newScanTask(new File(projectDir, "sonar-project.properties"))
+    AnalysisResult result = tester
+      .newAnalysis(new File(projectDir, "sonar-project.properties"))
       .execute();
 
     assertThat(result.trackedIssues()).hasSize(14);
@@ -65,7 +65,7 @@ public class NoPreviousAnalysisTest {
 
   private File copyProject(String path) throws Exception {
     File projectDir = temp.newFolder();
-    File originalProjectDir = new File(IssueModeAndReportsMediumTest.class.getResource(path).toURI());
+    File originalProjectDir = new File(path);
     FileUtils.copyDirectory(originalProjectDir, projectDir, FileFilterUtils.notFileFilter(FileFilterUtils.nameFileFilter(".sonar")));
     return projectDir;
   }

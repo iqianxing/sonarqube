@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -39,8 +39,6 @@ public class QualityGatesWsParameters {
   public static final String PARAM_QUERY = "query";
   public static final String PARAM_NAME = "name";
   public static final String PARAM_ERROR = "error";
-  public static final String PARAM_WARNING = "warning";
-  public static final String PARAM_PERIOD = "period";
   public static final String PARAM_OPERATOR = "op";
   public static final String PARAM_METRIC = "metric";
   public static final String PARAM_GATE_ID = "gateId";

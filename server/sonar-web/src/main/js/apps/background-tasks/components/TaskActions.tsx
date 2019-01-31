@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,46 +22,76 @@ import ScannerContext from './ScannerContext';
 import Stacktrace from './Stacktrace';
 import { STATUSES } from '../constants';
 import { translate, translateWithParameters } from '../../../helpers/l10n';
-import { Task } from '../types';
 import ActionsDropdown, { ActionsDropdownItem } from '../../../components/controls/ActionsDropdown';
+import { lazyLoad } from '../../../components/lazyLoad';
+import ConfirmModal from '../../../components/controls/ConfirmModal';
+
+const AnalysisWarningsModal = lazyLoad(
+  () => import('../../../components/common/AnalysisWarningsModal'),
+  'AnalysisWarningsModal'
+);
 
 interface Props {
-  component?: {};
-  onCancelTask: (task: Task) => void;
-  onFilterTask: (task: Task) => void;
-  task: Task;
+  component?: unknown;
+  onCancelTask: (task: T.Task) => Promise<void>;
+  onFilterTask: (task: T.Task) => void;
+  task: T.Task;
 }
 
 interface State {
+  cancelTaskOpen: boolean;
   scannerContextOpen: boolean;
   stacktraceOpen: boolean;
+  warningsOpen: boolean;
 }
 
 export default class TaskActions extends React.PureComponent<Props, State> {
   state: State = {
+    cancelTaskOpen: false,
     scannerContextOpen: false,
-    stacktraceOpen: false
+    stacktraceOpen: false,
+    warningsOpen: false
   };
 
   handleFilterClick = () => {
     this.props.onFilterTask(this.props.task);
   };
 
+  handleCancelTask = () => {
+    return this.props.onCancelTask(this.props.task);
+  };
+
   handleCancelClick = () => {
-    this.props.onCancelTask(this.props.task);
+    this.setState({ cancelTaskOpen: true });
   };
 
   handleShowScannerContextClick = () => {
     this.setState({ scannerContextOpen: true });
   };
 
-  closeScannerContext = () => this.setState({ scannerContextOpen: false });
+  closeCancelTask = () => {
+    this.setState({ cancelTaskOpen: false });
+  };
+
+  closeScannerContext = () => {
+    this.setState({ scannerContextOpen: false });
+  };
 
   handleShowStacktraceClick = () => {
     this.setState({ stacktraceOpen: true });
   };
 
-  closeStacktrace = () => this.setState({ stacktraceOpen: false });
+  closeStacktrace = () => {
+    this.setState({ stacktraceOpen: false });
+  };
+
+  handleShowWarningsClick = () => {
+    this.setState({ warningsOpen: true });
+  };
+
+  closeWarnings = () => {
+    this.setState({ warningsOpen: false });
+  };
 
   render() {
     const { component, task } = this.props;
@@ -69,7 +99,9 @@ export default class TaskActions extends React.PureComponent<Props, State> {
     const canFilter = component === undefined;
     const canCancel = task.status === STATUSES.PENDING;
     const canShowStacktrace = task.errorMessage !== undefined;
-    const hasActions = canFilter || canCancel || task.hasScannerContext || canShowStacktrace;
+    const canShowWarnings = task.warningCount !== undefined && task.warningCount > 0;
+    const hasActions =
+      canFilter || canCancel || task.hasScannerContext || canShowStacktrace || canShowWarnings;
 
     if (!hasActions) {
       return <td>&nbsp;</td>;
@@ -109,13 +141,36 @@ export default class TaskActions extends React.PureComponent<Props, State> {
               {translate('background_tasks.show_stacktrace')}
             </ActionsDropdownItem>
           )}
+          {canShowWarnings && (
+            <ActionsDropdownItem
+              className="js-task-show-warnings"
+              onClick={this.handleShowWarningsClick}>
+              {translate('background_tasks.show_warnings')}
+            </ActionsDropdownItem>
+          )}
         </ActionsDropdown>
+
+        {this.state.cancelTaskOpen && (
+          <ConfirmModal
+            cancelButtonText={translate('close')}
+            confirmButtonText={translate('background_tasks.cancel_task')}
+            header={translate('background_tasks.cancel_task')}
+            isDestructive={true}
+            onClose={this.closeCancelTask}
+            onConfirm={this.handleCancelTask}>
+            {translate('background_tasks.cancel_task.text')}
+          </ConfirmModal>
+        )}
 
         {this.state.scannerContextOpen && (
           <ScannerContext onClose={this.closeScannerContext} task={task} />
         )}
 
         {this.state.stacktraceOpen && <Stacktrace onClose={this.closeStacktrace} task={task} />}
+
+        {this.state.warningsOpen && (
+          <AnalysisWarningsModal onClose={this.closeWarnings} taskId={task.id} />
+        )}
       </td>
     );
   }

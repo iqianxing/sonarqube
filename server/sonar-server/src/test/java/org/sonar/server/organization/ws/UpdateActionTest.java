@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -82,6 +82,8 @@ public class UpdateActionTest {
     assertThat(action.param("name"))
       .matches(param -> !param.isRequired())
       .matches(param -> "Foo Company".equals(param.exampleValue()))
+      .matches(param -> param.minimumLength().equals(1))
+      .matches(param -> param.maximumLength().equals(255))
       .matches(param -> param.description() != null);
     assertThat(action.param("description"))
       .matches(param -> !param.isRequired())
@@ -173,32 +175,11 @@ public class UpdateActionTest {
   }
 
   @Test
-  public void request_fails_if_name_is_empty() {
-    userSession.logIn();
-
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("Name must not be empty");
-
-    executeKeyRequest(SOME_KEY, "");
-  }
-
-  @Test
   public void request_succeeds_if_name_is_two_chars_long() {
     OrganizationDto org = mockForSuccessfulUpdate(DATE_1, DATE_2);
     logInAsAdministrator(org);
 
     verifyResponseAndDb(executeKeyRequest(org.getKey(), "ab"), org, "ab", DATE_2);
-  }
-
-  @Test
-  public void request_fails_if_name_is_65_chars_long() {
-    userSession.logIn();
-
-    expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("'name' length (65) is longer than the maximum authorized (64)");
-
-
-    executeKeyRequest(SOME_KEY, STRING_65_CHARS_LONG);
   }
 
   @Test

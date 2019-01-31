@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -32,7 +32,7 @@ import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 import org.sonar.api.rule.RuleKey;
 import org.sonar.scanner.mediumtest.ScannerMediumTester;
-import org.sonar.scanner.mediumtest.TaskResult;
+import org.sonar.scanner.mediumtest.AnalysisResult;
 import org.sonar.scanner.protocol.output.ScannerReport.Issue;
 import org.sonar.scanner.rule.LoadedActiveRule;
 import org.sonar.xoo.XooPlugin;
@@ -66,7 +66,7 @@ public class ChecksMediumTest {
     File xooFile = new File(srcDir, "sample.xoo");
     FileUtils.write(xooFile, "foo\nbar");
 
-    TaskResult result = tester.newTask()
+    AnalysisResult result = tester.newAnalysis()
       .properties(ImmutableMap.<String, String>builder()
         .put("sonar.task", "scan")
         .put("sonar.projectBaseDir", baseDir.getAbsolutePath())
@@ -79,11 +79,12 @@ public class ChecksMediumTest {
       .execute();
 
     List<Issue> issues = result.issuesFor(result.inputFile("src/sample.xoo"));
+    // If the message is the rule name. it's set by the CE. See SONAR-11531
     assertThat(issues)
       .extracting("msg", "textRange.startLine")
       .containsOnly(
-        tuple("A template rule", 1),
-        tuple("Another template rule", 2));
+        tuple("", 1),
+        tuple("", 2));
 
   }
 

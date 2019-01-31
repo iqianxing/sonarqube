@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,16 +19,15 @@
  */
 import * as React from 'react';
 import MetaTagsSelector from './MetaTagsSelector';
+import Dropdown from '../../../components/controls/Dropdown';
+import TagsList from '../../../components/tags/TagsList';
+import { ButtonLink } from '../../../components/ui/buttons';
+import { PopupPlacement } from '../../../components/ui/popups';
 import { setProjectTags } from '../../../api/components';
 import { translate } from '../../../helpers/l10n';
-import TagsList from '../../../components/tags/TagsList';
-import { Component } from '../../../app/types';
-import { Button } from '../../../components/ui/buttons';
-import Dropdown from '../../../components/controls/Dropdown';
-import { PopupPlacement } from '../../../components/ui/popups';
 
 interface Props {
-  component: Component;
+  component: T.Component;
   onComponentChange: (changes: {}) => void;
 }
 
@@ -72,12 +71,9 @@ export default class MetaTags extends React.PureComponent<Props> {
               />
             }
             overlayPlacement={PopupPlacement.BottomLeft}>
-            <Button
-              className="button-link"
-              innerRef={tagsList => (this.tagsList = tagsList)}
-              stopPropagation={true}>
+            <ButtonLink innerRef={tagsList => (this.tagsList = tagsList)} stopPropagation={true}>
               <TagsList allowUpdate={true} tags={tags.length ? tags : [translate('no_tags')]} />
-            </Button>
+            </ButtonLink>
           </Dropdown>
         </div>
       );

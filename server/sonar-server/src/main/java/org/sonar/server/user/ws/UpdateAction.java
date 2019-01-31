@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -74,7 +74,7 @@ public class UpdateAction implements UsersWsAction {
   @Override
   public void define(WebService.NewController controller) {
     WebService.NewAction action = controller.createAction(ACTION_UPDATE)
-      .setDescription("Update a user. If a deactivated user account exists with the given login, it will be reactivated. " +
+      .setDescription("Update a user.<br/>" +
         "Requires Administer System permission")
       .setSince("3.7")
       .setChangelog(new Change("5.2", "User's password can only be changed using the 'change_password' action."))

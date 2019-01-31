@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -55,7 +55,8 @@ export default function Step(props: Props) {
       <div className="boxed-group-header">
         <h2>{props.stepTitle}</h2>
       </div>
-      {props.open ? props.renderForm() : <div className="boxed-group-inner" />}
+      {!props.open && <div className="boxed-group-inner" />}
+      <div className={classNames({ hidden: !props.open })}>{props.renderForm()}</div>
     </div>
   );
 }

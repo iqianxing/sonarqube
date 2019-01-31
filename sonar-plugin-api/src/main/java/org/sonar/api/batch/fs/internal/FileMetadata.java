@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,11 +26,8 @@ import java.io.InputStreamReader;
 import java.io.Reader;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
-
 import javax.annotation.Nullable;
 import javax.annotation.concurrent.Immutable;
-
-import org.sonar.api.batch.ScannerSide;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.internal.charhandler.CharHandler;
 import org.sonar.api.batch.fs.internal.charhandler.FileHashComputer;
@@ -42,7 +39,6 @@ import org.sonar.api.batch.fs.internal.charhandler.LineOffsetCounter;
  * Computes hash of files. Ends of Lines are ignored, so files with
  * same content but different EOL encoding have the same hash.
  */
-@ScannerSide
 @Immutable
 public class FileMetadata {
   private static final char LINE_FEED = '\n';
@@ -64,7 +60,8 @@ public class FileMetadata {
       CharHandler[] handlers = {lineCounter, fileHashComputer, lineOffsetCounter};
       readFile(stream, encoding, filePath, handlers);
     }
-    return new Metadata(lineCounter.lines(), lineCounter.nonBlankLines(), fileHashComputer.getHash(), lineOffsetCounter.getOriginalLineOffsets(),
+    return new Metadata(lineCounter.lines(), lineCounter.nonBlankLines(), fileHashComputer.getHash(), lineOffsetCounter.getOriginalLineStartOffsets(),
+      lineOffsetCounter.getOriginalLineEndOffsets(),
       lineOffsetCounter.getLastValidOffset());
   }
 
@@ -86,7 +83,8 @@ public class FileMetadata {
     } catch (IOException e) {
       throw new IllegalStateException("Should never occur", e);
     }
-    return new Metadata(lineCounter.lines(), lineCounter.nonBlankLines(), fileHashComputer.getHash(), lineOffsetCounter.getOriginalLineOffsets(),
+    return new Metadata(lineCounter.lines(), lineCounter.nonBlankLines(), fileHashComputer.getHash(), lineOffsetCounter.getOriginalLineStartOffsets(),
+      lineOffsetCounter.getOriginalLineEndOffsets(),
       lineOffsetCounter.getLastValidOffset());
   }
 

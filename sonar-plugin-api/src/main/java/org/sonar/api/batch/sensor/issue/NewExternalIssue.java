@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,8 +34,22 @@ import org.sonar.api.rules.RuleType;
 public interface NewExternalIssue {
   /**
    * The {@link RuleKey} of the issue.
+   * @deprecated since 7.4. It is misleading, because of the "external_" prefix that is added on server side. Use {@link #engineId(String)} and {@link #ruleId(String)}
    */
+  @Deprecated
   NewExternalIssue forRule(RuleKey ruleKey);
+
+  /**
+   * Unique identifier of the external analyzer (e.g. eslint, pmd, ...)
+   * @since 7.4
+   */
+  NewExternalIssue engineId(String engineId);
+
+  /**
+   * Unique rule identifier for a given {@link #engineId(String)}
+   * @since 7.4
+   */
+  NewExternalIssue ruleId(String ruleId);
 
   /**
    * Type of issue.

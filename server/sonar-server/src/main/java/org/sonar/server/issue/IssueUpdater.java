@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -50,7 +50,7 @@ public class IssueUpdater {
   private final IssueChangePostProcessor issueChangePostProcessor;
 
   public IssueUpdater(DbClient dbClient, WebIssueStorage issueStorage, NotificationManager notificationService,
-                      IssueChangePostProcessor issueChangePostProcessor) {
+    IssueChangePostProcessor issueChangePostProcessor) {
     this.dbClient = dbClient;
     this.issueStorage = issueStorage;
     this.notificationService = notificationService;
@@ -112,7 +112,7 @@ public class IssueUpdater {
   private ComponentDto getComponent(DbSession dbSession, DefaultIssue issue, @Nullable String componentUuid) {
     String issueKey = issue.key();
     checkState(componentUuid != null, "Issue '%s' has no component", issueKey);
-    ComponentDto component = dbClient.componentDao().selectByUuid(dbSession, componentUuid).orNull();
+    ComponentDto component = dbClient.componentDao().selectByUuid(dbSession, componentUuid).orElse(null);
     checkState(component != null, "Component uuid '%s' for issue key '%s' cannot be found", componentUuid, issueKey);
     return component;
   }

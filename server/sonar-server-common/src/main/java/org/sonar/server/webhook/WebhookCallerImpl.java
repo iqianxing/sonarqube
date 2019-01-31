@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -64,7 +64,12 @@ public class WebhookCallerImpl implements WebhookCaller {
       .setWebhook(webhook);
 
     try {
-      Request request = buildHttpRequest(webhook, payload);
+      HttpUrl url = HttpUrl.parse(webhook.getUrl());
+      if (url == null) {
+        throw new IllegalArgumentException("Webhook URL is not valid: " + webhook.getUrl());
+      }
+      builder.setEffectiveUrl(HttpUrlHelper.obfuscateCredentials(webhook.getUrl(), url));
+      Request request = buildHttpRequest(url, payload);
       try (Response response = execute(request)) {
         builder.setHttpStatus(response.code());
       }
@@ -77,11 +82,7 @@ public class WebhookCallerImpl implements WebhookCaller {
       .build();
   }
 
-  private static Request buildHttpRequest(Webhook webhook, WebhookPayload payload) {
-    HttpUrl url = HttpUrl.parse(webhook.getUrl());
-    if (url == null) {
-      throw new IllegalArgumentException("Webhook URL is not valid: " + webhook.getUrl());
-    }
+  private static Request buildHttpRequest(HttpUrl url, WebhookPayload payload) {
     Request.Builder request = new Request.Builder();
     request.url(url);
     request.header(PROJECT_KEY_HEADER, payload.getProjectKey());

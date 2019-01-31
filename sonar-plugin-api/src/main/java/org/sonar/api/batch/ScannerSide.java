@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -44,7 +44,9 @@ import java.lang.annotation.Target;
  * </pre>
  *
  * @since 6.0
+ * @deprecated since 7.6 use {@link org.sonar.api.scanner.ScannerSide} that will move the component to the project container
  */
+@Deprecated
 @Documented
 @Retention(RetentionPolicy.RUNTIME)
 @Target(ElementType.TYPE)

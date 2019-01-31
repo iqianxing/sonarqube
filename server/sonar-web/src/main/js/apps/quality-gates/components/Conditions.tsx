@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,23 +23,26 @@ import Condition from './Condition';
 import ConditionModal from './ConditionModal';
 import DocTooltip from '../../../components/docs/DocTooltip';
 import { translate, getLocalizedMetricName } from '../../../helpers/l10n';
-import { Condition as ICondition, Metric, QualityGate } from '../../../app/types';
 import ModalButton from '../../../components/controls/ModalButton';
 import { Button } from '../../../components/ui/buttons';
+import { Alert } from '../../../components/ui/Alert';
 
 interface Props {
   canEdit: boolean;
-  conditions: ICondition[];
-  metrics: { [key: string]: Metric };
-  onAddCondition: (condition: ICondition) => void;
-  onSaveCondition: (newCondition: ICondition, oldCondition: ICondition) => void;
-  onRemoveCondition: (Condition: ICondition) => void;
+  conditions: T.Condition[];
+  metrics: { [key: string]: T.Metric };
+  onAddCondition: (condition: T.Condition) => void;
+  onSaveCondition: (newCondition: T.Condition, oldCondition: T.Condition) => void;
+  onRemoveCondition: (Condition: T.Condition) => void;
   organization?: string;
-  qualityGate: QualityGate;
+  qualityGate: T.QualityGate;
 }
 
+const FORBIDDEN_METRIC_TYPES = ['DATA', 'DISTRIB', 'STRING', 'BOOL'];
+const FORBIDDEN_METRICS = ['alert_status', 'releasability_rating'];
+
 export default class Conditions extends React.PureComponent<Props> {
-  getConditionKey = (condition: ICondition, index: number) => {
+  getConditionKey = (condition: T.Condition, index: number) => {
     return condition.id ? condition.id : `new-${index}`;
   };
 
@@ -53,12 +56,10 @@ export default class Conditions extends React.PureComponent<Props> {
       condition => metrics[condition.metric] && metrics[condition.metric].name
     );
 
-    const duplicates: ICondition[] = [];
+    const duplicates: T.Condition[] = [];
     const savedConditions = existingConditions.filter(condition => condition.id != null);
     savedConditions.forEach(condition => {
-      const sameCount = savedConditions.filter(
-        sample => sample.metric === condition.metric && sample.period === condition.period
-      ).length;
+      const sameCount = savedConditions.filter(sample => sample.metric === condition.metric).length;
       if (sameCount > 1) {
         duplicates.push(condition);
       }
@@ -71,7 +72,10 @@ export default class Conditions extends React.PureComponent<Props> {
 
     const availableMetrics = differenceWith(
       map(metrics, metric => metric).filter(
-        metric => !metric.hidden && !['DATA', 'DISTRIB'].includes(metric.type)
+        metric =>
+          !metric.hidden &&
+          !FORBIDDEN_METRIC_TYPES.includes(metric.type) &&
+          !FORBIDDEN_METRICS.includes(metric.key)
       ),
       conditions,
       (metric, condition) => metric.key === condition.metric
@@ -109,14 +113,14 @@ export default class Conditions extends React.PureComponent<Props> {
         <div className="big-spacer-bottom">{translate('quality_gates.introduction')}</div>
 
         {uniqDuplicates.length > 0 && (
-          <div className="alert alert-warning">
+          <Alert variant="warning">
             <p>{translate('quality_gates.duplicated_conditions')}</p>
             <ul className="list-styled spacer-top">
               {uniqDuplicates.map(d => (
                 <li key={d.metric.key}>{getLocalizedMetricName(d.metric)}</li>
               ))}
             </ul>
-          </div>
+          </Alert>
         )}
 
         {sortedConditions.length ? (
@@ -132,9 +136,7 @@ export default class Conditions extends React.PureComponent<Props> {
                     />
                   </div>
                 </th>
-                <th className="thin nowrap">{translate('quality_gates.conditions.new_code')}</th>
                 <th className="thin nowrap">{translate('quality_gates.conditions.operator')}</th>
-                <th className="thin nowrap">{translate('quality_gates.conditions.warning')}</th>
                 <th className="thin nowrap">{translate('quality_gates.conditions.error')}</th>
                 {canEdit && <th />}
               </tr>

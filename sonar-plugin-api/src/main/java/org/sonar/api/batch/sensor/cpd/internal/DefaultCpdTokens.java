@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,18 +19,14 @@
  */
 package org.sonar.api.batch.sensor.cpd.internal;
 
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
-import org.sonar.api.CoreProperties;
 import org.sonar.api.batch.fs.InputFile;
 import org.sonar.api.batch.fs.TextRange;
-import org.sonar.api.batch.fs.internal.PathPattern;
+import org.sonar.api.batch.fs.internal.DefaultInputFile;
 import org.sonar.api.batch.sensor.cpd.NewCpdTokens;
 import org.sonar.api.batch.sensor.internal.DefaultStorable;
 import org.sonar.api.batch.sensor.internal.SensorStorage;
-import org.sonar.api.config.Configuration;
-import org.sonar.duplications.internal.pmd.TokensLine;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.Collections.unmodifiableList;
@@ -38,30 +34,21 @@ import static java.util.Objects.requireNonNull;
 
 public class DefaultCpdTokens extends DefaultStorable implements NewCpdTokens {
 
-  private final Configuration config;
-  private final ArrayList<TokensLine> result = new ArrayList<>();
+  private final List<TokensLine> result = new ArrayList<>();
   private InputFile inputFile;
   private int startLine = Integer.MIN_VALUE;
   private int startIndex = 0;
   private int currentIndex = 0;
   private StringBuilder sb = new StringBuilder();
   private TextRange lastRange;
-  private boolean excluded;
 
-  public DefaultCpdTokens(Configuration config, SensorStorage storage) {
+  public DefaultCpdTokens(SensorStorage storage) {
     super(storage);
-    this.config = config;
   }
 
   @Override
   public DefaultCpdTokens onFile(InputFile inputFile) {
     this.inputFile = requireNonNull(inputFile, "file can't be null");
-    String[] cpdExclusions = config.getStringArray(CoreProperties.CPD_EXCLUSIONS);
-    for (PathPattern cpdExclusion : PathPattern.create(cpdExclusions)) {
-      if (cpdExclusion.match(inputFile.path(), Paths.get(inputFile.relativePath()))) {
-        this.excluded = true;
-      }
-    }
     return this;
   }
 
@@ -86,7 +73,7 @@ public class DefaultCpdTokens extends DefaultStorable implements NewCpdTokens {
     requireNonNull(range, "Range should not be null");
     requireNonNull(image, "Image should not be null");
     checkInputFileNotNull();
-    if (excluded) {
+    if (isExcludedForDuplication()) {
       return this;
     }
     checkState(lastRange == null || lastRange.end().compareTo(range.start()) <= 0,
@@ -107,6 +94,10 @@ public class DefaultCpdTokens extends DefaultStorable implements NewCpdTokens {
     return this;
   }
 
+  private boolean isExcludedForDuplication() {
+    return ((DefaultInputFile) inputFile).isExcludedForDuplication();
+  }
+
   public List<TokensLine> getTokenLines() {
     return unmodifiableList(new ArrayList<>(result));
   }
@@ -121,7 +112,7 @@ public class DefaultCpdTokens extends DefaultStorable implements NewCpdTokens {
   @Override
   protected void doSave() {
     checkState(inputFile != null, "Call onFile() first");
-    if (excluded) {
+    if (isExcludedForDuplication()) {
       return;
     }
     addNewTokensLine(result, startIndex, currentIndex, startLine, sb);

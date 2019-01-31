@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,8 @@
 package org.sonar.scanner.mediumtest.issuesmode;
 
 import com.google.common.collect.ImmutableMap;
-import com.google.common.io.Resources;
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -49,9 +47,9 @@ import org.sonar.api.CoreProperties;
 import org.sonar.api.batch.fs.internal.FileMetadata;
 import org.sonar.api.utils.log.LogTester;
 import org.sonar.scanner.issue.tracking.TrackedIssue;
+import org.sonar.scanner.mediumtest.AnalysisResult;
 import org.sonar.scanner.mediumtest.ScannerMediumTester;
-import org.sonar.scanner.mediumtest.ScannerMediumTester.TaskBuilder;
-import org.sonar.scanner.mediumtest.TaskResult;
+import org.sonar.scanner.mediumtest.ScannerMediumTester.AnalysisBuilder;
 import org.sonar.scanner.protocol.Constants.Severity;
 import org.sonar.scanner.protocol.input.ScannerInput.ServerIssue;
 import org.sonar.scanner.repository.FileData;
@@ -97,16 +95,16 @@ public class ScanOnlyChangedTest {
     .addActiveRule("xoo", "OneIssuePerModule", null, "OneIssuePerModule", "MAJOR", null, "xoo");
 
   @Before
-  public void prepare() throws IOException, URISyntaxException {
+  public void prepare() throws IOException {
     String filePath = "xources/hello/HelloJava.xoo";
-    Path path = Paths.get(Resources.getResource("mediumtest/xoo/sample/" + filePath).toURI());
+    Path path = Paths.get("test-resources/mediumtest/xoo/sample/" + filePath);
     String md5sum = new FileMetadata()
       .readMetadata(Files.newInputStream(path), StandardCharsets.UTF_8, filePath)
       .hash();
 
     tester
       // this will cause the file to have status==SAME
-      .addFileData(projectKey, filePath, new FileData(md5sum, null))
+      .addFileData(filePath, new FileData(md5sum, null))
       .setPreviousAnalysisDate(new Date())
       // Existing issue that is copied
       .mockServerIssue(ServerIssue.newBuilder().setKey("xyz")
@@ -134,25 +132,25 @@ public class ScanOnlyChangedTest {
 
   private File copyProject(String path) throws Exception {
     File projectDir = temp.newFolder();
-    File originalProjectDir = new File(IssueModeAndReportsMediumTest.class.getResource(path).toURI());
+    File originalProjectDir = new File(path);
     FileUtils.copyDirectory(originalProjectDir, projectDir, FileFilterUtils.notFileFilter(FileFilterUtils.nameFileFilter(".sonar")));
     return projectDir;
   }
 
   @Test
   public void testScanOnlyChangedFiles() throws Exception {
-    File projectDir = copyProject("/mediumtest/xoo/sample");
+    File projectDir = copyProject("test-resources/mediumtest/xoo/sample");
 
-    TaskBuilder taskBuilder = tester
-      .newScanTask(new File(projectDir, "sonar-project.properties"))
+    AnalysisBuilder analysisBuilder = tester
+      .newAnalysis(new File(projectDir, "sonar-project.properties"))
       .property("sonar.report.export.path", "report.json");
     if (branch) {
-      taskBuilder.property("sonar.branch", "branch");
+      analysisBuilder.property("sonar.branch", "branch");
     } else {
-      taskBuilder.property("sonar.projectKey", projectKey);
+      analysisBuilder.property("sonar.projectKey", projectKey);
     }
 
-    TaskResult result = taskBuilder.execute();
+    AnalysisResult result = analysisBuilder.execute();
     /*
      * We have:
      * 6 new issues per line (open) in helloscala.xoo
@@ -169,18 +167,18 @@ public class ScanOnlyChangedTest {
 
   @Test
   public void testScanAll() throws Exception {
-    File projectDir = copyProject("/mediumtest/xoo/sample");
+    File projectDir = copyProject("test-resources/mediumtest/xoo/sample");
 
-    TaskBuilder taskBuilder = tester
-      .newScanTask(new File(projectDir, "sonar-project.properties"))
+    AnalysisBuilder analysisBuilder = tester
+      .newAnalysis(new File(projectDir, "sonar-project.properties"))
       .property("sonar.scanAllFiles", "true");
     if (branch) {
-      taskBuilder.property("sonar.branch", "branch");
+      analysisBuilder.property("sonar.branch", "branch");
     } else {
-      taskBuilder.property("sonar.projectKey", projectKey);
+      analysisBuilder.property("sonar.projectKey", projectKey);
     }
 
-    TaskResult result = taskBuilder.execute();
+    AnalysisResult result = analysisBuilder.execute();
 
     assertNumberIssues(result, 16, 2, 0);
 
@@ -190,7 +188,7 @@ public class ScanOnlyChangedTest {
     assertNumberIssuesOnFile(result, "HelloJava.xoo", 8);
   }
 
-  private static void assertNumberIssuesOnFile(TaskResult result, final String fileNameEndsWith, int issues) {
+  private static void assertNumberIssuesOnFile(AnalysisResult result, final String fileNameEndsWith, int issues) {
     assertThat(result.trackedIssues()).haveExactly(issues, new Condition<TrackedIssue>() {
       @Override
       public boolean matches(TrackedIssue value) {
@@ -199,7 +197,7 @@ public class ScanOnlyChangedTest {
     });
   }
 
-  private static void assertNumberIssues(TaskResult result, int expectedNew, int expectedOpen, int expectedResolved) {
+  private static void assertNumberIssues(AnalysisResult result, int expectedNew, int expectedOpen, int expectedResolved) {
     int newIssues = 0;
     int openIssues = 0;
     int resolvedIssue = 0;

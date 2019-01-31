@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,8 +19,7 @@
  */
 package org.sonar.ce.task.projectanalysis.formula.coverage;
 
-import com.google.common.base.Optional;
-import org.sonar.ce.task.projectanalysis.formula.CounterInitializationContext;
+import java.util.Optional;
 import org.sonar.ce.task.projectanalysis.formula.CounterInitializationContext;
 import org.sonar.ce.task.projectanalysis.measure.Measure;
 

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -56,5 +56,11 @@ public class ScmProviderTest {
   public void default_implementation_does_not_support_revisionId() {
     thrown.expect(UnsupportedOperationException.class);
     provider.revisionId(Paths.get("foo"));
+  }
+
+  @Test
+  public void default_implementation_does_not_support_ignore() {
+    thrown.expect(UnsupportedOperationException.class);
+    provider.ignoreCommand();
   }
 }

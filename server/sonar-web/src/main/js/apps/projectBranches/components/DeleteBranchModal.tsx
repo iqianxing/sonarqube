@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,14 +19,13 @@
  */
 import * as React from 'react';
 import { deleteBranch, deletePullRequest } from '../../../api/branches';
-import { BranchLike } from '../../../app/types';
 import Modal from '../../../components/controls/Modal';
 import { SubmitButton, ResetButtonLink } from '../../../components/ui/buttons';
 import { translate, translateWithParameters } from '../../../helpers/l10n';
 import { isPullRequest, getBranchLikeDisplayName } from '../../../helpers/branches';
 
 interface Props {
-  branchLike: BranchLike;
+  branchLike: T.BranchLike;
   component: string;
   onClose: () => void;
   onDelete: () => void;

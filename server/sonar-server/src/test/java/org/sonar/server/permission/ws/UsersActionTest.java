@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,11 +20,14 @@
 package org.sonar.server.permission.ws;
 
 import org.junit.Test;
+import org.sonar.api.resources.Qualifiers;
+import org.sonar.api.resources.ResourceTypes;
 import org.sonar.api.server.ws.WebService.Param;
 import org.sonar.api.server.ws.WebService.SelectionMode;
 import org.sonar.api.web.UserRole;
 import org.sonar.db.component.ComponentDto;
 import org.sonar.db.component.ComponentTesting;
+import org.sonar.db.component.ResourceTypesRule;
 import org.sonar.db.organization.OrganizationDto;
 import org.sonar.db.user.UserDto;
 import org.sonar.server.exceptions.BadRequestException;
@@ -32,6 +35,8 @@ import org.sonar.server.exceptions.ForbiddenException;
 import org.sonar.server.exceptions.NotFoundException;
 import org.sonar.server.exceptions.UnauthorizedException;
 import org.sonar.server.issue.ws.AvatarResolverImpl;
+import org.sonar.server.permission.PermissionService;
+import org.sonar.server.permission.PermissionServiceImpl;
 
 import static java.lang.String.format;
 import static org.apache.commons.lang.StringUtils.countMatches;
@@ -57,9 +62,14 @@ import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_U
 
 public class UsersActionTest extends BasePermissionWsTest<UsersAction> {
 
+  private ResourceTypes resourceTypes = new ResourceTypesRule().setRootQualifiers(Qualifiers.PROJECT);
+  private PermissionService permissionService = new PermissionServiceImpl(resourceTypes);
+  private WsParameters wsParameters = new WsParameters(permissionService);
+  private RequestValidator requestValidator = new RequestValidator(permissionService);
+
   @Override
   protected UsersAction buildWsAction() {
-    return new UsersAction(db.getDbClient(), userSession, newPermissionWsSupport(), new AvatarResolverImpl());
+    return new UsersAction(db.getDbClient(), userSession, newPermissionWsSupport(), new AvatarResolverImpl(), wsParameters, requestValidator);
   }
 
   @Test
@@ -116,29 +126,6 @@ public class UsersActionTest extends BasePermissionWsTest<UsersAction> {
 
     assertThat(result).contains(user.getLogin())
       .doesNotContain(userHavePermissionOnAnotherProject.getLogin())
-      .doesNotContain(withoutPermission.getLogin());
-  }
-
-  @Test
-  public void search_only_for_users_with_permission_when_no_search_query() {
-    // User have permission on project
-    ComponentDto project = db.components().insertPrivateProject();
-    UserDto user = db.users().insertUser();
-    db.organizations().addMember(db.getDefaultOrganization(), user);
-    db.users().insertProjectPermissionOnUser(user, ISSUE_ADMIN, project);
-
-    // User has no permission
-    UserDto withoutPermission = db.users().insertUser();
-    db.organizations().addMember(db.getDefaultOrganization(), withoutPermission);
-
-    loginAsAdmin(db.getDefaultOrganization());
-    String result = newRequest()
-      .setParam(PARAM_PROJECT_ID, project.uuid())
-      .execute()
-      .getInput();
-
-    assertThat(result)
-      .contains(user.getLogin())
       .doesNotContain(withoutPermission.getLogin());
   }
 

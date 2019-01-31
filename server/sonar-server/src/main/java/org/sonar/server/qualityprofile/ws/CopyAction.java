@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -32,7 +32,7 @@ import org.sonar.server.qualityprofile.QProfileCopier;
 import org.sonar.server.user.UserSession;
 import org.sonarqube.ws.Qualityprofiles.CopyWsResponse;
 
-import static org.sonar.core.util.Protobuf.setNullable;
+import static java.util.Optional.ofNullable;
 import static org.sonar.core.util.Uuids.UUID_EXAMPLE_01;
 import static org.sonar.db.permission.OrganizationPermission.ADMINISTER_QUALITY_PROFILES;
 import static org.sonar.server.ws.WsUtils.writeProtobuf;
@@ -108,10 +108,10 @@ public class CopyAction implements QProfileWsAction {
     wsResponse.setKey(copiedProfile.getKee());
     wsResponse.setName(copiedProfile.getName());
     wsResponse.setLanguage(languageKey);
-    setNullable(language, l -> wsResponse.setLanguageName(l.getName()));
+    ofNullable(language).ifPresent(l -> wsResponse.setLanguageName(l.getName()));
     wsResponse.setIsDefault(isDefault);
     wsResponse.setIsInherited(parentKey != null);
-    setNullable(parentKey, wsResponse::setParentKey);
+    ofNullable(parentKey).ifPresent(wsResponse::setParentKey);
     return wsResponse.build();
   }
 }

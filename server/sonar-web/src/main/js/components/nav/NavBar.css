@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -32,23 +32,16 @@
   right: 0;
 }
 
+.ReactModal__Body--open .navbar-inner {
+  padding-right: var(--sbw);
+}
+
 .navbar-limited {
   position: relative;
-  min-width: 1080px;
-  max-width: 1320px;
+  min-width: var(--minPageWidth);
+  max-width: var(--maxPageWidth);
   margin-left: auto;
   margin-right: auto;
-  padding-left: 20px;
-  padding-right: 20px;
-}
-
-.navbar-notif.alert {
-  border-left: none;
-  border-right: none;
-  padding: 6px 0;
-}
-
-.navbar-notif-cancelable {
-  display: flex;
-  justify-content: space-between;
+  padding-left: var(--pagePadding);
+  padding-right: var(--pagePadding);
 }

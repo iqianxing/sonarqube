@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -56,10 +56,10 @@ import org.sonarqube.ws.Qualityprofiles.SearchWsResponse.QualityProfile;
 import static com.google.common.base.Preconditions.checkState;
 import static java.lang.String.format;
 import static java.util.Collections.emptyList;
+import static java.util.Optional.ofNullable;
 import static java.util.function.Function.identity;
 import static org.sonar.api.rule.RuleStatus.DEPRECATED;
 import static org.sonar.api.utils.DateUtils.formatDateTime;
-import static org.sonar.core.util.Protobuf.setNullable;
 import static org.sonar.core.util.stream.MoreCollectors.toList;
 import static org.sonar.db.permission.OrganizationPermission.ADMINISTER_QUALITY_PROFILES;
 import static org.sonar.server.ws.KeyExamples.KEY_PROJECT_EXAMPLE_001;
@@ -120,7 +120,7 @@ public class SearchAction implements QProfileWsAction {
     action
       .createParam(PARAM_LANGUAGE)
       .setDescription("Language key. If provided, only profiles for the given language are returned.")
-      .setPossibleValues(LanguageParamUtils.getLanguageKeys(languages));
+      .setPossibleValues(LanguageParamUtils.getOrderedLanguageKeys(languages));
 
     action.createParam(PARAM_QUALITY_PROFILE)
       .setDescription("Quality profile name")
@@ -185,7 +185,7 @@ public class SearchAction implements QProfileWsAction {
     if (project.isRoot()) {
       return project;
     }
-    ComponentDto component = dbClient.componentDao().selectByUuid(dbSession, project.projectUuid()).orNull();
+    ComponentDto component = dbClient.componentDao().selectByUuid(dbSession, project.projectUuid()).orElse(null);
     checkState(component != null, "Project uuid of component uuid '%s' does not exist", project.uuid());
     return component;
   }
@@ -265,12 +265,12 @@ public class SearchAction implements QProfileWsAction {
       QualityProfile.Builder profileBuilder = response.addProfilesBuilder();
 
       String profileKey = profile.getKee();
-      setNullable(profile.getOrganizationUuid(), o -> profileBuilder.setOrganization(data.getOrganization().getKey()));
+      ofNullable(profile.getOrganizationUuid()).ifPresent(o -> profileBuilder.setOrganization(data.getOrganization().getKey()));
       profileBuilder.setKey(profileKey);
-      setNullable(profile.getName(), profileBuilder::setName);
-      setNullable(profile.getRulesUpdatedAt(), profileBuilder::setRulesUpdatedAt);
-      setNullable(profile.getLastUsed(), last -> profileBuilder.setLastUsed(formatDateTime(last)));
-      setNullable(profile.getUserUpdatedAt(), userUpdatedAt -> profileBuilder.setUserUpdatedAt(formatDateTime(userUpdatedAt)));
+      ofNullable(profile.getName()).ifPresent(profileBuilder::setName);
+      ofNullable(profile.getRulesUpdatedAt()).ifPresent(profileBuilder::setRulesUpdatedAt);
+      ofNullable(profile.getLastUsed()).ifPresent(last -> profileBuilder.setLastUsed(formatDateTime(last)));
+      ofNullable(profile.getUserUpdatedAt()).ifPresent(userUpdatedAt -> profileBuilder.setUserUpdatedAt(formatDateTime(userUpdatedAt)));
       profileBuilder.setActiveRuleCount(data.getActiveRuleCount(profileKey));
       profileBuilder.setActiveDeprecatedRuleCount(data.getActiveDeprecatedRuleCount(profileKey));
       boolean isDefault = data.isDefault(profile);

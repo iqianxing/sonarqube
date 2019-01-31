@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -40,7 +40,7 @@ import org.sonarqube.ws.Favorites.Favorite;
 import org.sonarqube.ws.Favorites.SearchResponse;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static org.sonar.core.util.Protobuf.setNullable;
+import static java.util.Optional.ofNullable;
 import static org.sonar.server.ws.WsUtils.writeProtobuf;
 import static org.sonar.server.favorite.ws.FavoritesWsParameters.ACTION_SEARCH;
 
@@ -154,8 +154,8 @@ public class SearchAction implements FavoritesWsAction {
       .clear()
       .setOrganization(organization.getKey())
       .setKey(componentDto.getDbKey());
-    setNullable(componentDto.name(), builder::setName);
-    setNullable(componentDto.qualifier(), builder::setQualifier);
+    ofNullable(componentDto.name()).ifPresent(builder::setName);
+    ofNullable(componentDto.qualifier()).ifPresent(builder::setQualifier);
     return builder.build();
   }
 

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,8 +23,7 @@ import { translate } from '../../helpers/l10n';
 
 interface Props {
   className?: string;
-  // TODO avoid passing nil values
-  severity: string | undefined | null;
+  severity: string;
 }
 
 export default function SeverityHelper({ className, severity }: Props) {

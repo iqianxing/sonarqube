@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,9 +31,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 import org.picocontainer.Startable;
-import org.sonar.api.batch.ScannerSide;
 
-@ScannerSide
 public class Storages implements Startable {
   private final Map<String, Exchange> cacheMap = new HashMap<>();
   private Persistit persistit;

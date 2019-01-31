@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,7 +23,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import javax.annotation.Nullable;
 import org.apache.ibatis.session.ResultHandler;
 import org.sonar.api.utils.System2;
 import org.sonar.core.util.Uuids;
@@ -32,6 +31,7 @@ import org.sonar.db.DbSession;
 import org.sonar.db.component.BranchType;
 import org.sonar.db.component.ComponentDto;
 import org.sonar.db.component.KeyType;
+import org.sonar.db.dialect.Dialect;
 
 import static java.util.Collections.singletonList;
 import static org.sonar.api.measures.CoreMetrics.NCLOC_KEY;
@@ -65,6 +65,11 @@ public class LiveMeasureDao implements Dao {
       componentUuids -> mapper(dbSession).selectByComponentUuidsAndMetricKeys(componentUuids, metricKeys));
   }
 
+  public Optional<LiveMeasureDto> selectByComponentUuidAndMetricKey(DbSession dbSession, String componentUuid, String metricKey) {
+    LiveMeasureDto liveMeasureDto = mapper(dbSession).selectByComponentUuidAndMetricKey(componentUuid, metricKey);
+    return Optional.ofNullable(liveMeasureDto);
+  }
+
   public Optional<LiveMeasureDto> selectMeasure(DbSession dbSession, String componentUuid, String metricKey) {
     List<LiveMeasureDto> measures = selectByComponentUuidsAndMetricKeys(dbSession, singletonList(componentUuid), singletonList(metricKey));
     // couple of columns [component_uuid, metric_id] is unique. List can't have more than 1 item.
@@ -94,22 +99,32 @@ public class LiveMeasureDao implements Dao {
   }
 
   public void insert(DbSession dbSession, LiveMeasureDto dto) {
-    mapper(dbSession).insert(dto, Uuids.create(), null, system2.now());
+    mapper(dbSession).insert(dto, Uuids.create(), system2.now());
   }
 
-  public void insertOrUpdate(DbSession dbSession, LiveMeasureDto dto, @Nullable String marker) {
+  public void insertOrUpdate(DbSession dbSession, LiveMeasureDto dto) {
     LiveMeasureMapper mapper = mapper(dbSession);
     long now = system2.now();
-    if (mapper.update(dto, marker, now) == 0) {
-      mapper.insert(dto, Uuids.create(), marker, now);
+    if (mapper.update(dto, now) == 0) {
+      mapper.insert(dto, Uuids.create(), now);
     }
   }
 
   /**
-   * Delete the rows that do NOT have the specified marker
+   * Similar to {@link #insertOrUpdate(DbSession, LiveMeasureDto)}, except that:
+   * <ul>
+   * <li>it is batch session friendly (single same statement for both updates and inserts)</li>
+   * <li>it triggers a single SQL request</li>
+   * </ul>
+   * <p>
+   * <strong>This method should not be called unless {@link Dialect#supportsUpsert()} is true</strong>
    */
-  public int deleteByProjectUuidExcludingMarker(DbSession dbSession, String projectUuid, String marker) {
-    return mapper(dbSession).deleteByProjectUuidExcludingMarker(projectUuid, marker);
+  public int upsert(DbSession dbSession, LiveMeasureDto dto) {
+    return mapper(dbSession).upsert(dto, Uuids.create(), system2.now());
+  }
+
+  public int deleteByComponentUuidExcludingMetricIds(DbSession dbSession, String componentUuid, List<Integer> excludedMetricIds) {
+    return mapper(dbSession).deleteByComponentUuidExcludingMetricIds(componentUuid, excludedMetricIds);
   }
 
   private static LiveMeasureMapper mapper(DbSession dbSession) {

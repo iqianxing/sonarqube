@@ -14,12 +14,10 @@ dependencies {
   compile 'commons-lang:commons-lang'
   compile 'com.google.code.gson:gson'
   compile 'com.google.guava:guava'
+  compile 'org.apache.commons:commons-csv'
 
   // shaded, but not relocated
   compile project(':sonar-check-api')
-  compile(project(':sonar-duplications')) {
-    exclude group: 'org.slf4', module: 'slf4j-api'
-  }
 
   shadow 'org.codehaus.staxmate:staxmate'
   shadow 'org.codehaus.woodstox:stax2-api'

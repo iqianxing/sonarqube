@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,6 +20,7 @@
 /* eslint-disable no-console */
 process.env.NODE_ENV = 'development';
 
+const fs = require('fs');
 const chalk = require('chalk');
 const webpack = require('webpack');
 const WebpackDevServer = require('webpack-dev-server');
@@ -27,10 +28,11 @@ const clearConsole = require('react-dev-utils/clearConsole');
 const formatWebpackMessages = require('react-dev-utils/formatWebpackMessages');
 const errorOverlayMiddleware = require('react-error-overlay/middleware');
 const getMessages = require('./utils/getMessages');
-const getConfig = require('../config/webpack.config');
+const getConfigs = require('../config/webpack.config');
 const paths = require('../config/paths');
 
-const config = getConfig({ production: false });
+const configs = getConfigs({ production: false });
+const config = configs.find(config => config.name === 'modern');
 
 const port = process.env.PORT || 3000;
 const protocol = process.env.HTTPS === 'true' ? 'https' : 'http';
@@ -39,6 +41,7 @@ const proxy = process.env.PROXY || 'http://localhost:9000';
 
 // Force start script to proxy l10n request to the server (can be useful when working with plugins/extensions)
 const l10nCompiledFlag = process.argv.findIndex(val => val === 'l10nCompiled') >= 0;
+const l10nExtensions = process.argv.findIndex(val => val === 'l10nExtensions') >= 0;
 
 const compiler = setupCompiler(host, port, protocol);
 runDevServer(compiler, host, port, protocol);
@@ -86,7 +89,7 @@ function runDevServer(compiler, host, port, protocol) {
       app.use(errorOverlayMiddleware());
       if (!l10nCompiledFlag) {
         app.get('/api/l10n/index', (req, res) => {
-          getMessages()
+          getMessages(l10nExtensions)
             .then(messages => res.json({ effectiveLocale: 'en', messages }))
             .catch(() => res.status(500));
         });
@@ -113,7 +116,8 @@ function runDevServer(compiler, host, port, protocol) {
       '/static': { target: proxy, changeOrigin: true },
       '/integration': { target: proxy, changeOrigin: true },
       '/sessions/init': { target: proxy, changeOrigin: true },
-      '/oauth2': { target: proxy, changeOrigin: true }
+      '/oauth2': { target: proxy, changeOrigin: true },
+      '/batch': { target: proxy, changeOrigin: true }
     }
   });
 

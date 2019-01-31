@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,6 +31,7 @@ public class LoadedActiveRule {
   private String language;
   private Map<String, String> params;
   private long createdAt;
+  private long updatedAt;
   private String templateRuleKey;
   private String internalKey;
 
@@ -80,6 +81,14 @@ public class LoadedActiveRule {
 
   public void setCreatedAt(long createdAt) {
     this.createdAt = createdAt;
+  }
+
+  public long getUpdatedAt() {
+    return updatedAt;
+  }
+
+  public void setUpdatedAt(long updatedAt) {
+    this.updatedAt = updatedAt;
   }
 
   @CheckForNull

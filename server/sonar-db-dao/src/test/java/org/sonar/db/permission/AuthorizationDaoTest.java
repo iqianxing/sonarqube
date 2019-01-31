@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,7 +31,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.sonar.api.utils.System2;
 import org.sonar.api.web.UserRole;
-import org.sonar.core.permission.ProjectPermissions;
 import org.sonar.core.util.stream.MoreCollectors;
 import org.sonar.db.DbSession;
 import org.sonar.db.DbTester;
@@ -45,7 +44,6 @@ import static com.google.common.collect.Sets.newHashSet;
 import static java.util.Collections.singleton;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.sonar.core.permission.GlobalPermissions.QUALITY_GATE_ADMIN;
-import static org.sonar.core.permission.GlobalPermissions.SCAN_EXECUTION;
 import static org.sonar.core.permission.GlobalPermissions.SYSTEM_ADMIN;
 import static org.sonar.db.permission.OrganizationPermission.ADMINISTER;
 import static org.sonar.db.permission.OrganizationPermission.ADMINISTER_QUALITY_GATES;
@@ -372,7 +370,7 @@ public class AuthorizationDaoTest {
 
   @Test
   public void keepAuthorizedProjectIds_returns_empty_for_user_and_any_permission_on_private_project_without_any_permission_in_DB() {
-    ProjectPermissions.ALL
+    PermissionsTestHelper.ALL_PERMISSIONS
       .forEach(perm -> {
         assertThat(underTest.keepAuthorizedProjectIds(dbSession, randomPrivateProjectIds, user.getId(), perm))
           .isEmpty();
@@ -383,7 +381,7 @@ public class AuthorizationDaoTest {
 
   @Test
   public void keepAuthorizedProjectIds_returns_empty_for_group_AnyOne_and_any_permission_on_private_project_without_any_permission_in_DB() {
-    ProjectPermissions.ALL
+    PermissionsTestHelper.ALL_PERMISSIONS
       .forEach(perm -> {
         assertThat(underTest.keepAuthorizedProjectIds(dbSession, randomPrivateProjectIds, null, perm))
           .isEmpty();
@@ -621,7 +619,7 @@ public class AuthorizationDaoTest {
   public void keepAuthorizedUsersForRoleAndProject_returns_empty_for_any_users_and_any_permission_on_private_project_without_any_permission_in_DB() {
     ComponentDto project = db.components().insertPrivateProject(organization);
 
-    ProjectPermissions.ALL
+    PermissionsTestHelper.ALL_PERMISSIONS
       .forEach(perm -> {
         assertThat(underTest.keepAuthorizedUsersForRoleAndProject(dbSession, randomExistingUserIds, perm, project.getId()))
           .isEmpty();
@@ -768,21 +766,21 @@ public class AuthorizationDaoTest {
   public void selectOrganizationUuidsOfUserWithGlobalPermission_returns_empty_set_if_user_does_not_have_permission_at_all() {
     db.users().insertPermissionOnUser(user, ADMINISTER_QUALITY_GATES);
     // user is not part of this group
-    db.users().insertPermissionOnGroup(group1, SCAN_EXECUTION);
+    db.users().insertPermissionOnGroup(group1, SCAN);
 
-    Set<String> orgUuids = underTest.selectOrganizationUuidsOfUserWithGlobalPermission(dbSession, user.getId(), SCAN_EXECUTION);
+    Set<String> orgUuids = underTest.selectOrganizationUuidsOfUserWithGlobalPermission(dbSession, user.getId(), SCAN.getKey());
 
     assertThat(orgUuids).isEmpty();
   }
 
   @Test
   public void selectOrganizationUuidsOfUserWithGlobalPermission_returns_organizations_on_which_user_has_permission() {
-    db.users().insertPermissionOnGroup(group1, SCAN_EXECUTION);
+    db.users().insertPermissionOnGroup(group1, SCAN);
     db.users().insertPermissionOnGroup(group2, QUALITY_GATE_ADMIN);
     db.users().insertMember(group1, user);
     db.users().insertMember(group2, user);
 
-    Set<String> orgUuids = underTest.selectOrganizationUuidsOfUserWithGlobalPermission(dbSession, user.getId(), SCAN_EXECUTION);
+    Set<String> orgUuids = underTest.selectOrganizationUuidsOfUserWithGlobalPermission(dbSession, user.getId(), SCAN.getKey());
 
     assertThat(orgUuids).containsExactly(group1.getOrganizationUuid());
   }
@@ -790,12 +788,12 @@ public class AuthorizationDaoTest {
   @Test
   public void selectOrganizationUuidsOfUserWithGlobalPermission_handles_user_permissions_and_group_permissions() {
     // organization: through group membership
-    db.users().insertPermissionOnGroup(group1, SCAN_EXECUTION);
+    db.users().insertPermissionOnGroup(group1, SCAN);
     db.users().insertMember(group1, user);
 
     // org2 : direct user permission
     OrganizationDto org2 = db.organizations().insert();
-    db.users().insertPermissionOnUser(org2, user, SCAN_EXECUTION);
+    db.users().insertPermissionOnUser(org2, user, SCAN);
 
     // org3 : another permission QUALITY_GATE_ADMIN
     OrganizationDto org3 = db.organizations().insert();
@@ -804,7 +802,7 @@ public class AuthorizationDaoTest {
     // exclude project permission
     db.users().insertProjectPermissionOnUser(user, UserRole.ADMIN, db.components().insertPrivateProject());
 
-    Set<String> orgUuids = underTest.selectOrganizationUuidsOfUserWithGlobalPermission(dbSession, user.getId(), SCAN_EXECUTION);
+    Set<String> orgUuids = underTest.selectOrganizationUuidsOfUserWithGlobalPermission(dbSession, user.getId(), SCAN.getKey());
 
     assertThat(orgUuids).containsOnly(organization.getUuid(), org2.getUuid());
   }

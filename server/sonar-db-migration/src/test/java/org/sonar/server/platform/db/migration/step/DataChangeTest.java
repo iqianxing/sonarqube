@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -306,7 +306,7 @@ public class DataChangeTest {
             .setString(2, "login" + i)
             .setInt(3, 10 + i)
             .setBoolean(4, true)
-            .setDouble(4, i + 0.5)
+            .setDouble(5, i + 0.5)
             .addBatch();
         }
         upsert.execute().commit().close();

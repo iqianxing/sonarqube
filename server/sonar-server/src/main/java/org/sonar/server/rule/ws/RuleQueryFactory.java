@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -131,7 +131,7 @@ public class RuleQueryFactory {
       query.setOrganization(wsSupport.getOrganizationByKey(dbSession, organizationKey));
       return;
     }
-    OrganizationDto organization = checkFoundWithOptional(dbClient.organizationDao().selectByUuid(dbSession, profile.getOrganizationUuid()), "No organization with UUID ",
+    OrganizationDto organization = checkFoundWithOptional(dbClient.organizationDao().selectByUuid(dbSession, profile.getOrganizationUuid()), "No organization with UUID %s",
       profile.getOrganizationUuid());
     if (organizationKey != null) {
       OrganizationDto inputOrganization = checkFoundWithOptional(dbClient.organizationDao().selectByKey(dbSession, organizationKey), "No organization with key '%s'",

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -79,7 +79,9 @@ public class ResetAction implements SettingsWsAction {
         "<li>'Administer' rights on the specified component</li>" +
         "</ul>")
       .setSince("6.1")
-      .setChangelog(new Change("7.1", "The settings defined in config/sonar.properties are read-only and can't be changed"))
+      .setChangelog(
+        new Change("7.6", String.format("The use of module keys in parameter '%s' is deprecated", PARAM_COMPONENT)),
+        new Change("7.1", "The settings defined in config/sonar.properties are read-only and can't be changed"))
       .setPost(true)
       .setHandler(this);
 

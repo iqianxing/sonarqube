@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,12 +19,6 @@
  */
 package org.sonar.scanner.bootstrap;
 
-import org.sonar.api.batch.ScannerSide;
-
-/**
- * @since 3.6
- */
-@ScannerSide
 public interface ExtensionMatcher {
   boolean accept(Object extension);
 }

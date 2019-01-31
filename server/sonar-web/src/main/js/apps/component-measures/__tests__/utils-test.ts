@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -102,7 +102,7 @@ describe('groupByDomains', () => {
 describe('parseQuery', () => {
   it('should correctly parse the url query', () => {
     expect(utils.parseQuery({})).toEqual({
-      metric: 'project_overview',
+      metric: utils.DEFAULT_METRIC,
       selected: '',
       view: utils.DEFAULT_VIEW
     });
@@ -121,16 +121,17 @@ describe('parseQuery', () => {
 
 describe('serializeQuery', () => {
   it('should correctly serialize the query', () => {
-    expect(utils.serializeQuery({ metric: '', selected: '', view: 'list' })).toEqual({});
+    expect(utils.serializeQuery({ metric: '', selected: '', view: 'list' })).toEqual({
+      view: 'list'
+    });
     expect(utils.serializeQuery({ metric: 'foo', selected: 'bar', view: 'tree' })).toEqual({
       metric: 'foo',
-      selected: 'bar',
-      view: 'tree'
+      selected: 'bar'
     });
   });
 
   it('should be memoized', () => {
-    const query = { metric: 'foo', selected: 'bar', view: 'tree' };
+    const query: utils.Query = { metric: 'foo', selected: 'bar', view: 'tree' };
     expect(utils.serializeQuery(query)).toBe(utils.serializeQuery(query));
   });
 });

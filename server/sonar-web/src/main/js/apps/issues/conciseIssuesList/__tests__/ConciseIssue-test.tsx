@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,29 +20,30 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import ConciseIssue from '../ConciseIssue';
-import { IssueType } from '../../../../app/types';
 
-const issue = {
+const issue: T.Issue = {
+  actions: [],
   component: '',
   componentLongName: 'src/file.js',
   componentQualifier: '',
   componentUuid: '',
   creationDate: '',
+  flows: [],
+  fromHotspot: false,
   key: '',
   message: '',
   organization: '',
   project: '',
+  projectKey: '',
   projectName: '',
   projectOrganization: '',
-  projectKey: '',
   rule: '',
   ruleName: '',
+  secondaryLocations: [],
   severity: '',
   status: '',
-  type: IssueType.Bug,
-  secondaryLocations: [],
-  flows: [],
-  fromHotspot: false
+  transitions: [],
+  type: 'BUG'
 };
 
 it('should render', () => {

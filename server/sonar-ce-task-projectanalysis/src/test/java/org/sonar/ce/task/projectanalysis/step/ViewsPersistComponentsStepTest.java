@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -470,7 +470,7 @@ public class ViewsPersistComponentsStepTest extends BaseStepTest {
       .setUuid(PROJECT_VIEW_1_UUID)
       .setName(PROJECT_VIEW_1_NAME)
       .setDescription("project view description is not persisted")
-      .setProjectViewAttributes(new ProjectViewAttributes(project.uuid(), analysisDate));
+      .setProjectViewAttributes(new ProjectViewAttributes(project.uuid(), project.getDbKey(), analysisDate, project.getBranch()));
   }
 
   private void persistComponents(ComponentDto... componentDtos) {

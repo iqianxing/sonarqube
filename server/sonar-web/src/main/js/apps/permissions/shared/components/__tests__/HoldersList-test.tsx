@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,16 +21,27 @@ import * as React from 'react';
 import { shallow } from 'enzyme';
 import HoldersList from '../HoldersList';
 
-const permissions = [{ key: 'bar', name: 'bar', description: 'foo' }];
+const permissions = [
+  { key: 'foo', name: 'Foo', description: '' },
+  {
+    category: 'admin',
+    permissions: [
+      { key: 'bar', name: 'Bar', description: '' },
+      { key: 'baz', name: 'Baz', description: '' }
+    ]
+  }
+];
 
 const groups = [
   { id: 'foobar', name: 'Foobar', permissions: ['bar'] },
-  { id: 'barbaz', name: 'Barbaz', permissions: ['bar'] }
+  { id: 'barbaz', name: 'Barbaz', permissions: ['bar'] },
+  { id: 'abc', name: 'abc', permissions: [] }
 ];
 
 const users = [
   { login: 'foobar', name: 'Foobar', permissions: ['bar'] },
-  { login: 'barbaz', name: 'Barbaz', permissions: ['bar'] }
+  { login: 'barbaz', name: 'Barbaz', permissions: ['bar'] },
+  { login: 'bcd', name: 'bcd', permissions: [] }
 ];
 
 const elementsContainer = (

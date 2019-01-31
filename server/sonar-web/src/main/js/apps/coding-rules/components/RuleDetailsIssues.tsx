@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,19 +18,19 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import { Link } from 'react-router';
 import DeferredSpinner from '../../../components/common/DeferredSpinner';
 import Tooltip from '../../../components/controls/Tooltip';
 import { getFacet } from '../../../api/issues';
-import { RuleDetails, RuleType } from '../../../app/types';
 import { getIssuesUrl } from '../../../helpers/urls';
 import { formatMeasure } from '../../../helpers/measures';
 import { translate } from '../../../helpers/l10n';
+import { withAppState } from '../../../components/withAppState';
 
 interface Props {
+  appState: Pick<T.AppState, 'branchesEnabled'>;
   organization: string | undefined;
-  ruleDetails: Pick<RuleDetails, 'key' | 'type'>;
+  ruleDetails: Pick<T.RuleDetails, 'key' | 'type'>;
 }
 
 interface Project {
@@ -45,13 +45,8 @@ interface State {
   total?: number;
 }
 
-export default class RuleDetailsIssues extends React.PureComponent<Props, State> {
+export class RuleDetailsIssues extends React.PureComponent<Props, State> {
   mounted = false;
-
-  static contextTypes = {
-    branchesEnabled: PropTypes.bool
-  };
-
   state: State = { loading: true };
 
   componentDidMount() {
@@ -73,8 +68,8 @@ export default class RuleDetailsIssues extends React.PureComponent<Props, State>
     resolved: 'false',
     rules: this.props.ruleDetails.key,
     types:
-      this.props.ruleDetails.type === RuleType.Hotspot
-        ? [RuleType.Vulnerability, RuleType.Hotspot].join()
+      this.props.ruleDetails.type === 'SECURITY_HOTSPOT'
+        ? ['VULNERABILITY', 'SECURITY_HOTSPOT'].join()
         : undefined
   });
 
@@ -120,7 +115,7 @@ export default class RuleDetailsIssues extends React.PureComponent<Props, State>
       </span>
     );
 
-    if (!this.context.branchesEnabled) {
+    if (!this.props.appState.branchesEnabled) {
       return totalItem;
     }
 
@@ -174,3 +169,5 @@ export default class RuleDetailsIssues extends React.PureComponent<Props, State>
     );
   }
 }
+
+export default withAppState(RuleDetailsIssues);

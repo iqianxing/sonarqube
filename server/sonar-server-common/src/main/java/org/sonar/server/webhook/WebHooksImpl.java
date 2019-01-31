@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -66,11 +66,11 @@ public class WebHooksImpl implements WebHooks {
   private Stream<WebhookDto> readWebHooksFrom(String projectUuid) {
     try (DbSession dbSession = dbClient.openSession(false)) {
 
-      Optional<ComponentDto> optionalComponentDto = ofNullable(dbClient.componentDao().selectByUuid(dbSession, projectUuid).orNull());
+      Optional<ComponentDto> optionalComponentDto = ofNullable(dbClient.componentDao().selectByUuid(dbSession, projectUuid).orElse(null));
       ComponentDto componentDto = checkStateWithOptional(optionalComponentDto, "the requested project '%s' was not found", projectUuid);
 
       if (componentDto.getMainBranchProjectUuid() != null && !componentDto.uuid().equals(componentDto.getMainBranchProjectUuid())) {
-        Optional<ComponentDto> mainBranchComponentDto = ofNullable(dbClient.componentDao().selectByUuid(dbSession, componentDto.getMainBranchProjectUuid()).orNull());
+        Optional<ComponentDto> mainBranchComponentDto = ofNullable(dbClient.componentDao().selectByUuid(dbSession, componentDto.getMainBranchProjectUuid()).orElse(null));
         componentDto = checkStateWithOptional(mainBranchComponentDto, "the requested project '%s' was not found", projectUuid);
       }
 

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,7 +24,6 @@ import CreationDateFacet from './CreationDateFacet';
 import DirectoryFacet from './DirectoryFacet';
 import FileFacet from './FileFacet';
 import LanguageFacet from './LanguageFacet';
-import ModuleFacet from './ModuleFacet';
 import ProjectFacet from './ProjectFacet';
 import ResolutionFacet from './ResolutionFacet';
 import RuleFacet from './RuleFacet';
@@ -42,10 +41,9 @@ import {
   ReferencedRule,
   STANDARDS
 } from '../utils';
-import { Component } from '../../../app/types';
 
 export interface Props {
-  component: Component | undefined;
+  component: T.Component | undefined;
   facets: { [facet: string]: Facet };
   hideAuthorFacet?: boolean;
   loadSearchResultCount: (property: string, changes: Partial<Query>) => Promise<Facet>;
@@ -78,16 +76,6 @@ export default class Sidebar extends React.PureComponent<Props> {
     };
     return (
       <>
-        {component.qualifier !== 'DIR' && (
-          <ModuleFacet
-            fetching={loadingFacets.modules === true}
-            modules={query.modules}
-            open={!!openFacets.modules}
-            referencedComponents={this.props.referencedComponentsById}
-            stats={facets.modules}
-            {...commonProps}
-          />
-        )}
         {component.qualifier !== 'DIR' && (
           <DirectoryFacet
             directories={query.directories}

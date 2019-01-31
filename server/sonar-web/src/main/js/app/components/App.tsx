@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,21 +18,22 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import { connect } from 'react-redux';
 import Helmet from 'react-helmet';
-import { AppState, CurrentUser } from '../types';
 import { fetchLanguages } from '../../store/rootActions';
 import { fetchMyOrganizations } from '../../apps/account/organizations/actions';
 import { getInstance, isSonarCloud } from '../../helpers/system';
 import { lazyLoad } from '../../components/lazyLoad';
-import { getCurrentUser, getAppState } from '../../store/rootReducer';
+import { getCurrentUser, getAppState, getGlobalSettingValue, Store } from '../../store/rootReducer';
+import { isLoggedIn } from '../../helpers/users';
 
 const PageTracker = lazyLoad(() => import('./PageTracker'));
 
 interface StateProps {
-  appState: AppState | undefined;
-  currentUser: CurrentUser | undefined;
+  appState: T.AppState | undefined;
+  currentUser: T.CurrentUser | undefined;
+  enableGravatar: boolean;
+  gravatarServerUrl: string;
 }
 
 interface DispatchProps {
@@ -49,29 +50,13 @@ type Props = StateProps & DispatchProps & OwnProps;
 class App extends React.PureComponent<Props> {
   mounted = false;
 
-  static childContextTypes = {
-    branchesEnabled: PropTypes.bool.isRequired,
-    canAdmin: PropTypes.bool.isRequired,
-    organizationsEnabled: PropTypes.bool
-  };
-
-  getChildContext() {
-    const { appState } = this.props;
-    return {
-      branchesEnabled: (appState && appState.branchesEnabled) || false,
-      canAdmin: (appState && appState.canAdmin) || false,
-      organizationsEnabled: (appState && appState.organizationsEnabled) || false
-    };
-  }
-
   componentDidMount() {
     this.mounted = true;
     this.props.fetchLanguages();
+    this.setScrollbarWidth();
     const { appState, currentUser } = this.props;
-    if (appState && currentUser) {
-      if (appState.organizationsEnabled && currentUser.isLoggedIn) {
-        this.props.fetchMyOrganizations();
-      }
+    if (appState && isSonarCloud() && currentUser && isLoggedIn(currentUser)) {
+      this.props.fetchMyOrganizations();
     }
   }
 
@@ -79,10 +64,47 @@ class App extends React.PureComponent<Props> {
     this.mounted = false;
   }
 
+  setScrollbarWidth = () => {
+    // See https://stackoverflow.com/questions/13382516/getting-scroll-bar-width-using-javascript
+    const outer = document.createElement('div');
+    outer.style.visibility = 'hidden';
+    outer.style.width = '100px';
+    outer.style.msOverflowStyle = 'scrollbar';
+
+    document.body.appendChild(outer);
+
+    const widthNoScroll = outer.offsetWidth;
+    outer.style.overflow = 'scroll';
+
+    const inner = document.createElement('div');
+    inner.style.width = '100%';
+    outer.appendChild(inner);
+
+    const widthWithScroll = inner.offsetWidth;
+
+    if (outer.parentNode) {
+      outer.parentNode.removeChild(outer);
+    }
+
+    document.body.style.setProperty('--sbw', `${widthNoScroll - widthWithScroll}px`);
+  };
+
+  renderPreconnectLink = () => {
+    const parser = document.createElement('a');
+    parser.href = this.props.gravatarServerUrl;
+    if (parser.hostname !== window.location.hostname) {
+      return <link href={parser.origin} rel="preconnect" />;
+    } else {
+      return null;
+    }
+  };
+
   render() {
     return (
       <>
-        <Helmet defaultTitle={getInstance()} />
+        <Helmet defaultTitle={getInstance()}>
+          {this.props.enableGravatar && this.renderPreconnectLink()}
+        </Helmet>
         {isSonarCloud() && <PageTracker />}
         {this.props.children}
       </>
@@ -90,10 +112,16 @@ class App extends React.PureComponent<Props> {
   }
 }
 
-const mapStateToProps = (state: any): StateProps => ({
-  appState: getAppState(state),
-  currentUser: getCurrentUser(state)
-});
+const mapStateToProps = (state: Store): StateProps => {
+  const enableGravatar = getGlobalSettingValue(state, 'sonar.lf.enableGravatar');
+  const gravatarServerUrl = getGlobalSettingValue(state, 'sonar.lf.gravatarServerUrl');
+  return {
+    appState: getAppState(state),
+    currentUser: getCurrentUser(state),
+    enableGravatar: Boolean(enableGravatar && enableGravatar.value === 'true'),
+    gravatarServerUrl: (gravatarServerUrl && gravatarServerUrl.value) || ''
+  };
+};
 
 const mapDispatchToProps = ({
   fetchLanguages,

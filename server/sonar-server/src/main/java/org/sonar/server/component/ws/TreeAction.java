@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -120,6 +120,8 @@ public class TreeAction implements ComponentsWsAction {
       .setSince("5.4")
       .setResponseExample(getClass().getResource("tree-example.json"))
       .setChangelog(
+        new Change("7.6", String.format("The use of 'BRC' as value for parameter '%s' is deprecated", PARAM_QUALIFIERS)),
+        new Change("7.6", String.format("The use of module keys in parameter '%s' is deprecated", PARAM_COMPONENT)),
         new Change("6.4", "The field 'id' is deprecated in the response"))
       .setHandler(this)
       .addPagingParams(100, MAX_SIZE);

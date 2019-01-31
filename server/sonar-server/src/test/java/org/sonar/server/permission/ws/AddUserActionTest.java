@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,15 +21,20 @@ package org.sonar.server.permission.ws;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.sonar.api.resources.Qualifiers;
+import org.sonar.api.resources.ResourceTypes;
 import org.sonar.api.web.UserRole;
 import org.sonar.db.component.ComponentDto;
 import org.sonar.db.component.ComponentTesting;
+import org.sonar.db.component.ResourceTypesRule;
 import org.sonar.db.organization.OrganizationDto;
 import org.sonar.db.user.UserDto;
 import org.sonar.server.exceptions.BadRequestException;
 import org.sonar.server.exceptions.ForbiddenException;
 import org.sonar.server.exceptions.NotFoundException;
 import org.sonar.server.exceptions.ServerException;
+import org.sonar.server.permission.PermissionService;
+import org.sonar.server.permission.PermissionServiceImpl;
 
 import static java.lang.String.format;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -53,6 +58,9 @@ import static org.sonarqube.ws.client.permission.PermissionsWsParameters.PARAM_U
 public class AddUserActionTest extends BasePermissionWsTest<AddUserAction> {
 
   private UserDto user;
+  private ResourceTypes resourceTypes = new ResourceTypesRule().setRootQualifiers(Qualifiers.PROJECT);
+  private PermissionService permissionService = new PermissionServiceImpl(resourceTypes);
+  private WsParameters wsParameters = new WsParameters(permissionService);
 
   @Before
   public void setUp() {
@@ -62,7 +70,7 @@ public class AddUserActionTest extends BasePermissionWsTest<AddUserAction> {
 
   @Override
   protected AddUserAction buildWsAction() {
-    return new AddUserAction(db.getDbClient(), userSession, newPermissionUpdater(), newPermissionWsSupport());
+    return new AddUserAction(db.getDbClient(), userSession, newPermissionUpdater(), newPermissionWsSupport(), wsParameters, permissionService);
   }
 
   @Test
@@ -315,17 +323,32 @@ public class AddUserActionTest extends BasePermissionWsTest<AddUserAction> {
   }
 
   @Test
-  public void organization_parameter_must_not_be_set_on_project_permissions() {
+  public void organization_parameter_must_be_the_organization_of_the_project() {
     ComponentDto project = db.components().insertPrivateProject();
     loginAsAdmin(db.getDefaultOrganization());
 
     expectedException.expect(IllegalArgumentException.class);
-    expectedException.expectMessage("Organization must not be set when project is set.");
+    expectedException.expectMessage("Organization key is incorrect.");
 
     newRequest()
       .setParam(PARAM_USER_LOGIN, user.getLogin())
       .setParam(PARAM_PROJECT_KEY, project.getDbKey())
       .setParam(PARAM_ORGANIZATION, "an_org")
+      .setParam(PARAM_PERMISSION, ISSUE_ADMIN)
+      .execute();
+  }
+
+  @Test
+  public void organization_parameter_and_project_is_working_when_it_s_the_organization_of_the_project() {
+    OrganizationDto org = db.organizations().insert();
+    ComponentDto project = db.components().insertPrivateProject(org);
+    addUserAsMemberOfOrganization(org);
+    userSession.logIn().addProjectPermission(UserRole.ADMIN, project);
+
+    newRequest()
+      .setParam(PARAM_USER_LOGIN, user.getLogin())
+      .setParam(PARAM_PROJECT_KEY, project.getDbKey())
+      .setParam(PARAM_ORGANIZATION, org.getKey())
       .setParam(PARAM_PERMISSION, ISSUE_ADMIN)
       .execute();
   }

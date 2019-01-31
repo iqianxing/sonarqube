@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -37,8 +37,8 @@ import org.sonar.ce.container.ComputeEngineStatus;
 import org.sonar.ce.monitoring.CEQueueStatus;
 import org.sonar.ce.task.CeTask;
 import org.sonar.ce.task.CeTaskResult;
+import org.sonar.ce.task.TypedException;
 import org.sonar.ce.task.projectanalysis.component.VisitException;
-import org.sonar.ce.task.step.TypedException;
 import org.sonar.core.util.UuidFactory;
 import org.sonar.db.DbClient;
 import org.sonar.db.DbSession;
@@ -53,21 +53,20 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static java.lang.String.format;
 import static java.util.Collections.singletonList;
 import static java.util.Objects.requireNonNull;
+import static java.util.Optional.ofNullable;
 import static org.sonar.core.util.stream.MoreCollectors.uniqueIndex;
 
 @ComputeEngineSide
 public class InternalCeQueueImpl extends CeQueueImpl implements InternalCeQueue {
   private static final Logger LOG = Loggers.get(InternalCeQueueImpl.class);
 
-  private final System2 system2;
   private final DbClient dbClient;
   private final CEQueueStatus queueStatus;
   private final ComputeEngineStatus computeEngineStatus;
 
   public InternalCeQueueImpl(System2 system2, DbClient dbClient, UuidFactory uuidFactory, CEQueueStatus queueStatus,
     DefaultOrganizationProvider defaultOrganizationProvider, ComputeEngineStatus computeEngineStatus) {
-    super(dbClient, uuidFactory, defaultOrganizationProvider);
-    this.system2 = system2;
+    super(system2, dbClient, uuidFactory, defaultOrganizationProvider);
     this.dbClient = dbClient;
     this.queueStatus = queueStatus;
     this.computeEngineStatus = computeEngineStatus;
@@ -90,15 +89,13 @@ public class InternalCeQueueImpl extends CeQueueImpl implements InternalCeQueue 
       Optional<CeQueueDto> opt = ceQueueDao.peek(dbSession, workerUuid);
       if (opt.isPresent()) {
         CeQueueDto taskDto = opt.get();
-        ComponentDto component = null;
-        String componentUuid = taskDto.getComponentUuid();
-        if (componentUuid != null) {
-          component = dbClient.componentDao().selectByUuid(dbSession, componentUuid).orNull();
-        }
+        Map<String, ComponentDto> componentsByUuid = loadComponentDtos(dbSession, taskDto);
         Map<String, String> characteristics = dbClient.ceTaskCharacteristicsDao().selectByTaskUuids(dbSession, singletonList(taskDto.getUuid())).stream()
           .collect(uniqueIndex(CeTaskCharacteristicDto::getKey, CeTaskCharacteristicDto::getValue));
 
-        CeTask task = convertToTask(taskDto, characteristics, component);
+        CeTask task = convertToTask(dbSession, taskDto, characteristics,
+          ofNullable(taskDto.getComponentUuid()).map(componentsByUuid::get).orElse(null),
+          ofNullable(taskDto.getMainComponentUuid()).map(componentsByUuid::get).orElse(null));
         queueStatus.addInProgress();
         return Optional.of(task);
       }
@@ -175,18 +172,6 @@ public class InternalCeQueueImpl extends CeQueueImpl implements InternalCeQueue 
       LOG.debug("Failed to getStacktrace out of error", e);
       return null;
     }
-  }
-
-  private long updateExecutionFields(CeActivityDto activityDto) {
-    Long startedAt = activityDto.getStartedAt();
-    if (startedAt == null) {
-      return 0L;
-    }
-    long now = system2.now();
-    long executionTimeInMs = now - startedAt;
-    activityDto.setExecutedAt(now);
-    activityDto.setExecutionTimeMs(executionTimeInMs);
-    return executionTimeInMs;
   }
 
   @Override

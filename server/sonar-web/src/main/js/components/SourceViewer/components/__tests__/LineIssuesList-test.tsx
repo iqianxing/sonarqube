@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,9 +20,9 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import LineIssuesList from '../LineIssuesList';
-import { Issue, IssueType } from '../../../../app/types';
 
-const issueBase: Issue = {
+const issueBase: T.Issue = {
+  actions: [],
   component: '',
   componentLongName: '',
   componentQualifier: '',
@@ -42,11 +42,12 @@ const issueBase: Issue = {
   secondaryLocations: [],
   severity: '',
   status: '',
-  type: IssueType.Bug
+  transitions: [],
+  type: 'BUG'
 };
 
 it('render issues list', () => {
-  const issues: Issue[] = [{ ...issueBase, key: 'foo' }, { ...issueBase, key: 'bar' }];
+  const issues: T.Issue[] = [{ ...issueBase, key: 'foo' }, { ...issueBase, key: 'bar' }];
   const onIssueClick = jest.fn();
   const wrapper = shallow(
     <LineIssuesList

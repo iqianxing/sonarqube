@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,15 +20,13 @@
 import * as React from 'react';
 import { Link } from 'react-router';
 import Truncated from './Truncated';
-import { Component } from '../types';
 import * as theme from '../../../app/theme';
-import { BranchLike } from '../../../app/types';
 import QualifierIcon from '../../../components/icons-components/QualifierIcon';
 import { getBranchLikeQuery } from '../../../helpers/branches';
 import LongLivingBranchIcon from '../../../components/icons-components/LongLivingBranchIcon';
 import { translate } from '../../../helpers/l10n';
 
-function getTooltip(component: Component) {
+function getTooltip(component: T.ComponentMeasure) {
   const isFile = component.qualifier === 'FIL' || component.qualifier === 'UTS';
   if (isFile && component.path) {
     return component.path + '\n\n' + component.key;
@@ -53,11 +51,11 @@ function mostCommitPrefix(strings: string[]) {
 }
 
 interface Props {
-  branchLike?: BranchLike;
+  branchLike?: T.BranchLike;
   canBrowse?: boolean;
-  component: Component;
-  previous?: Component;
-  rootComponent: Component;
+  component: T.ComponentMeasure;
+  previous?: T.ComponentMeasure;
+  rootComponent: T.ComponentMeasure;
 }
 
 export default function ComponentName(props: Props) {

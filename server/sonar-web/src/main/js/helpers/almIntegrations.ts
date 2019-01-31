@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -17,22 +17,33 @@
  * along with this program; if not, write to the Free Software Foundation,
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
+import { isLoggedIn } from './users';
 
-export function isBitbucket(almId?: string) {
-  return almId && almId.startsWith('bitbucket');
+export function hasAdvancedALMIntegration(user: T.CurrentUser) {
+  return (
+    isLoggedIn(user) && (isBitbucket(user.externalProvider) || isGithub(user.externalProvider))
+  );
 }
 
-export function isGithub(almId?: string) {
-  return almId === 'github';
+export function isBitbucket(almKey?: string) {
+  return almKey && almKey.startsWith('bitbucket');
 }
 
-export function isVSTS(almId?: string) {
-  return almId === 'microsoft';
+export function isGithub(almKey?: string) {
+  return almKey === 'github';
 }
 
-export function sanitizeAlmId(almId?: string) {
-  if (isBitbucket(almId)) {
+export function isVSTS(almKey?: string) {
+  return almKey === 'microsoft';
+}
+
+export function isPersonal(organization?: T.AlmOrganization) {
+  return Boolean(organization && organization.personal);
+}
+
+export function sanitizeAlmId(almKey?: string) {
+  if (isBitbucket(almKey)) {
     return 'bitbucket';
   }
-  return almId;
+  return almKey;
 }

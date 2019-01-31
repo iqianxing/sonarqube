@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,79 +23,38 @@ import { AutoSizer } from 'react-virtualized/dist/commonjs/AutoSizer';
 import { Link } from 'react-router';
 import { min, max } from 'd3-array';
 import { scaleLinear, ScaleLinear } from 'd3-scale';
-import { zoom, zoomIdentity } from 'd3-zoom';
-import { event, select } from 'd3-selection';
+import { zoom, zoomIdentity, ZoomBehavior } from 'd3-zoom';
+import { event, select, Selection } from 'd3-selection';
 import { sortBy, uniq } from 'lodash';
 import Tooltip from '../controls/Tooltip';
 import { translate } from '../../helpers/l10n';
+import { Location } from '../../helpers/urls';
 import './BubbleChart.css';
 
 const TICKS_COUNT = 5;
 
-interface BubbleProps {
-  color?: string;
-  link?: string;
-  onClick?: (link?: string) => void;
-  r: number;
-  scale: number;
-  tooltip?: string | React.ReactNode;
-  x: number;
-  y: number;
-}
-
-export class Bubble extends React.PureComponent<BubbleProps> {
-  handleClick = (event: React.MouseEvent<SVGCircleElement>) => {
-    if (this.props.onClick) {
-      event.stopPropagation();
-      event.preventDefault();
-      this.props.onClick(this.props.link);
-    }
-  };
-
-  render() {
-    let circle = (
-      <circle
-        className="bubble-chart-bubble"
-        onClick={this.props.onClick ? this.handleClick : undefined}
-        r={this.props.r}
-        style={{ fill: this.props.color, stroke: this.props.color }}
-        transform={`translate(${this.props.x}, ${this.props.y}) scale(${this.props.scale})`}
-      />
-    );
-
-    if (this.props.link && !this.props.onClick) {
-      circle = <Link to={this.props.link}>{circle}</Link>;
-    }
-
-    return (
-      <Tooltip overlay={this.props.tooltip || undefined}>
-        <g>{circle}</g>
-      </Tooltip>
-    );
-  }
-}
-
-interface Item {
+interface BubbleItem<T> {
   color?: string;
   key?: string;
-  link?: any;
+  link?: string | Location;
+  data?: T;
   size: number;
   tooltip?: React.ReactNode;
   x: number;
   y: number;
 }
 
-interface Props {
+interface Props<T> {
   displayXGrid?: boolean;
   displayXTicks?: boolean;
   displayYGrid?: boolean;
   displayYTicks?: boolean;
-  formatXTick?: (tick: number) => string;
-  formatYTick?: (tick: number) => string;
+  formatXTick: (tick: number) => string;
+  formatYTick: (tick: number) => string;
   height: number;
-  items: Item[];
-  onBubbleClick?: (link?: string) => void;
-  padding?: [number, number, number, number];
+  items: BubbleItem<T>[];
+  onBubbleClick?: (ref?: T) => void;
+  padding: [number, number, number, number];
   sizeDomain?: [number, number];
   sizeRange?: [number, number];
   xDomain?: [number, number];
@@ -108,21 +67,23 @@ interface State {
 
 type Scale = ScaleLinear<number, number>;
 
-export default class BubbleChart extends React.Component<Props, State> {
-  node: SVGSVGElement | null = null;
-  selection: any = null;
-  transform: any = null;
-  zoom: any = null;
+export default class BubbleChart<T> extends React.PureComponent<Props<T>, State> {
+  node?: Element;
+  selection?: Selection<Element, {}, null, undefined>;
+  zoom?: ZoomBehavior<Element, {}>;
 
   static defaultProps = {
     displayXGrid: true,
     displayXTicks: true,
     displayYGrid: true,
     displayYTicks: true,
+    formatXTick: (d: number) => String(d),
+    formatYTick: (d: number) => String(d),
+    padding: [10, 10, 10, 10],
     sizeRange: [5, 45]
   };
 
-  constructor(props: Props) {
+  constructor(props: Props<T>) {
     super(props);
     this.state = { transform: { x: 0, y: 0, k: 1 } };
   }
@@ -143,26 +104,24 @@ export default class BubbleChart extends React.Component<Props, State> {
   };
 
   zoomed = () => {
-    this.setState({ transform: event.transform });
+    const { padding } = this.props;
+    const { x, y, k } = event.transform as { x: number; y: number; k: number };
+    this.setState({
+      transform: {
+        x: x + padding[3] * (k - 1),
+        y: y + padding[0] * (k - 1),
+        k
+      }
+    });
   };
 
   resetZoom = (event: React.MouseEvent<Link>) => {
     event.stopPropagation();
     event.preventDefault();
-    select(this.node).call(this.zoom.transform, zoomIdentity);
+    if (this.zoom && this.node) {
+      select(this.node).call(this.zoom.transform, zoomIdentity);
+    }
   };
-
-  get formatXTick() {
-    return this.props.formatXTick || ((d: number) => String(d));
-  }
-
-  get formatYTick() {
-    return this.props.formatYTick || ((d: number) => String(d));
-  }
-
-  get padding() {
-    return this.props.padding || [10, 10, 10, 10];
-  }
 
   getXRange(xScale: Scale, sizeScale: Scale, availableWidth: number) {
     const minX = min(this.props.items, d => xScale(d.x) - sizeScale(d.size)) || 0;
@@ -250,8 +209,9 @@ export default class BubbleChart extends React.Component<Props, State> {
     const ticks = xTicks.map((tick, index) => {
       const x = xScale(tick) * transform.k + transform.x;
       const y = yScale.range()[0];
-      const innerText = this.formatXTick(tick);
-      return x > 0 ? (
+      const innerText = this.props.formatXTick(tick);
+      // as we modified the `x` using `transform`, check that it is inside the range again
+      return x > 0 && x < xScale.range()[1] ? (
         <text className="bubble-chart-tick" dy="1.5em" key={index} x={x} y={y}>
           {innerText}
         </text>
@@ -270,8 +230,9 @@ export default class BubbleChart extends React.Component<Props, State> {
     const ticks = yTicks.map((tick, index) => {
       const x = xScale.range()[0];
       const y = yScale(tick) * transform.k + transform.y;
-      const innerText = this.formatYTick(tick);
-      return y > 0 && y < this.props.height - 80 ? (
+      const innerText = this.props.formatYTick(tick);
+      // as we modified the `y` using `transform`, check that it is inside the range again
+      return y > 0 && y < yScale.range()[0] ? (
         <text
           className="bubble-chart-tick bubble-chart-tick-y"
           dx="-0.5em"
@@ -289,8 +250,8 @@ export default class BubbleChart extends React.Component<Props, State> {
 
   renderChart = (width: number) => {
     const { transform } = this.state;
-    const availableWidth = width - this.padding[1] - this.padding[3];
-    const availableHeight = this.props.height - this.padding[0] - this.padding[2];
+    const availableWidth = width - this.props.padding[1] - this.props.padding[3];
+    const availableHeight = this.props.height - this.props.padding[0] - this.props.padding[2];
 
     const xScale = scaleLinear()
       .domain(this.props.xDomain || [0, max(this.props.items, d => d.x) || 0])
@@ -314,6 +275,7 @@ export default class BubbleChart extends React.Component<Props, State> {
       return (
         <Bubble
           color={item.color}
+          data={item.data}
           key={item.key || index}
           link={item.link}
           onClick={this.props.onBubbleClick}
@@ -326,8 +288,8 @@ export default class BubbleChart extends React.Component<Props, State> {
       );
     });
 
-    const xTicks = this.getTicks(xScale, this.formatXTick);
-    const yTicks = this.getTicks(yScale, this.formatYTick);
+    const xTicks = this.getTicks(xScale, this.props.formatXTick);
+    const yTicks = this.getTicks(yScale, this.props.formatYTick);
 
     return (
       <svg
@@ -339,14 +301,14 @@ export default class BubbleChart extends React.Component<Props, State> {
           <clipPath id="graph-region">
             <rect
               // Extend clip by 2 pixels: one for clipRect border, and one for Bubble borders
-              height={this.props.height - this.padding[0] - this.padding[2] + 4}
-              width={width + 4}
+              height={availableHeight + 4}
+              width={availableWidth + 4}
               x={-2}
               y={-2}
             />
           </clipPath>
         </defs>
-        <g transform={`translate(${this.padding[3]}, ${this.padding[0]})`}>
+        <g transform={`translate(${this.props.padding[3]}, ${this.props.padding[0]})`}>
           <g clipPath="url(#graph-region)">
             {this.renderXGrid(xTicks, xScale, yScale)}
             {this.renderYGrid(yTicks, xScale, yScale)}
@@ -378,4 +340,46 @@ export default class BubbleChart extends React.Component<Props, State> {
       </div>
     );
   }
+}
+
+interface BubbleProps<T> {
+  color?: string;
+  link?: string | Location;
+  onClick?: (ref?: T) => void;
+  data?: T;
+  r: number;
+  scale: number;
+  tooltip?: string | React.ReactNode;
+  x: number;
+  y: number;
+}
+
+function Bubble<T>(props: BubbleProps<T>) {
+  const handleClick = (event: React.MouseEvent<SVGCircleElement>) => {
+    if (props.onClick) {
+      event.stopPropagation();
+      event.preventDefault();
+      props.onClick(props.data);
+    }
+  };
+
+  let circle = (
+    <circle
+      className="bubble-chart-bubble"
+      onClick={props.onClick ? handleClick : undefined}
+      r={props.r}
+      style={{ fill: props.color, stroke: props.color }}
+      transform={`translate(${props.x}, ${props.y}) scale(${props.scale})`}
+    />
+  );
+
+  if (props.link && !props.onClick) {
+    circle = <Link to={props.link}>{circle}</Link>;
+  }
+
+  return (
+    <Tooltip overlay={props.tooltip || undefined}>
+      <g>{circle}</g>
+    </Tooltip>
+  );
 }

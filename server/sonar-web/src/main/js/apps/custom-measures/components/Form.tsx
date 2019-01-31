@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,17 +19,17 @@
  */
 import * as React from 'react';
 import { getAllMetrics } from '../../../api/metrics';
-import { CustomMeasure, Metric } from '../../../app/types';
 import DeferredSpinner from '../../../components/common/DeferredSpinner';
 import Select from '../../../components/controls/Select';
 import SimpleModal from '../../../components/controls/SimpleModal';
 import { SubmitButton, ResetButtonLink } from '../../../components/ui/buttons';
 import { translate } from '../../../helpers/l10n';
+import { Alert } from '../../../components/ui/Alert';
 
 interface Props {
   confirmButtonText: string;
   header: string;
-  measure?: CustomMeasure;
+  measure?: T.CustomMeasure;
   onClose: () => void;
   onSubmit: (data: { description: string; metricKey: string; value: string }) => Promise<void>;
   skipMetrics?: string[];
@@ -39,7 +39,7 @@ interface State {
   description: string;
   loading: boolean;
   metricKey?: string;
-  metrics?: Metric[];
+  metrics?: T.Metric[];
   value: string;
 }
 
@@ -109,9 +109,7 @@ export default class Form extends React.PureComponent<Props, State> {
 
   renderMetricSelect = (options: { label: string; value: string }[]) => {
     if (!options.length && !this.state.loading) {
-      return (
-        <div className="alert alert-warning">{translate('custom_measures.all_metrics_taken')}</div>
-      );
+      return <Alert variant="warning">{translate('custom_measures.all_metrics_taken')}</Alert>;
     }
     return (
       <div className="modal-field">
@@ -125,6 +123,7 @@ export default class Form extends React.PureComponent<Props, State> {
           <Select
             autoFocus={true}
             clearable={false}
+            id="create-custom-measure-metric"
             onChange={this.handleMetricSelect}
             options={options}
             value={this.state.metricKey}

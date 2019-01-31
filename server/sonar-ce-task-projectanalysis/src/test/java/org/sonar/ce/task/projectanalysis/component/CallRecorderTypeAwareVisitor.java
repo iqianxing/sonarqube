@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -32,11 +32,6 @@ class CallRecorderTypeAwareVisitor extends TypeAwareVisitorAdapter {
   @Override
   public void visitProject(Component project) {
     callsRecords.add(reportCallRecord(project, "visitProject"));
-  }
-
-  @Override
-  public void visitModule(Component module) {
-    callsRecords.add(reportCallRecord(module, "visitModule"));
   }
 
   @Override
@@ -74,7 +69,7 @@ class CallRecorderTypeAwareVisitor extends TypeAwareVisitorAdapter {
   }
 
   private static CallRecord viewsCallRecord(Component component, String method) {
-    return CallRecord.viewsCallRecord(method, component.getKey());
+    return CallRecord.viewsCallRecord(method, component.getDbKey());
   }
 
 }

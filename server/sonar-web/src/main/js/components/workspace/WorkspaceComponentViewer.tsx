@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,10 +22,9 @@ import { ComponentDescriptor } from './context';
 import WorkspaceHeader, { Props as WorkspaceHeaderProps } from './WorkspaceHeader';
 import WorkspaceComponentTitle from './WorkspaceComponentTitle';
 import SourceViewer from '../SourceViewer/SourceViewer';
-import { SourceViewerFile, Omit } from '../../app/types';
 import { scrollToElement } from '../../helpers/scrolling';
 
-export interface Props extends Omit<WorkspaceHeaderProps, 'children' | 'onClose'> {
+export interface Props extends T.Omit<WorkspaceHeaderProps, 'children' | 'onClose'> {
   component: ComponentDescriptor;
   height: number;
   onClose: (componentKey: string) => void;
@@ -36,18 +35,22 @@ export default class WorkspaceComponentViewer extends React.PureComponent<Props>
   container?: HTMLElement | null;
 
   componentDidMount() {
-    document.documentElement.classList.add('with-workspace');
+    if (document.documentElement) {
+      document.documentElement.classList.add('with-workspace');
+    }
   }
 
   componentWillUnmount() {
-    document.documentElement.classList.remove('with-workspace');
+    if (document.documentElement) {
+      document.documentElement.classList.remove('with-workspace');
+    }
   }
 
   handleClose = () => {
     this.props.onClose(this.props.component.key);
   };
 
-  handleLoaded = (component: SourceViewerFile) => {
+  handleLoaded = (component: T.SourceViewerFile) => {
     this.props.onLoad({
       key: this.props.component.key,
       name: component.path,

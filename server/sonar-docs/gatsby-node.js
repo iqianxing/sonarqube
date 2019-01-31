@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,8 +21,8 @@ const path = require('path');
 const fs = require('fs-extra');
 const { createFilePath } = require('gatsby-source-filesystem');
 
-exports.onCreateNode = ({ node, getNode, boundActionCreators }) => {
-  const { createNodeField } = boundActionCreators;
+exports.onCreateNode = ({ node, getNode, actions }) => {
+  const { createNodeField } = actions;
   if (node.internal.type === 'MarkdownRemark') {
     const slug = createFilePath({ node, getNode, basePath: 'pages' });
     createNodeField({
@@ -33,8 +33,8 @@ exports.onCreateNode = ({ node, getNode, boundActionCreators }) => {
   }
 };
 
-exports.createPages = ({ graphql, boundActionCreators }) => {
-  const { createPage } = boundActionCreators;
+exports.createPages = ({ graphql, actions }) => {
+  const { createPage } = actions;
   return new Promise((resolve, reject) => {
     graphql(`
       {
@@ -42,7 +42,7 @@ exports.createPages = ({ graphql, boundActionCreators }) => {
           edges {
             node {
               frontmatter {
-                scope
+                url
               }
               headings {
                 depth
@@ -57,16 +57,14 @@ exports.createPages = ({ graphql, boundActionCreators }) => {
       }
     `).then(result => {
       result.data.allMarkdownRemark.edges.forEach(({ node }) => {
-        if (node.frontmatter.scope !== 'sonarcloud') {
-          createPage({
-            path: node.fields.slug,
-            component: path.resolve('./src/templates/page.js'),
-            context: {
-              // Data passed to context is available in page queries as GraphQL variables.
-              slug: node.fields.slug
-            }
-          });
-        }
+        createPage({
+          path: node.frontmatter.url || node.fields.slug,
+          component: path.resolve('./src/templates/page.tsx'),
+          context: {
+            // Data passed to context is available in page queries as GraphQL variables.
+            slug: node.fields.slug
+          }
+        });
       });
       resolve();
     });

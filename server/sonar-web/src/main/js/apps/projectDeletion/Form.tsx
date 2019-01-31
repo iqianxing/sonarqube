@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,11 +22,10 @@ import { withRouter, WithRouterProps } from 'react-router';
 import { deleteProject, deletePortfolio } from '../../api/components';
 import { Button } from '../../components/ui/buttons';
 import { translate, translateWithParameters } from '../../helpers/l10n';
-import { Component } from '../../app/types';
 import ConfirmButton from '../../components/controls/ConfirmButton';
 
 interface Props {
-  component: Pick<Component, 'key' | 'name' | 'qualifier'>;
+  component: Pick<T.Component, 'key' | 'name' | 'qualifier'>;
 }
 
 export default withRouter(

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,7 +26,6 @@ import {
   searchWebhooks,
   updateWebhook
 } from '../../../../api/webhooks';
-import { Visibility } from '../../../../app/types';
 
 jest.mock('../../../../api/webhooks', () => ({
   createWebhook: jest.fn(() =>
@@ -44,7 +43,7 @@ jest.mock('../../../../api/webhooks', () => ({
   updateWebhook: jest.fn(() => Promise.resolve())
 }));
 
-const organization = { key: 'foo', name: 'Foo', projectVisibility: Visibility.Private };
+const organization: T.Organization = { key: 'foo', name: 'Foo', projectVisibility: 'private' };
 const component = { key: 'bar', organization: 'foo', qualifier: 'TRK' };
 
 beforeEach(() => {

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -92,7 +92,7 @@ public class CancelAction implements CeWsAction {
     if (componentUuid == null) {
       throw insufficientPrivilegesException();
     }
-    com.google.common.base.Optional<ComponentDto> component = dbClient.componentDao().selectByUuid(dbSession, componentUuid);
+    Optional<ComponentDto> component = dbClient.componentDao().selectByUuid(dbSession, componentUuid);
     if (!component.isPresent()) {
       throw insufficientPrivilegesException();
     }

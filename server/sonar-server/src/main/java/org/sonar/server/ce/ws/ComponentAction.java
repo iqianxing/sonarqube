@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -38,11 +38,12 @@ import org.sonar.server.ws.KeyExamples;
 import org.sonarqube.ws.Ce;
 import org.sonarqube.ws.Ce.ComponentResponse;
 
+import static java.util.Collections.emptyList;
 import static org.sonar.db.Pagination.forPage;
-import static org.sonar.server.component.ComponentFinder.ParamNames.COMPONENT_ID_AND_COMPONENT;
-import static org.sonar.server.ws.WsUtils.writeProtobuf;
 import static org.sonar.server.ce.ws.CeWsParameters.PARAM_COMPONENT;
 import static org.sonar.server.ce.ws.CeWsParameters.PARAM_COMPONENT_ID;
+import static org.sonar.server.component.ComponentFinder.ParamNames.COMPONENT_ID_AND_COMPONENT;
+import static org.sonar.server.ws.WsUtils.writeProtobuf;
 
 public class ComponentAction implements CeWsAction {
 
@@ -69,7 +70,8 @@ public class ComponentAction implements CeWsAction {
       .setResponseExample(getClass().getResource("component-example.json"))
       .setChangelog(
         new Change("6.1", "field \"logs\" is deprecated and its value is always false"),
-        new Change("6.6", "fields \"branch\" and \"branchType\" added"))
+        new Change("6.6", "fields \"branch\" and \"branchType\" added"),
+        new Change("7.6", String.format("The use of module keys in parameter \"%s\" is deprecated", PARAM_COMPONENT)))
       .setHandler(this);
 
     action.createParam(PARAM_COMPONENT_ID)
@@ -88,16 +90,16 @@ public class ComponentAction implements CeWsAction {
     try (DbSession dbSession = dbClient.openSession(false)) {
       ComponentDto component = loadComponent(dbSession, wsRequest);
       userSession.checkComponentPermission(UserRole.USER, component);
-      List<CeQueueDto> queueDtos = dbClient.ceQueueDao().selectByComponentUuid(dbSession, component.uuid());
+      List<CeQueueDto> queueDtos = dbClient.ceQueueDao().selectByMainComponentUuid(dbSession, component.uuid());
       CeTaskQuery activityQuery = new CeTaskQuery()
-        .setComponentUuid(component.uuid())
+        .setMainComponentUuid(component.uuid())
         .setOnlyCurrents(true);
       List<CeActivityDto> activityDtos = dbClient.ceActivityDao().selectByQuery(dbSession, activityQuery, forPage(1).andSize(1));
 
       Ce.ComponentResponse.Builder wsResponseBuilder = ComponentResponse.newBuilder();
       wsResponseBuilder.addAllQueue(formatter.formatQueue(dbSession, queueDtos));
       if (activityDtos.size() == 1) {
-        wsResponseBuilder.setCurrent(formatter.formatActivity(dbSession, activityDtos.get(0), null));
+        wsResponseBuilder.setCurrent(formatter.formatActivity(dbSession, activityDtos.get(0), null, emptyList()));
       }
       writeProtobuf(wsResponseBuilder.build(), wsRequest, wsResponse);
     }

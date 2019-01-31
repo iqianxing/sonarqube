@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -95,11 +95,6 @@ public class NewReliabilityAndSecurityRatingMeasuresVisitor extends PathAwareVis
   @Override
   public void visitDirectory(Component directory, Path<Counter> path) {
     computeAndSaveMeasures(directory, path);
-  }
-
-  @Override
-  public void visitModule(Component module, Path<Counter> path) {
-    computeAndSaveMeasures(module, path);
   }
 
   @Override

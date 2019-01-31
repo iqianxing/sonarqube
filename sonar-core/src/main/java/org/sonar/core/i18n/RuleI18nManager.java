@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,17 +22,15 @@ package org.sonar.core.i18n;
 import java.util.Locale;
 import javax.annotation.CheckForNull;
 import org.apache.commons.lang.StringUtils;
-import org.sonar.api.batch.ScannerSide;
+import org.sonar.api.ce.ComputeEngineSide;
 import org.sonar.api.i18n.RuleI18n;
 import org.sonar.api.rules.Rule;
-import org.sonar.api.ce.ComputeEngineSide;
 import org.sonar.api.server.ServerSide;
 
 /**
  * @deprecated in 4.1. Rules are not localized anymore. See http://jira.sonarsource.com/browse/SONAR-4885
  */
 @Deprecated
-@ScannerSide
 @ServerSide
 @ComputeEngineSide
 public class RuleI18nManager implements RuleI18n {

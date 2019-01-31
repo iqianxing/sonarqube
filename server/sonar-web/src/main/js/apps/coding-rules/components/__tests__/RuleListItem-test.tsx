@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,9 @@
 import * as React from 'react';
 import { shallow } from 'enzyme';
 import RuleListItem from '../RuleListItem';
-import { Rule, RuleType } from '../../../../app/types';
 import { mockEvent } from '../../../../helpers/testUtils';
 
-const rule: Rule = {
+const rule: T.Rule = {
   key: 'foo',
   lang: 'js',
   langName: 'JavaScript',
@@ -32,7 +31,7 @@ const rule: Rule = {
   status: 'READY',
   sysTags: ['a', 'b'],
   tags: ['x'],
-  type: RuleType.CodeSmell
+  type: 'CODE_SMELL'
 };
 
 it('should render', () => {

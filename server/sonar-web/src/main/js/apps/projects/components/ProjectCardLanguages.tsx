@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,14 +21,14 @@ import * as React from 'react';
 import { sortBy } from 'lodash';
 import Tooltip from '../../../components/controls/Tooltip';
 import { translate } from '../../../helpers/l10n';
-import { Languages } from '../../../store/languages/reducer';
 
 interface Props {
+  className?: string;
   distribution?: string;
-  languages: Languages;
+  languages: T.Languages;
 }
 
-export default function ProjectCardLanguages({ distribution, languages }: Props) {
+export default function ProjectCardLanguages({ className, distribution, languages }: Props) {
   if (distribution === undefined) {
     return null;
   }
@@ -38,22 +38,25 @@ export default function ProjectCardLanguages({ distribution, languages }: Props)
     getLanguageName(languages, l[0])
   );
 
-  const tooltip = (
-    <span>
-      {finalLanguages.map(language => (
-        <span key={language}>
-          {language}
-          <br />
-        </span>
-      ))}
-    </span>
-  );
-
   const languagesText =
     finalLanguages.slice(0, 2).join(', ') + (finalLanguages.length > 2 ? ', ...' : '');
 
+  let tooltip;
+  if (finalLanguages.length > 2) {
+    tooltip = (
+      <span>
+        {finalLanguages.map(language => (
+          <span key={language}>
+            {language}
+            <br />
+          </span>
+        ))}
+      </span>
+    );
+  }
+
   return (
-    <div className="project-card-languages">
+    <div className={className}>
       <Tooltip overlay={tooltip}>
         <span>{languagesText}</span>
       </Tooltip>
@@ -61,7 +64,7 @@ export default function ProjectCardLanguages({ distribution, languages }: Props)
   );
 }
 
-function getLanguageName(languages: Languages, key: string): string {
+function getLanguageName(languages: T.Languages, key: string): string {
   if (key === '<null>') {
     return translate('unknown');
   }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,12 +19,11 @@
  */
 import * as React from 'react';
 import Select from '../../../components/controls/Select';
-import { Metric } from '../../../app/types';
 
 interface Props {
   name: string;
   value: string;
-  metric: Metric;
+  metric: T.Metric;
   onChange: (value: string) => void;
 }
 
@@ -55,6 +54,7 @@ export default class ThresholdInput extends React.PureComponent<Props> {
       <Select
         className="input-tiny text-middle"
         clearable={true}
+        id="condition-threshold"
         name={name}
         onChange={this.handleSelectChange}
         options={options}
@@ -76,6 +76,7 @@ export default class ThresholdInput extends React.PureComponent<Props> {
       <input
         className="input-tiny text-middle"
         data-type={metric.type}
+        id="condition-threshold"
         name={name}
         onChange={this.handleChange}
         type="text"

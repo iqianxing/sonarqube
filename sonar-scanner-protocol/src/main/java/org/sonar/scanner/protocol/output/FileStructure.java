@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,6 @@
 package org.sonar.scanner.protocol.output;
 
 import java.io.File;
-
 import javax.annotation.concurrent.Immutable;
 
 /**
@@ -40,10 +39,9 @@ public class FileStructure {
     CHANGESETS("changesets-", Domain.PB),
     SYMBOLS("symbols-", Domain.PB),
     COVERAGES("coverages-", Domain.PB),
-    TESTS("tests-", Domain.PB),
-    COVERAGE_DETAILS("coverage-details-", Domain.PB),
     SOURCE("source-", ".txt"),
-    SGNIFICANT_CODE("sgnificant-code-", Domain.PB);
+    SGNIFICANT_CODE("sgnificant-code-", Domain.PB),
+    CHANGED_LINES("changed-lines-", Domain.PB);
 
     private static final String PB = ".pb";
     private final String filePrefix;
@@ -76,12 +74,20 @@ public class FileStructure {
     return new File(dir, "activerules.pb");
   }
 
+  public File adHocRules() {
+    return new File(dir, "adhocrules.pb");
+  }
+
   public File fileFor(Domain domain, int componentRef) {
     return new File(dir, domain.filePrefix + componentRef + domain.fileSuffix);
   }
 
   public File contextProperties() {
     return new File(dir, "context-props.pb");
+  }
+
+  public File analysisWarnings() {
+    return new File(dir, "analysis-warnings.pb");
   }
 
   public File root() {

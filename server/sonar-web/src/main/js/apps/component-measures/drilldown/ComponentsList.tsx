@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,16 +22,17 @@ import ComponentsListRow from './ComponentsListRow';
 import EmptyResult from './EmptyResult';
 import { complementary } from '../config/complementary';
 import { getLocalizedMetricName } from '../../../helpers/l10n';
-import { ComponentMeasure, ComponentMeasureEnhanced, Metric, BranchLike } from '../../../app/types';
+import { View } from '../utils';
 
 interface Props {
-  branchLike?: BranchLike;
-  components: ComponentMeasureEnhanced[];
+  branchLike?: T.BranchLike;
+  components: T.ComponentMeasureEnhanced[];
   onClick: (component: string) => void;
-  metric: Metric;
-  metrics: { [metric: string]: Metric };
-  rootComponent: ComponentMeasure;
+  metric: T.Metric;
+  metrics: { [metric: string]: T.Metric };
+  rootComponent: T.ComponentMeasure;
   selectedComponent?: string;
+  view: View;
 }
 
 export default function ComponentsList({ components, metric, metrics, ...props }: Props) {
@@ -41,37 +42,35 @@ export default function ComponentsList({ components, metric, metrics, ...props }
 
   const otherMetrics = (complementary[metric.key] || []).map(key => metrics[key]);
   return (
-    <React.Fragment>
-      <table className="data zebra zebra-hover">
-        {otherMetrics.length > 0 && (
-          <thead>
-            <tr>
-              <th>&nbsp;</th>
-              <th className="text-right">
+    <table className="data zebra zebra-hover">
+      {otherMetrics.length > 0 && (
+        <thead>
+          <tr>
+            <th>&nbsp;</th>
+            <th className="text-right">
+              <span className="small">{getLocalizedMetricName(metric)}</span>
+            </th>
+            {otherMetrics.map(metric => (
+              <th className="text-right" key={metric.key}>
                 <span className="small">{getLocalizedMetricName(metric)}</span>
               </th>
-              {otherMetrics.map(metric => (
-                <th className="text-right" key={metric.key}>
-                  <span className="small">{getLocalizedMetricName(metric)}</span>
-                </th>
-              ))}
-            </tr>
-          </thead>
-        )}
+            ))}
+          </tr>
+        </thead>
+      )}
 
-        <tbody>
-          {components.map(component => (
-            <ComponentsListRow
-              component={component}
-              isSelected={component.key === props.selectedComponent}
-              key={component.key}
-              metric={metric}
-              otherMetrics={otherMetrics}
-              {...props}
-            />
-          ))}
-        </tbody>
-      </table>
-    </React.Fragment>
+      <tbody>
+        {components.map(component => (
+          <ComponentsListRow
+            component={component}
+            isSelected={component.key === props.selectedComponent}
+            key={component.key}
+            metric={metric}
+            otherMetrics={otherMetrics}
+            {...props}
+          />
+        ))}
+      </tbody>
+    </table>
   );
 }

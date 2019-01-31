@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -24,15 +24,14 @@ import RemoveEventForm from './forms/RemoveEventForm';
 import Tooltip from '../../../components/controls/Tooltip';
 import { DeleteButton, EditButton } from '../../../components/ui/buttons';
 import { translate } from '../../../helpers/l10n';
-import { Event as IEvent } from '../../../api/projectActivity';
 
 interface Props {
   analysis: string;
-  canAdmin: boolean;
+  canAdmin?: boolean;
   changeEvent: (event: string, name: string) => Promise<void>;
   deleteEvent: (analysis: string, event: string) => Promise<void>;
-  event: IEvent;
-  isFirst: boolean;
+  event: T.AnalysisEvent;
+  isFirst?: boolean;
 }
 
 interface State {

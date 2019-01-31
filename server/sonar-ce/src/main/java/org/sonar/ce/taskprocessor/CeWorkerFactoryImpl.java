@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,48 +19,49 @@
  */
 package org.sonar.ce.taskprocessor;
 
-import java.util.HashSet;
+import java.util.Collections;
 import java.util.Set;
+import java.util.stream.Stream;
 import org.sonar.ce.queue.InternalCeQueue;
 import org.sonar.core.util.UuidFactory;
-
-import static com.google.common.collect.ImmutableSet.copyOf;
+import org.sonar.core.util.stream.MoreCollectors;
 
 public class CeWorkerFactoryImpl implements CeWorkerFactory {
   private final UuidFactory uuidFactory;
-  private final Set<String> ceWorkerUUIDs = new HashSet<>();
   private final InternalCeQueue queue;
   private final CeTaskProcessorRepository taskProcessorRepository;
-  private final EnabledCeWorkerController enabledCeWorkerController;
+  private final CeWorkerController ceWorkerController;
   private final CeWorker.ExecutionListener[] executionListeners;
+  private Set<CeWorker> ceWorkers = Collections.emptySet();
 
   /**
    * Used by Pico when there is no {@link CeWorker.ExecutionListener} in the container.
    */
   public CeWorkerFactoryImpl(InternalCeQueue queue, CeTaskProcessorRepository taskProcessorRepository,
-    UuidFactory uuidFactory, EnabledCeWorkerController enabledCeWorkerController) {
-    this(queue, taskProcessorRepository, uuidFactory, enabledCeWorkerController, new CeWorker.ExecutionListener[0]);
+    UuidFactory uuidFactory, CeWorkerController ceWorkerController) {
+    this(queue, taskProcessorRepository, uuidFactory, ceWorkerController, new CeWorker.ExecutionListener[0]);
   }
 
   public CeWorkerFactoryImpl(InternalCeQueue queue, CeTaskProcessorRepository taskProcessorRepository,
-    UuidFactory uuidFactory, EnabledCeWorkerController enabledCeWorkerController,
+    UuidFactory uuidFactory, CeWorkerController ceWorkerController,
     CeWorker.ExecutionListener[] executionListeners) {
     this.queue = queue;
     this.taskProcessorRepository = taskProcessorRepository;
     this.uuidFactory = uuidFactory;
-    this.enabledCeWorkerController = enabledCeWorkerController;
+    this.ceWorkerController = ceWorkerController;
     this.executionListeners = executionListeners;
   }
 
   @Override
   public CeWorker create(int ordinal) {
     String uuid = uuidFactory.create();
-    ceWorkerUUIDs.add(uuid);
-    return new CeWorkerImpl(ordinal, uuid, queue, taskProcessorRepository, enabledCeWorkerController, executionListeners);
+    CeWorkerImpl ceWorker = new CeWorkerImpl(ordinal, uuid, queue, taskProcessorRepository, ceWorkerController, executionListeners);
+    ceWorkers = Stream.concat(ceWorkers.stream(), Stream.of(ceWorker)).collect(MoreCollectors.toSet(ceWorkers.size() + 1));
+    return ceWorker;
   }
 
   @Override
-  public Set<String> getWorkerUUIDs() {
-    return copyOf(ceWorkerUUIDs);
+  public Set<CeWorker> getWorkers() {
+    return ceWorkers;
   }
 }

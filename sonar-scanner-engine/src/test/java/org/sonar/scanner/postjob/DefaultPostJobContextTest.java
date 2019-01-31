@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,11 +22,8 @@ package org.sonar.scanner.postjob;
 import java.io.IOException;
 import java.util.Arrays;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TemporaryFolder;
 import org.sonar.api.batch.AnalysisMode;
-import org.sonar.api.batch.fs.internal.DefaultInputModule;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.batch.postjob.issue.PostJobIssue;
 import org.sonar.api.batch.rule.Severity;
@@ -42,9 +39,6 @@ import static org.mockito.Mockito.when;
 
 public class DefaultPostJobContextTest {
 
-  @Rule
-  public TemporaryFolder temp = new TemporaryFolder();
-
   private IssueCache issueCache;
   private InputComponentStore componentStore;
   private DefaultPostJobContext context;
@@ -54,8 +48,7 @@ public class DefaultPostJobContextTest {
   @Before
   public void setUp() throws IOException {
     issueCache = mock(IssueCache.class);
-    DefaultInputModule rootModule = TestInputFileBuilder.newDefaultInputModule("foo", temp.newFolder());
-    componentStore = new InputComponentStore(rootModule, mock(BranchConfiguration.class));
+    componentStore = new InputComponentStore(mock(BranchConfiguration.class));
     settings = new MapSettings();
     analysisMode = mock(AnalysisMode.class);
     context = new DefaultPostJobContext(settings.asConfig(), settings, issueCache, componentStore, analysisMode);
@@ -87,7 +80,7 @@ public class DefaultPostJobContextTest {
     assertThat(issue.inputComponent()).isNull();
 
     String moduleKey = "foo";
-    componentStore.put(new TestInputFileBuilder(moduleKey, "src/Foo.php").build());
+    componentStore.put(moduleKey, new TestInputFileBuilder(moduleKey, "src/Foo.php").build());
     assertThat(issue.inputComponent()).isNotNull();
 
   }

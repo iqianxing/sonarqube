@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -49,14 +49,6 @@ public abstract class TypeAwareVisitorAdapter implements TypeAwareVisitor {
    */
   @Override
   public void visitProject(Component project) {
-    // empty implementation, meant to be override at will by subclasses
-  }
-
-  /**
-   * Called when encountering a Component of type {@link Component.Type#MODULE}
-   */
-  @Override
-  public void visitModule(Component module) {
     // empty implementation, meant to be override at will by subclasses
   }
 

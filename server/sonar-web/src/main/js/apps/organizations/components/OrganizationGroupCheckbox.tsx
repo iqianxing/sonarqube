@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,10 +20,9 @@
 import * as React from 'react';
 import * as classNames from 'classnames';
 import Checkbox from '../../../components/controls/Checkbox';
-import { Group } from '../../../app/types';
 
 interface Props {
-  group: Group;
+  group: T.Group;
   checked: boolean;
   onCheck: (name: string, checked: boolean) => void;
 }

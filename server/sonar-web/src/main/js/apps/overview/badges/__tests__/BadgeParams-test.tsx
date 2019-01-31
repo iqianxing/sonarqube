@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,6 @@ import * as React from 'react';
 import { shallow } from 'enzyme';
 import BadgeParams from '../BadgeParams';
 import { BadgeType } from '../utils';
-import { Metric } from '../../../../app/types';
 
 jest.mock('../../../../api/web-api', () => ({
   fetchWebApi: () =>
@@ -39,8 +38,8 @@ jest.mock('../../../../api/web-api', () => ({
 }));
 
 const METRICS = {
-  alert_status: { key: 'alert_status', name: 'Quality Gate' } as Metric,
-  coverage: { key: 'coverage', name: 'Coverage' } as Metric
+  alert_status: { key: 'alert_status', name: 'Quality Gate' } as T.Metric,
+  coverage: { key: 'coverage', name: 'Coverage' } as T.Metric
 };
 
 it('should display marketing badge params', () => {
@@ -55,8 +54,16 @@ it('should display measure badge params', () => {
   const updateOptions = jest.fn();
   const wrapper = getWrapper({ updateOptions, type: BadgeType.measure });
   expect(wrapper).toMatchSnapshot();
-  (wrapper.instance() as BadgeParams).handleColorChange({ value: 'black' });
-  expect(updateOptions).toHaveBeenCalledWith({ color: 'black' });
+  (wrapper.instance() as BadgeParams).handleMetricChange({ value: 'code_smell' });
+  expect(updateOptions).toHaveBeenCalledWith({ metric: 'code_smell' });
+});
+
+it('should display quality gate badge params', () => {
+  const updateOptions = jest.fn();
+  const wrapper = getWrapper({ updateOptions, type: BadgeType.qualityGate });
+  expect(wrapper).toMatchSnapshot();
+  (wrapper.instance() as BadgeParams).handleFormatChange({ value: 'md' });
+  expect(updateOptions).toHaveBeenCalledWith({ format: 'md' });
 });
 
 function getWrapper(props = {}) {

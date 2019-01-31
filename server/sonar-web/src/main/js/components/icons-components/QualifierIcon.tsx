@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -34,7 +34,6 @@ const qualifierIcons: { [x: string]: (props: IconProps) => React.ReactElement<an
 
   // deprecated:
   cla: UnitTestIcon,
-  // eslint-disable-next-line camelcase
   dev_prj: ProjectIcon,
   lib: LibraryIcon,
   pac: DirectoryIcon

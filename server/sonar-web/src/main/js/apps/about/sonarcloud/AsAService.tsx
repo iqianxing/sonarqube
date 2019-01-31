@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,18 +18,25 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import SonarCloudPage from './SonarCloudPage';
-import SQStartUsing from './SQStartUsing';
-import SQTopNav from './SQTopNav';
-import { isLoggedIn } from '../../../app/types';
+import Helmet from 'react-helmet';
+import SQPageContainer from './components/SQPageContainer';
+import SQStartUsing from './components/SQStartUsing';
+import SQTopNav from './components/SQTopNav';
+import { isLoggedIn } from '../../../helpers/users';
 import { getBaseUrl } from '../../../helpers/urls';
 import './style.css';
 
 export default function AsAService() {
   return (
-    <SonarCloudPage>
+    <SQPageContainer>
       {({ currentUser }) => (
         <div className="page page-limited sc-page">
+          <Helmet title="Get started with SonarQube as a Service | SonarCloud">
+            <meta
+              content="Analyze your code with just a few clicks. Immediate access to the latest features and functionality. You use the service and we take care of the rest."
+              name="description"
+            />
+          </Helmet>
           <SQTopNav />
 
           <div className="sc-child-header">
@@ -68,7 +75,7 @@ export default function AsAService() {
             <li className="sc-feature sc-child-feature">
               <h3 className="sc-feature-title">Get started in minutes</h3>
               <p className="sc-feature-description">
-                Simply sign up, create an oganization for your team, and you are ready to run your
+                Simply sign up, create an organization for your team, and you are ready to run your
                 builds to get your projects analyzed in minutes.
               </p>
             </li>
@@ -85,6 +92,6 @@ export default function AsAService() {
           {!isLoggedIn(currentUser) && <SQStartUsing />}
         </div>
       )}
-    </SonarCloudPage>
+    </SQPageContainer>
   );
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,6 @@
 import * as React from 'react';
 import DeleteForm from './DeleteForm';
 import Form, { MetricProps } from './Form';
-import { Metric } from '../../../app/types';
 import ActionsDropdown, {
   ActionsDropdownDivider,
   ActionsDropdownItem
@@ -29,7 +28,7 @@ import { translate } from '../../../helpers/l10n';
 
 interface Props {
   domains?: string[];
-  metric: Metric;
+  metric: T.Metric;
   onDelete: (metricKey: string) => Promise<void>;
   onEdit: (data: { id: string } & MetricProps) => Promise<void>;
   types?: string[];

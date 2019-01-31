@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -26,12 +26,11 @@ import {
   associateGateWithProject,
   dissociateGateWithProject
 } from '../../../api/quality-gates';
-import { QualityGate } from '../../../app/types';
 
 interface Props {
   canEdit?: boolean;
   organization?: string;
-  qualityGate: QualityGate;
+  qualityGate: T.QualityGate;
 }
 
 interface State {
@@ -40,10 +39,16 @@ interface State {
 }
 
 export default class Projects extends React.PureComponent<Props, State> {
+  mounted = false;
   state: State = { projects: [], selectedProjects: [] };
 
   componentDidMount() {
+    this.mounted = true;
     this.handleSearch('', Filter.Selected);
+  }
+
+  componentWillUnmount() {
+    this.mounted = false;
   }
 
   handleSearch = (query: string, selected: string) => {
@@ -54,12 +59,14 @@ export default class Projects extends React.PureComponent<Props, State> {
       query: query !== '' ? query : undefined,
       selected
     }).then(data => {
-      this.setState({
-        projects: data.results,
-        selectedProjects: data.results
-          .filter(project => project.selected)
-          .map(project => project.id)
-      });
+      if (this.mounted) {
+        this.setState({
+          projects: data.results,
+          selectedProjects: data.results
+            .filter(project => project.selected)
+            .map(project => project.id)
+        });
+      }
     });
   };
 
@@ -69,9 +76,11 @@ export default class Projects extends React.PureComponent<Props, State> {
       organization: this.props.organization,
       projectId: id
     }).then(() => {
-      this.setState(state => ({
-        selectedProjects: [...state.selectedProjects, id]
-      }));
+      if (this.mounted) {
+        this.setState(state => ({
+          selectedProjects: [...state.selectedProjects, id]
+        }));
+      }
     });
   };
 
@@ -82,9 +91,11 @@ export default class Projects extends React.PureComponent<Props, State> {
       projectId: id
     }).then(
       () => {
-        this.setState(state => ({
-          selectedProjects: without(state.selectedProjects, id)
-        }));
+        if (this.mounted) {
+          this.setState(state => ({
+            selectedProjects: without(state.selectedProjects, id)
+          }));
+        }
       },
       () => {}
     );

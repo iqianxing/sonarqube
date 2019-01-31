@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,6 @@ package org.sonar.ce.task.projectanalysis.issue;
 
 import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.core.issue.DefaultIssue;
-import org.sonar.ce.task.projectanalysis.component.Component;
 
 public abstract class IssueVisitor {
 

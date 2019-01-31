@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -94,6 +94,25 @@ public class OAuth2AuthenticationParametersImplTest {
     underTest.init(request, response);
 
     verify(response, never()).addCookie(any(Cookie.class));
+  }
+
+  @Test
+  public void return_to_is_not_set_when_not_local() {
+    when(request.getParameter("return_to")).thenReturn("http://external_url");
+    underTest.init(request, response);
+    verify(response, never()).addCookie(any());
+
+    when(request.getParameter("return_to")).thenReturn("//local_file");
+    underTest.init(request, response);
+    verify(response, never()).addCookie(any());
+
+    when(request.getParameter("return_to")).thenReturn("/\\local_file");
+    underTest.init(request, response);
+    verify(response, never()).addCookie(any());
+
+    when(request.getParameter("return_to")).thenReturn("something_else");
+    underTest.init(request, response);
+    verify(response, never()).addCookie(any());
   }
 
   @Test

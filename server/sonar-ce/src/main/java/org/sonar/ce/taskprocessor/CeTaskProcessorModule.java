@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -29,9 +29,13 @@ public class CeTaskProcessorModule extends Module {
       CeTaskProcessorRepositoryImpl.class,
       CeLoggingWorkerExecutionListener.class,
       ReportAnalysisFailureNotificationExecutionListener.class,
+      new CeTaskInterrupterProvider(),
+      CeTaskInterrupterWorkerExecutionListener.class,
       CeWorkerFactoryImpl.class,
-      EnabledCeWorkerControllerImpl.class,
+      CeWorkerControllerImpl.class,
       CeProcessingSchedulerExecutorServiceImpl.class,
-      CeProcessingSchedulerImpl.class);
+      CeProcessingSchedulerImpl.class
+
+    );
   }
 }

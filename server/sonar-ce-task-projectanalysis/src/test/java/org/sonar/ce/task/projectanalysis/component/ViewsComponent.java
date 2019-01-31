@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -46,8 +46,8 @@ public class ViewsComponent implements Component {
   private final ViewAttributes viewAttributes;
 
   private ViewsComponent(Type type, String key, @Nullable String uuid, @Nullable String name, @Nullable String description,
-    List<Component> children,
-    @Nullable ProjectViewAttributes projectViewAttributes, @Nullable SubViewAttributes subViewAttributes, @Nullable ViewAttributes viewAttributes) {
+    List<Component> children, @Nullable ProjectViewAttributes projectViewAttributes, @Nullable SubViewAttributes subViewAttributes,
+    @Nullable ViewAttributes viewAttributes) {
     checkArgument(type.isViewsType(), "Component type must be a Views type");
     this.type = type;
     this.key = requireNonNull(key);
@@ -70,7 +70,7 @@ public class ViewsComponent implements Component {
 
   public static final class Builder {
     private final Type type;
-    private final String key;
+    private String key;
     private String uuid;
     private String name;
     private String description;
@@ -86,6 +86,11 @@ public class ViewsComponent implements Component {
 
     public Builder setUuid(@Nullable String uuid) {
       this.uuid = uuid;
+      return this;
+    }
+
+    public Builder setKey(String key) {
+      this.key = key;
       return this;
     }
 
@@ -148,7 +153,7 @@ public class ViewsComponent implements Component {
   }
 
   @Override
-  public String getKey() {
+  public String getDbKey() {
     return key;
   }
 
@@ -156,14 +161,19 @@ public class ViewsComponent implements Component {
    * Views has no branch feature, the public key is the same as the key
    */
   @Override
-  public String getPublicKey() {
-    return getKey();
+  public String getKey() {
+    return getDbKey();
   }
 
   @Override
   public String getName() {
     checkState(this.name != null, "No name has been set");
     return this.name;
+  }
+
+  @Override
+  public String getShortName() {
+    return getName();
   }
 
   @Override
@@ -175,6 +185,11 @@ public class ViewsComponent implements Component {
   @Override
   public List<Component> getChildren() {
     return children;
+  }
+
+  @Override
+  public ProjectAttributes getProjectAttributes() {
+    throw new IllegalStateException("A component of type " + type + " does not have project attributes");
   }
 
   @Override

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -91,9 +91,7 @@ public class QualitygatesService extends BaseService {
         .setParam("gateId", request.getGateId())
         .setParam("metric", request.getMetric())
         .setParam("op", request.getOp())
-        .setParam("organization", request.getOrganization())
-        .setParam("period", request.getPeriod())
-        .setParam("warning", request.getWarning()),
+        .setParam("organization", request.getOrganization()),
       CreateConditionResponse.parser());
   }
 
@@ -307,9 +305,7 @@ public class QualitygatesService extends BaseService {
         .setParam("id", request.getId())
         .setParam("metric", request.getMetric())
         .setParam("op", request.getOp())
-        .setParam("organization", request.getOrganization())
-        .setParam("period", request.getPeriod())
-        .setParam("warning", request.getWarning()),
+        .setParam("organization", request.getOrganization()),
       UpdateConditionResponse.parser());
   }
 }

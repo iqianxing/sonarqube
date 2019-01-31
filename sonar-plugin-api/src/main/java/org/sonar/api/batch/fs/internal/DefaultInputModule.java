@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,133 +20,56 @@
 package org.sonar.api.batch.fs.internal;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import javax.annotation.CheckForNull;
+import java.util.ArrayList;
+import java.util.List;
 import javax.annotation.concurrent.Immutable;
 import org.sonar.api.batch.bootstrap.ProjectDefinition;
 import org.sonar.api.batch.fs.InputModule;
+import org.sonar.api.scan.filesystem.PathResolver;
 
-/**
- * @since 5.2
- */
+import static org.sonar.api.config.internal.MultivalueProperty.parseAsCsv;
+
 @Immutable
-public class DefaultInputModule extends DefaultInputComponent implements InputModule {
-  private final Path baseDir;
-  private final Path workDir;
-  private final String name;
-  private final String version;
-  private final String originalName;
-  private final String originalVersion;
-  private final String description;
-  private final String keyWithBranch;
-  private final String branch;
-  private final Map<String, String> properties;
+public class DefaultInputModule extends AbstractProjectOrModule implements InputModule {
 
-  private final String moduleKey;
-  private final ProjectDefinition definition;
+  private final List<Path> sourceDirsOrFiles;
+  private final List<Path> testDirsOrFiles;
 
   /**
    * For testing only!
    */
   public DefaultInputModule(ProjectDefinition definition) {
-    this(definition, TestInputFileBuilder.nextBatchId());
+    this(definition, 0);
   }
 
-  public DefaultInputModule(ProjectDefinition definition, int batchId) {
-    super(batchId);
-    this.baseDir = initBaseDir(definition);
-    this.workDir = initWorkingDir(definition);
-    this.name = definition.getName();
-    this.originalName = definition.getOriginalName();
-    this.version = definition.getVersion();
-    this.originalVersion = definition.getOriginalVersion();
-    this.description = definition.getDescription();
-    this.keyWithBranch = definition.getKeyWithBranch();
-    this.branch = definition.getBranch();
-    this.properties = Collections.unmodifiableMap(new HashMap<>(definition.properties()));
+  public DefaultInputModule(ProjectDefinition definition, int scannerComponentId) {
+    super(definition, scannerComponentId);
 
-    this.definition = definition;
-    this.moduleKey = definition.getKey();
+    this.sourceDirsOrFiles = initSources(definition, ProjectDefinition.SOURCES_PROPERTY);
+    this.testDirsOrFiles = initSources(definition, ProjectDefinition.TESTS_PROPERTY);
   }
 
-  private static Path initBaseDir(ProjectDefinition module) {
-    Path result;
-    try {
-      result = module.getBaseDir().toPath().toRealPath(LinkOption.NOFOLLOW_LINKS);
-    } catch (IOException e) {
-      throw new IllegalStateException("Unable to resolve module baseDir", e);
+  private List<Path> initSources(ProjectDefinition module, String propertyKey) {
+    List<Path> result = new ArrayList<>();
+    PathResolver pathResolver = new PathResolver();
+    String srcPropValue = module.properties().get(propertyKey);
+    if (srcPropValue != null) {
+      for (String sourcePath : parseAsCsv(propertyKey, srcPropValue)) {
+        File dirOrFile = pathResolver.relativeFile(getBaseDir().toFile(), sourcePath);
+        if (dirOrFile.exists()) {
+          result.add(dirOrFile.toPath());
+        }
+      }
     }
     return result;
   }
 
-  private static Path initWorkingDir(ProjectDefinition module) {
-    File workingDirAsFile = module.getWorkDir();
-    return workingDirAsFile.getAbsoluteFile().toPath().normalize();
+  public List<Path> getSourceDirsOrFiles() {
+    return sourceDirsOrFiles;
   }
 
-  /**
-   * Module key without branch
-   */
-  @Override
-  public String key() {
-    return moduleKey;
+  public List<Path> getTestDirsOrFiles() {
+    return testDirsOrFiles;
   }
-
-  @Override
-  public boolean isFile() {
-    return false;
-  }
-
-  public ProjectDefinition definition() {
-    return definition;
-  }
-
-  public Path getBaseDir() {
-    return baseDir;
-  }
-
-  public Path getWorkDir() {
-    return workDir;
-  }
-
-  public String getKeyWithBranch() {
-    return keyWithBranch;
-  }
-
-  @CheckForNull
-  public String getBranch() {
-    return branch;
-  }
-
-  public Map<String, String> properties() {
-    return properties;
-  }
-
-  @CheckForNull
-  public String getOriginalVersion() {
-    return originalVersion;
-  }
-
-  public String getVersion() {
-    return version;
-  }
-
-  @CheckForNull
-  public String getOriginalName() {
-    return originalName;
-  }
-
-  public String getName() {
-    return name;
-  }
-
-  public String getDescription() {
-    return description;
-  }
-
 }

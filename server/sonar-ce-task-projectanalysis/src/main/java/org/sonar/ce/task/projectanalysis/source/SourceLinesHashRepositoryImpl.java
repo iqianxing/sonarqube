@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,7 +27,6 @@ import org.sonar.core.hash.LineRange;
 import org.sonar.core.hash.SourceLineHashesComputer;
 import org.sonar.core.util.CloseableIterator;
 import org.sonar.db.source.LineHashVersion;
-import org.sonar.ce.task.projectanalysis.component.Component;
 
 public class SourceLinesHashRepositoryImpl implements SourceLinesHashRepository {
   private final SourceLinesRepository sourceLinesRepository;
@@ -86,16 +85,15 @@ public class SourceLinesHashRepositoryImpl implements SourceLinesHashRepository 
 
   private List<String> createLineHashes(Component component, Optional<LineRange[]> significantCodePerLine) {
     LineHashesComputer processor = createLineHashesProcessor(component.getFileAttributes().getLines(), significantCodePerLine);
-    CloseableIterator<String> lines = sourceLinesRepository.readLines(component);
-
-    while (lines.hasNext()) {
-      processor.addLine(lines.next());
+    try (CloseableIterator<String> lines = sourceLinesRepository.readLines(component)) {
+      while (lines.hasNext()) {
+        processor.addLine(lines.next());
+      }
+      return processor.getResult();
     }
-
-    return processor.getResult();
   }
 
-  public static interface LineHashesComputer {
+  public interface LineHashesComputer {
     void addLine(String line);
 
     List<String> getResult();

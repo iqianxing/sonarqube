@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,14 +25,19 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutorService;
+import java.util.function.Consumer;
+import javax.annotation.Nullable;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.rules.TemporaryFolder;
-import org.sonar.api.batch.fs.InputFile;
+import org.mockito.ArgumentMatchers;
 import org.sonar.api.batch.fs.internal.DefaultInputFile;
-import org.sonar.api.batch.fs.internal.DefaultInputModule;
+import org.sonar.api.batch.fs.internal.DefaultInputProject;
 import org.sonar.api.batch.fs.internal.TestInputFileBuilder;
 import org.sonar.api.utils.log.LogTester;
 import org.sonar.api.utils.log.LoggerLevel;
@@ -52,7 +57,8 @@ import org.sonar.scanner.scan.filesystem.InputComponentStore;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
 public class CpdExecutorTest {
@@ -65,11 +71,11 @@ public class CpdExecutorTest {
   @Rule
   public ExpectedException thrown = ExpectedException.none();
 
-  private BranchConfiguration branchConfig;
   private CpdExecutor executor;
-  private CpdSettings settings;
-  private SonarCpdBlockIndex index;
-  private ReportPublisher publisher;
+  private ExecutorService executorService = mock(ExecutorService.class);
+  private CpdSettings settings = mock(CpdSettings.class);
+  private ReportPublisher publisher = mock(ReportPublisher.class);
+  private SonarCpdBlockIndex index = new SonarCpdBlockIndex(publisher, settings);
   private ScannerReportReader reader;
   private DefaultInputFile batchComponent1;
   private DefaultInputFile batchComponent2;
@@ -81,16 +87,11 @@ public class CpdExecutorTest {
   public void setUp() throws IOException {
     File outputDir = temp.newFolder();
     baseDir = temp.newFolder();
-
-    branchConfig = mock(BranchConfiguration.class);
-    settings = mock(CpdSettings.class);
-    publisher = mock(ReportPublisher.class);
     when(publisher.getWriter()).thenReturn(new ScannerReportWriter(outputDir));
 
-    index = new SonarCpdBlockIndex(publisher, settings);
-    DefaultInputModule inputModule = TestInputFileBuilder.newDefaultInputModule("foo", baseDir);
-    componentStore = new InputComponentStore(inputModule, mock(BranchConfiguration.class));
-    executor = new CpdExecutor(settings, index, publisher, componentStore, branchConfig);
+    DefaultInputProject project = TestInputFileBuilder.newDefaultInputProject("foo", baseDir);
+    componentStore = new InputComponentStore(mock(BranchConfiguration.class));
+    executor = new CpdExecutor(settings, index, publisher, componentStore, executorService);
     reader = new ScannerReportReader(outputDir);
 
     batchComponent1 = createComponent("src/Foo.php", 5);
@@ -99,55 +100,28 @@ public class CpdExecutorTest {
   }
 
   @Test
-  public void skipIfShortBranch() {
-    when(branchConfig.isShortOrPullRequest()).thenReturn(true);
-    index = mock(SonarCpdBlockIndex.class);
-    executor = new CpdExecutor(settings, index, publisher, componentStore, branchConfig);
-
-    executor.execute();
-
-    verifyZeroInteractions(index);
-  }
-
-  @Test
-  public void skip_if_pull_request() {
-    when(branchConfig.isShortOrPullRequest()).thenReturn(true);
-    index = mock(SonarCpdBlockIndex.class);
-    executor = new CpdExecutor(settings, index, publisher, componentStore, branchConfig);
-
-    executor.execute();
-
-    verifyZeroInteractions(index);
-  }
-
-  private DefaultInputFile createComponent(String relativePath, int lines) {
-    DefaultInputFile file = new TestInputFileBuilder("foo", relativePath)
-      .setModuleBaseDir(baseDir.toPath())
-      .setLines(lines)
-      .build();
-    componentStore.put(file);
-    return file;
-  }
-
-  @Test
-  public void testNothingToSave() {
+  public void dont_fail_if_nothing_to_save() {
     executor.saveDuplications(batchComponent1, Collections.<CloneGroup>emptyList());
-    assertThat(reader.readComponentDuplications(batchComponent1.batchId())).hasSize(0);
+    assertThat(reader.readComponentDuplications(batchComponent1.scannerId())).hasSize(0);
   }
 
   @Test
-  public void reportOneSimpleDuplicationBetweenTwoFiles() {
-    List<CloneGroup> groups = Arrays.asList(newCloneGroup(new ClonePart(batchComponent1.key(), 0, 2, 4), new ClonePart(batchComponent2.key(), 0, 15, 17)));
+  public void should_save_single_duplication() {
+    List<CloneGroup> groups = Collections.singletonList(newCloneGroup(
+      new ClonePart(batchComponent1.key(), 0, 2, 4),
+      new ClonePart(batchComponent2.key(), 0, 15, 17)));
 
     executor.saveDuplications(batchComponent1, groups);
 
     Duplication[] dups = readDuplications(1);
-    assertDuplication(dups[0], 2, 4, batchComponent2.batchId(), 15, 17);
+    assertDuplication(dups[0], 2, 4, batchComponent2.scannerId(), 15, 17);
   }
 
   @Test
-  public void reportDuplicationOnSameFile() throws Exception {
-    List<CloneGroup> groups = Arrays.asList(newCloneGroup(new ClonePart(batchComponent1.key(), 0, 5, 204), new ClonePart(batchComponent1.key(), 0, 215, 414)));
+  public void should_save_duplication_on_same_file() {
+    List<CloneGroup> groups = Collections.singletonList(newCloneGroup(
+      new ClonePart(batchComponent1.key(), 0, 5, 204),
+      new ClonePart(batchComponent1.key(), 0, 215, 414)));
     executor.saveDuplications(batchComponent1, groups);
 
     Duplication[] dups = readDuplications(1);
@@ -155,13 +129,13 @@ public class CpdExecutorTest {
   }
 
   @Test
-  public void reportTooManyDuplicates() throws Exception {
+  public void should_limit_number_of_references() {
     // 1 origin part + 101 duplicates = 102
     List<ClonePart> parts = new ArrayList<>(CpdExecutor.MAX_CLONE_PART_PER_GROUP + 2);
     for (int i = 0; i < CpdExecutor.MAX_CLONE_PART_PER_GROUP + 2; i++) {
       parts.add(new ClonePart(batchComponent1.key(), i, i, i + 1));
     }
-    List<CloneGroup> groups = Arrays.asList(CloneGroup.builder().setLength(0).setOrigin(parts.get(0)).setParts(parts).build());
+    List<CloneGroup> groups = Collections.singletonList(CloneGroup.builder().setLength(0).setOrigin(parts.get(0)).setParts(parts).build());
     executor.saveDuplications(batchComponent1, groups);
 
     Duplication[] dups = readDuplications(1);
@@ -173,7 +147,7 @@ public class CpdExecutorTest {
   }
 
   @Test
-  public void reportTooManyDuplications() throws Exception {
+  public void should_limit_number_of_clones() {
     // 1 origin part + 101 duplicates = 102
     List<CloneGroup> dups = new ArrayList<>(CpdExecutor.MAX_CLONE_GROUP_PER_FILE + 1);
     for (int i = 0; i < CpdExecutor.MAX_CLONE_GROUP_PER_FILE + 1; i++) {
@@ -183,73 +157,95 @@ public class CpdExecutorTest {
     }
     executor.saveDuplications(batchComponent1, dups);
 
-    assertThat(reader.readComponentDuplications(batchComponent1.batchId())).hasSize(CpdExecutor.MAX_CLONE_GROUP_PER_FILE);
+    assertThat(reader.readComponentDuplications(batchComponent1.scannerId())).hasSize(CpdExecutor.MAX_CLONE_GROUP_PER_FILE);
 
     assertThat(logTester.logs(LoggerLevel.WARN))
       .contains("Too many duplication groups on file " + batchComponent1 + ". Keep only the first " + CpdExecutor.MAX_CLONE_GROUP_PER_FILE + " groups.");
   }
 
   @Test
-  public void reportOneDuplicatedGroupInvolvingMoreThanTwoFiles() throws Exception {
-    List<CloneGroup> groups = Arrays
-      .asList(newCloneGroup(new ClonePart(batchComponent1.key(), 0, 5, 204), new ClonePart(batchComponent2.key(), 0, 15, 214), new ClonePart(batchComponent3.key(), 0, 25, 224)));
+  public void should_save_duplication_involving_three_files() {
+    List<CloneGroup> groups = Collections.singletonList(newCloneGroup(
+      new ClonePart(batchComponent1.key(), 0, 5, 204),
+      new ClonePart(batchComponent2.key(), 0, 15, 214),
+      new ClonePart(batchComponent3.key(), 0, 25, 224)));
     executor.saveDuplications(batchComponent1, groups);
 
     Duplication[] dups = readDuplications(1);
     assertDuplication(dups[0], 5, 204, 2);
-    assertDuplicate(dups[0].getDuplicate(0), batchComponent2.batchId(), 15, 214);
-    assertDuplicate(dups[0].getDuplicate(1), batchComponent3.batchId(), 25, 224);
+    assertDuplicate(dups[0].getDuplicate(0), batchComponent2.scannerId(), 15, 214);
+    assertDuplicate(dups[0].getDuplicate(1), batchComponent3.scannerId(), 25, 224);
   }
 
   @Test
-  public void reportTwoDuplicatedGroupsInvolvingThreeFiles() throws Exception {
+  public void should_save_two_duplicated_groups_involving_three_files() {
     List<CloneGroup> groups = Arrays.asList(
-      newCloneGroup(new ClonePart(batchComponent1.key(), 0, 5, 204), new ClonePart(batchComponent2.key(), 0, 15, 214)),
-      newCloneGroup(new ClonePart(batchComponent1.key(), 0, 15, 214), new ClonePart(batchComponent3.key(), 0, 15, 214)));
+      newCloneGroup(new ClonePart(batchComponent1.key(), 0, 5, 204),
+        new ClonePart(batchComponent2.key(), 0, 15, 214)),
+      newCloneGroup(new ClonePart(batchComponent1.key(), 0, 15, 214),
+        new ClonePart(batchComponent3.key(), 0, 15, 214)));
     executor.saveDuplications(batchComponent1, groups);
 
     Duplication[] dups = readDuplications(2);
-    assertDuplication(dups[0], 5, 204, batchComponent2.batchId(), 15, 214);
-    assertDuplication(dups[1], 15, 214, batchComponent3.batchId(), 15, 214);
+    assertDuplication(dups[0], 5, 204, batchComponent2.scannerId(), 15, 214);
+    assertDuplication(dups[1], 15, 214, batchComponent3.scannerId(), 15, 214);
   }
 
   @Test
-  public void failOnMissingComponent() {
-    executor.runCpdAnalysis(null, "unknown", Collections.emptyList(), 1);
-    readDuplications(0);
+  public void should_ignore_missing_component() {
+    Block block = Block.builder()
+      .setBlockHash(new ByteArray("AAAABBBBCCCC"))
+      .setResourceId("unknown")
+      .build();
+    index.insert(batchComponent1, Collections.singletonList(block));
+    executor.execute();
+
+    verify(executorService).shutdown();
+    verifyNoMoreInteractions(executorService);
+    readDuplications(batchComponent1, 0);
     assertThat(logTester.logs(LoggerLevel.ERROR)).contains("Resource not found in component store: unknown. Skipping CPD computation for it");
   }
 
   @Test
-  public void timeout() {
-    for (int i = 1; i <= 2; i++) {
-      DefaultInputFile component = createComponent("src/Foo" + i + ".php", 100);
-      List<Block> blocks = new ArrayList<>();
-      for (int j = 1; j <= 10000; j++) {
-        blocks.add(Block.builder()
-          .setResourceId(component.key())
-          .setIndexInFile(j)
-          .setLines(j, j + 1)
-          .setUnit(j, j + 1)
-          .setBlockHash(new ByteArray("abcd1234".getBytes()))
-          .build());
-      }
-      index.insert((InputFile) component, blocks);
-    }
+  public void should_timeout() {
+    Block block = Block.builder()
+      .setBlockHash(new ByteArray("AAAABBBBCCCC"))
+      .setResourceId(batchComponent1.key())
+      .build();
+    index.insert(batchComponent1, Collections.singletonList(block));
+    when(executorService.submit(ArgumentMatchers.any(Callable.class))).thenReturn(new CompletableFuture());
     executor.execute(1);
 
     readDuplications(0);
     assertThat(logTester.logs(LoggerLevel.WARN))
       .usingElementComparator((l, r) -> l.matches(r) ? 0 : 1)
       .containsOnly(
-        "Timeout during detection of duplications for .*Foo1.php",
-        "Timeout during detection of duplications for .*Foo2.php");
+        "Timeout during detection of duplications for .*Foo.php");
+  }
+
+  private DefaultInputFile createComponent(String relativePath, int lines) {
+    return createComponent(relativePath, lines, f -> {
+    });
+  }
+
+  private DefaultInputFile createComponent(String relativePath, int lines, Consumer<TestInputFileBuilder> config) {
+    TestInputFileBuilder fileBuilder = new TestInputFileBuilder("foo", relativePath)
+      .setModuleBaseDir(baseDir.toPath())
+      .setLines(lines);
+    config.accept(fileBuilder);
+    DefaultInputFile file = fileBuilder.build();
+    componentStore.put("foo", file);
+    return file;
   }
 
   private Duplication[] readDuplications(int expected) {
-    assertThat(reader.readComponentDuplications(batchComponent1.batchId())).hasSize(expected);
+    return readDuplications(batchComponent1, expected);
+  }
+
+  private Duplication[] readDuplications(DefaultInputFile file, int expected) {
+    assertThat(reader.readComponentDuplications(file.scannerId())).hasSize(expected);
     Duplication[] duplications = new Duplication[expected];
-    CloseableIterator<Duplication> dups = reader.readComponentDuplications(batchComponent1.batchId());
+    CloseableIterator<Duplication> dups = reader.readComponentDuplications(file.scannerId());
 
     for (int i = 0; i < expected; i++) {
       duplications[i] = dups.next();
@@ -270,7 +266,7 @@ public class CpdExecutorTest {
     assertThat(d.getDuplicateList()).hasSize(numDuplicates);
   }
 
-  private void assertDuplication(Duplication d, int originStartLine, int originEndLine, Integer otherFileRef, int rangeStartLine, int rangeEndLine) {
+  private void assertDuplication(Duplication d, int originStartLine, int originEndLine, @Nullable Integer otherFileRef, int rangeStartLine, int rangeEndLine) {
     assertThat(d.getOriginPosition().getStartLine()).isEqualTo(originStartLine);
     assertThat(d.getOriginPosition().getEndLine()).isEqualTo(originEndLine);
     assertThat(d.getDuplicateList()).hasSize(1);

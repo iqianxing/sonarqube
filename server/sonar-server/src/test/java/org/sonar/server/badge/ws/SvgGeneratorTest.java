@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -31,6 +31,7 @@ import org.sonar.server.tester.UserSessionRule;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.sonar.api.measures.Metric.Level.ERROR;
 import static org.sonar.api.measures.Metric.Level.WARN;
 import static org.sonar.server.badge.ws.SvgGenerator.Color.DEFAULT;
 
@@ -62,9 +63,19 @@ public class SvgGeneratorTest {
     mapSettings.setProperty("sonar.sonarcloud.enabled", false);
     initSvgGenerator();
 
+    String result = underTest.generateQualityGate(ERROR);
+
+    checkQualityGate(result, ERROR);
+  }
+
+  @Test
+  public void generate_deprecated_warning_quality_gate() {
+    mapSettings.setProperty("sonar.sonarcloud.enabled", false);
+    initSvgGenerator();
+
     String result = underTest.generateQualityGate(WARN);
 
-    checkQualityGate(result, WARN);
+    assertThat(result).isEqualTo(readTemplate("quality_gate_warn.svg"));
   }
 
   @Test
@@ -102,9 +113,6 @@ public class SvgGeneratorTest {
     switch (status) {
       case OK:
         assertThat(response).isEqualTo(readTemplate("quality_gate_passed.svg"));
-        break;
-      case WARN:
-        assertThat(response).isEqualTo(readTemplate("quality_gate_warn.svg"));
         break;
       case ERROR:
         assertThat(response).isEqualTo(readTemplate("quality_gate_failed.svg"));

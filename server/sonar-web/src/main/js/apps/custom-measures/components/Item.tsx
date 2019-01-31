@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,7 +21,6 @@ import * as React from 'react';
 import DeleteForm from './DeleteForm';
 import Form from './Form';
 import MeasureDate from './MeasureDate';
-import { CustomMeasure } from '../../../app/types';
 import ActionsDropdown, {
   ActionsDropdownDivider,
   ActionsDropdownItem
@@ -31,7 +30,7 @@ import { translate } from '../../../helpers/l10n';
 import { formatMeasure } from '../../../helpers/measures';
 
 interface Props {
-  measure: CustomMeasure;
+  measure: T.CustomMeasure;
   onDelete: (measureId: string) => Promise<void>;
   onEdit: (data: { description: string; id: string; value: string }) => Promise<void>;
 }

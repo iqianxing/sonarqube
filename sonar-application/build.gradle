@@ -6,9 +6,9 @@ sonarqube {
 
 configurations {
   zip
-
   jsw
   scanner
+  web
   jdbc_mssql {
     transitive = false
   }
@@ -26,6 +26,11 @@ configurations {
   }
 }
 
+ext {
+  slangVersion = '1.4.0.155'
+  dotnetVersion = '7.10.0.7896'
+}
+
 dependencies {
   // please keep list ordered
 
@@ -39,26 +44,33 @@ dependencies {
 
   jsw 'tanukisoft:wrapper:3.2.3'
   scanner project(path: ':sonar-scanner-engine-shaded', configuration: 'shadow')
+  web project(':server:sonar-vsts')
+  web project(':server:sonar-web')
 
   jdbc_h2 'com.h2database:h2'
   jdbc_mssql 'com.microsoft.sqlserver:mssql-jdbc'
   jdbc_mysql 'mysql:mysql-connector-java'
   jdbc_postgresql 'org.postgresql:postgresql'
 
-  bundledPlugin 'org.sonarsource.css:sonar-css-plugin:1.0.1.508@jar'
-  bundledPlugin 'org.sonarsource.dotnet:sonar-csharp-plugin:7.3.2.6129@jar'
+  bundledPlugin 'org.sonarsource.css:sonar-css-plugin:1.0.3.724@jar'
+  bundledPlugin "org.sonarsource.dotnet:sonar-csharp-plugin:${dotnetVersion}@jar"
+  bundledPlugin "org.sonarsource.dotnet:sonar-vbnet-plugin:${dotnetVersion}@jar"
   bundledPlugin 'org.sonarsource.flex:sonar-flex-plugin:2.4.0.1222@jar'
   bundledPlugin 'org.sonarsource.go:sonar-go-plugin:1.1.0.1612@jar'
-  bundledPlugin 'org.sonarsource.java:sonar-java-plugin:5.6.1.15064@jar'
-  bundledPlugin 'org.sonarsource.javascript:sonar-javascript-plugin:4.2.0.6476@jar'
-  bundledPlugin 'org.sonarsource.slang:sonar-kotlin-plugin:1.0.1.965@jar'
+  bundledPlugin 'org.sonarsource.html:sonar-html-plugin:3.1.0.1615@jar'
+  bundledPlugin 'org.sonarsource.java:sonar-java-plugin:5.10.1.16922@jar'
+  bundledPlugin 'org.sonarsource.jacoco:sonar-jacoco-plugin:1.0.1.143@jar'
+  bundledPlugin 'org.sonarsource.javascript:sonar-javascript-plugin:5.0.0.6962@jar'
   bundledPlugin 'org.sonarsource.ldap:sonar-ldap-plugin:2.2.0.608@jar'
-  bundledPlugin 'org.sonarsource.php:sonar-php-plugin:2.14.0.3569@jar'
-  bundledPlugin 'org.sonarsource.python:sonar-python-plugin:1.10.0.2131@jar'
-  bundledPlugin 'org.sonarsource.scm.git:sonar-scm-git-plugin:1.4.1.1128@jar'
-  bundledPlugin 'org.sonarsource.scm.svn:sonar-scm-svn-plugin:1.8.0.1168@jar'
-  bundledPlugin 'org.sonarsource.typescript:sonar-typescript-plugin:1.7.0.2893@jar'
-  bundledPlugin 'org.sonarsource.xml:sonar-xml-plugin:1.5.1.1452@jar'
+  bundledPlugin 'org.sonarsource.php:sonar-php-plugin:2.16.0.4355@jar'
+  bundledPlugin 'org.sonarsource.python:sonar-python-plugin:1.11.0.2473@jar'
+  bundledPlugin "org.sonarsource.slang:sonar-kotlin-plugin:${slangVersion}@jar"
+  bundledPlugin "org.sonarsource.slang:sonar-ruby-plugin:${slangVersion}@jar"
+  bundledPlugin 'org.sonarsource.scm.git:sonar-scm-git-plugin:1.7.0.1491@jar'
+  bundledPlugin 'org.sonarsource.scm.svn:sonar-scm-svn-plugin:1.9.0.1295@jar'
+  bundledPlugin "org.sonarsource.slang:sonar-scala-plugin:${slangVersion}@jar"
+  bundledPlugin 'org.sonarsource.typescript:sonar-typescript-plugin:1.9.0.3766@jar'
+  bundledPlugin 'org.sonarsource.xml:sonar-xml-plugin:2.0.1.2020@jar'
 
   testCompile 'junit:junit'
   testCompile 'org.assertj:assertj-core'
@@ -68,7 +80,7 @@ dependencies {
 jar {
   manifest {
     attributes(
-      'Class-Path': configurations.compile.collect { "common/${it.getName()}" }.join(' '),
+      'Class-Path': configurations.compile.resolvedConfiguration.files.collect { "common/${it.getName()}" }.join(' '),
       'Main-Class': 'org.sonar.application.App'
     )
   }
@@ -106,8 +118,12 @@ task zip(type: Zip, dependsOn: [configurations.compile]) {
     from configurations.compile
   }
   into("${archiveDir}/web/") {
+    // FIXME use configurations.web with correct artifacts
     from tasks.getByPath(':server:sonar-web:yarn_run').outputs
     from tasks.getByPath(':server:sonar-vsts:yarn_run').outputs
+    if (official) {
+      from project(':private:branding').file('.')
+    }
   }
   into("${archiveDir}/lib/jdbc/mssql/") {
     from configurations.jdbc_mssql
@@ -128,8 +144,8 @@ zip.doFirst {
 }
 // Check the size of the archive
 zip.doLast {
-  def minLength = 160000000
-  def maxLength = 175000000
+  def minLength = 185000000
+  def maxLength = 190000000
   def length = new File(distsDir, archiveName).length()
   if (length < minLength)
     throw new GradleException("$archiveName size ($length) too small. Min is $minLength")

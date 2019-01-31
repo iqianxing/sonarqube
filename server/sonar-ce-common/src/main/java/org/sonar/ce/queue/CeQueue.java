@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,6 +22,7 @@ package org.sonar.ce.queue;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import javax.annotation.Nullable;
 import org.sonar.ce.task.CeTask;
 import org.sonar.db.DbSession;
 import org.sonar.db.ce.CeQueueDto;
@@ -57,7 +58,7 @@ public interface CeQueue {
    * <p>
    * This method is equivalent to calling {@code massSubmit(Collections.singletonList(submission))}.
    *
-   * @return empty if {@code options} contains {@link SubmitOption#UNIQUE_QUEUE_PER_COMPONENT UNIQUE_QUEUE_PER_COMPONENT}
+   * @return empty if {@code options} contains {@link SubmitOption#UNIQUE_QUEUE_PER_MAIN_COMPONENT UNIQUE_QUEUE_PER_MAIN_COMPONENT}
    *         and there's already a queued task, otherwise the created task.
    */
   Optional<CeTask> submit(CeTaskSubmit submission, SubmitOption... options);
@@ -87,6 +88,16 @@ public interface CeQueue {
   int cancelAll();
 
   /**
+   * Mark a task in status {@link org.sonar.db.ce.CeQueueDto.Status#IN_PROGRESS} as failed. An unchecked
+   * exception is thrown if the status is not {@link org.sonar.db.ce.CeQueueDto.Status#IN_PROGRESS}.
+   *
+   * The {@code dbSession} is committed.
+
+   * @throws RuntimeException if the task is concurrently removed from the queue
+   */
+  void fail(DbSession dbSession, CeQueueDto ceQueueDto, @Nullable String errorType, @Nullable String errorMessage);
+
+  /**
    * Requests workers to stop peeking tasks from queue. Does nothing if workers are already paused or being paused.
    * The workers that are already processing tasks are not interrupted.
    * This method is not restricted to the local workers. All the Compute Engine nodes are paused.
@@ -102,7 +113,7 @@ public interface CeQueue {
   WorkersPauseStatus getWorkersPauseStatus();
 
   enum SubmitOption {
-    UNIQUE_QUEUE_PER_COMPONENT
+    UNIQUE_QUEUE_PER_MAIN_COMPONENT
   }
 
   enum WorkersPauseStatus {

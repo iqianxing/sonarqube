@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -23,12 +23,15 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import org.sonar.core.platform.Module;
-import org.sonar.db.alm.ProjectAlmBindingsDao;
+import org.sonar.db.alm.AlmAppInstallDao;
+import org.sonar.db.alm.OrganizationAlmBindingDao;
+import org.sonar.db.alm.ProjectAlmBindingDao;
 import org.sonar.db.ce.CeActivityDao;
 import org.sonar.db.ce.CeQueueDao;
 import org.sonar.db.ce.CeScannerContextDao;
 import org.sonar.db.ce.CeTaskCharacteristicDao;
 import org.sonar.db.ce.CeTaskInputDao;
+import org.sonar.db.ce.CeTaskMessageDao;
 import org.sonar.db.component.AnalysisPropertiesDao;
 import org.sonar.db.component.BranchDao;
 import org.sonar.db.component.ComponentDao;
@@ -37,10 +40,10 @@ import org.sonar.db.component.ProjectLinkDao;
 import org.sonar.db.component.SnapshotDao;
 import org.sonar.db.duplication.DuplicationDao;
 import org.sonar.db.es.EsQueueDao;
+import org.sonar.db.event.EventComponentChangeDao;
 import org.sonar.db.event.EventDao;
 import org.sonar.db.issue.IssueChangeDao;
 import org.sonar.db.issue.IssueDao;
-import org.sonar.db.alm.AlmAppInstallDao;
 import org.sonar.db.mapping.ProjectMappingsDao;
 import org.sonar.db.measure.LiveMeasureDao;
 import org.sonar.db.measure.MeasureDao;
@@ -76,6 +79,7 @@ import org.sonar.db.user.GroupMembershipDao;
 import org.sonar.db.user.RoleDao;
 import org.sonar.db.user.UserDao;
 import org.sonar.db.user.UserGroupDao;
+import org.sonar.db.user.UserPropertiesDao;
 import org.sonar.db.user.UserTokenDao;
 import org.sonar.db.webhook.WebhookDao;
 import org.sonar.db.webhook.WebhookDeliveryDao;
@@ -94,6 +98,7 @@ public class DaoModule extends Module {
     CeScannerContextDao.class,
     CeTaskCharacteristicDao.class,
     CeTaskInputDao.class,
+    CeTaskMessageDao.class,
     ComponentDao.class,
     ComponentKeyUpdaterDao.class,
     CustomMeasureDao.class,
@@ -101,12 +106,13 @@ public class DaoModule extends Module {
     DuplicationDao.class,
     EsQueueDao.class,
     EventDao.class,
+    EventComponentChangeDao.class,
     FileSourceDao.class,
     GroupDao.class,
     GroupMembershipDao.class,
     GroupPermissionDao.class,
     AlmAppInstallDao.class,
-    ProjectAlmBindingsDao.class,
+    ProjectAlmBindingDao.class,
     InternalPropertiesDao.class,
     IssueChangeDao.class,
     IssueDao.class,
@@ -114,6 +120,7 @@ public class DaoModule extends Module {
     MeasureDao.class,
     MetricDao.class,
     NotificationQueueDao.class,
+    OrganizationAlmBindingDao.class,
     OrganizationDao.class,
     OrganizationMemberDao.class,
     PermissionTemplateCharacteristicDao.class,
@@ -138,6 +145,7 @@ public class DaoModule extends Module {
     UserDao.class,
     UserGroupDao.class,
     UserPermissionDao.class,
+    UserPropertiesDao.class,
     UserTokenDao.class,
     WebhookDao.class,
     WebhookDeliveryDao.class));

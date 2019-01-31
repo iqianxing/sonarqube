@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,24 +20,24 @@
 import * as React from 'react';
 import { Link } from 'react-router';
 import Analysis from './Analysis';
-import { getProjectActivity, Analysis as IAnalysis } from '../../../api/projectActivity';
+import { getProjectActivity } from '../../../api/projectActivity';
 import PreviewGraph from '../../../components/preview-graph/PreviewGraph';
 import { translate } from '../../../helpers/l10n';
-import { Metric, Component, BranchLike } from '../../../app/types';
-import { History } from '../../../api/time-machine';
 import { getBranchLikeQuery, isSameBranchLike } from '../../../helpers/branches';
 import { getActivityUrl } from '../../../helpers/urls';
 
 interface Props {
-  branchLike?: BranchLike;
-  component: Component;
-  history?: History;
-  metrics: { [key: string]: Metric };
+  branchLike?: T.BranchLike;
+  component: T.Component;
+  history?: {
+    [metric: string]: Array<{ date: Date; value?: string }>;
+  };
+  metrics: { [key: string]: T.Metric };
   qualifier: string;
 }
 
 interface State {
-  analyses: IAnalysis[];
+  analyses: T.Analysis[];
   loading: boolean;
 }
 
@@ -98,7 +98,7 @@ export default class AnalysesList extends React.PureComponent<Props, State> {
     );
   };
 
-  renderList(analyses: IAnalysis[]) {
+  renderList(analyses: T.Analysis[]) {
     if (!analyses.length) {
       return <p className="spacer-top note">{translate('no_results')}</p>;
     }

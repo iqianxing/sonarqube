@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,31 +21,110 @@ import * as React from 'react';
 import { shallow } from 'enzyme';
 import { GlobalNav } from '../GlobalNav';
 import { isSonarCloud } from '../../../../../helpers/system';
+import { waitAndUpdate, click } from '../../../../../helpers/testUtils';
+import {
+  fetchPrismicRefs,
+  fetchPrismicFeatureNews,
+  PrismicFeatureNews
+} from '../../../../../api/news';
 
 jest.mock('../../../../../helpers/system', () => ({ isSonarCloud: jest.fn() }));
 
-const appState = { qualifiers: [] };
-const currentUser = { isLoggedIn: false };
+// Solve redux warning issue "No reducer provided for key":
+// https://stackoverflow.com/questions/43375079/redux-warning-only-appearing-in-tests
+jest.mock('../../../../../store/rootReducer');
+
+jest.mock('../../../../../api/news', () => {
+  const prismicResult: PrismicFeatureNews[] = [
+    {
+      notification: '10 Java rules, Github checks, Security Hotspots, BitBucket branch decoration',
+      publicationDate: '2018-04-06',
+      features: [
+        {
+          categories: [{ color: '#ff0000', name: 'Java' }],
+          description: '10 new Java rules'
+        }
+      ]
+    },
+    {
+      notification: 'Some other notification',
+      publicationDate: '2018-04-05',
+      features: [
+        {
+          categories: [{ color: '#0000ff', name: 'BitBucket' }],
+          description: 'BitBucket branch decoration',
+          readMore: 'http://example.com'
+        }
+      ]
+    }
+  ];
+
+  return {
+    fetchPrismicRefs: jest.fn().mockResolvedValue({ ref: 'master-ref' }),
+    fetchPrismicFeatureNews: jest.fn().mockResolvedValue({
+      news: prismicResult,
+      paging: { pageIndex: 1, pageSize: 10, total: 2 }
+    })
+  };
+});
+
+const appState: GlobalNav['props']['appState'] = {
+  globalPages: [],
+  canAdmin: false,
+  organizationsEnabled: false,
+  qualifiers: []
+};
 const location = { pathname: '' };
 
-it('should render for SonarQube', () => {
-  runTest(false);
+beforeEach(() => {
+  (fetchPrismicRefs as jest.Mock).mockClear();
+  (fetchPrismicFeatureNews as jest.Mock).mockClear();
+});
+
+it('should render for SonarQube', async () => {
+  (isSonarCloud as jest.Mock).mockImplementation(() => false);
+
+  const wrapper = shallowRender();
+
+  expect(wrapper).toMatchSnapshot();
+  wrapper.setProps({ currentUser: { isLoggedIn: true } });
+  expect(wrapper.find('[data-test="global-nav-plus"]').exists()).toBe(true);
+
+  await waitAndUpdate(wrapper);
+  expect(fetchPrismicRefs).not.toBeCalled();
 });
 
 it('should render for SonarCloud', () => {
-  runTest(true);
+  (isSonarCloud as jest.Mock).mockImplementation(() => true);
+  const wrapper = shallowRender({ currentUser: { isLoggedIn: true } });
+
+  expect(wrapper).toMatchSnapshot();
+  expect(wrapper.find('[data-test="global-nav-plus"]').exists()).toBe(true);
 });
 
-function runTest(mockedIsSonarCloud: boolean) {
-  (isSonarCloud as jest.Mock).mockImplementation(() => mockedIsSonarCloud);
-  expect(
-    shallow(
-      <GlobalNav
-        appState={appState}
-        currentUser={currentUser}
-        location={location}
-        suggestions={[]}
-      />
-    )
-  ).toMatchSnapshot();
+it('should render correctly if there are new features', async () => {
+  (isSonarCloud as jest.Mock).mockImplementation(() => true);
+  const wrapper = shallowRender();
+  wrapper.setProps({ currentUser: { isLoggedIn: true } });
+
+  await waitAndUpdate(wrapper);
+  expect(fetchPrismicRefs).toHaveBeenCalled();
+  expect(fetchPrismicFeatureNews).toHaveBeenCalled();
+  expect(wrapper).toMatchSnapshot();
+  expect(wrapper.find('NavLatestNotification').exists()).toBe(true);
+  click(wrapper.find('NavLatestNotification'));
+  expect(wrapper.find('NotificationsSidebar').exists()).toBe(true);
+});
+
+function shallowRender(props: Partial<GlobalNav['props']> = {}) {
+  return shallow(
+    <GlobalNav
+      accessToken="token"
+      appState={appState}
+      currentUser={{ isLoggedIn: false }}
+      location={location}
+      setCurrentUserSetting={jest.fn()}
+      {...props}
+    />
+  );
 }

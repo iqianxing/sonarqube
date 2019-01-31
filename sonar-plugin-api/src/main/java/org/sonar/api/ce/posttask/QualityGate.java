@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -50,7 +50,10 @@ public interface QualityGate {
   enum Status {
     /** at least one threshold is defined, no threshold is reached */
     OK,
-    /** at least one warning threshold is reached, no error threshold is reached */
+    /**
+     * @deprecated in 7.6.
+     */
+    @Deprecated
     WARN,
     /** at least one error threshold is reached */
     ERROR
@@ -74,34 +77,28 @@ public interface QualityGate {
     String getMetricKey();
 
     /**
-     * The operator used to evaluate the error and/or warning thresholds against the value of the measure
+     * The operator used to evaluate the error threshold against the value of the measure
      */
     Operator getOperator();
 
     /**
-     * <p>
-     * At least one of {@link #getErrorThreshold()} and {@link #getWarningThreshold()} is guaranteed to be non {@code null}.
-     * 
-     *
-     * @see #getWarningThreshold()
+     * The threshold value which makes the quality gates status change to {@link EvaluationStatus#ERROR} when it's reached.
      */
-    @CheckForNull
     String getErrorThreshold();
 
     /**
-     *
-     * <p>
-     * At least one of {@link #getErrorThreshold()} and {@link #getWarningThreshold()} is guaranteed to be non {@code null}.
-     * 
-     *
-     * @see #getErrorThreshold()
+     * @deprecated in 7.6. Implementations should always return null.
      */
+    @Deprecated
     @CheckForNull
     String getWarningThreshold();
 
     /**
-     * Whether this condition is defined on the leak period or on an absolute value
+     * Whether this condition is defined on the leak period or on an absolute value.
+     * @deprecated in 7.6. Implementations should always return false.
+     * Conditions "on leak period" were removed. Use "New X" conditions instead.
      */
+    @Deprecated
     boolean isOnLeakPeriod();
 
     /**
@@ -123,7 +120,18 @@ public interface QualityGate {
    * Quality Gate condition operator.
    */
   enum Operator {
-    EQUALS, NOT_EQUALS, GREATER_THAN, LESS_THAN
+    /**
+     * @deprecated in 7.6. Using this operator will have no effect.
+     */
+    @Deprecated
+    EQUALS,
+    /**
+     * @deprecated in 7.6.  Using this operator will have no effect.
+     */
+    @Deprecated
+    NOT_EQUALS,
+    GREATER_THAN,
+    LESS_THAN
   }
 
   /**
@@ -136,12 +144,14 @@ public interface QualityGate {
      */
     NO_VALUE,
     /**
-     * Condition evaluated as OK, neither error nor warning thresholds have been reached.
+     * Condition evaluated as OK, error thresholds has not been reached.
      */
     OK,
     /**
      * Condition evaluated as WARN, only warning thresholds has been reached.
+     * @deprecated in 7.6
      */
+    @Deprecated
     WARN,
     /**
      * Condition evaluated as ERROR, error thresholds has been reached (and most likely warning thresholds too).

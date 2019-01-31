@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -20,7 +20,6 @@
 package org.sonar.server.measure.ws;
 
 import com.google.common.base.Joiner;
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
@@ -29,6 +28,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import javax.annotation.CheckForNull;
 import javax.annotation.Nullable;
@@ -105,6 +105,7 @@ public class ComponentAction implements MeasuresWsAction {
       .setResponseExample(getClass().getResource("component-example.json"))
       .setSince("5.4")
       .setChangelog(
+        new Change("7.6", String.format("The use of module keys in parameter '%s' is deprecated", PARAM_COMPONENT)),
         new Change("6.6", "the response field id is deprecated. Use key instead."),
         new Change("6.6", "the response field refId is deprecated. Use refKey instead."))
       .setHandler(this);
@@ -176,7 +177,7 @@ public class ComponentAction implements MeasuresWsAction {
 
   private Optional<ComponentDto> getReferenceComponent(DbSession dbSession, ComponentDto component) {
     if (component.getCopyResourceUuid() == null) {
-      return Optional.absent();
+      return Optional.empty();
     }
 
     return dbClient.componentDao().selectByUuid(dbSession, component.getCopyResourceUuid());

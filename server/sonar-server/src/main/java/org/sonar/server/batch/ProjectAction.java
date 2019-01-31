@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,18 +19,22 @@
  */
 package org.sonar.server.batch;
 
+import com.google.common.collect.Maps;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
+import org.sonar.api.server.ws.Change;
 import org.sonar.api.server.ws.Request;
 import org.sonar.api.server.ws.Response;
 import org.sonar.api.server.ws.WebService;
 import org.sonar.scanner.protocol.input.FileData;
+import org.sonar.scanner.protocol.input.MultiModuleProjectRepository;
 import org.sonar.scanner.protocol.input.ProjectRepositories;
+import org.sonar.scanner.protocol.input.SingleProjectRepository;
 import org.sonarqube.ws.Batch.WsProjectResponse;
 import org.sonarqube.ws.Batch.WsProjectResponse.FileData.Builder;
 
-import static org.sonar.core.util.Protobuf.setNullable;
+import static java.util.Optional.ofNullable;
 import static org.sonar.server.ws.KeyExamples.KEY_BRANCH_EXAMPLE_001;
 import static org.sonar.server.ws.KeyExamples.KEY_PROJECT_EXAMPLE_001;
 import static org.sonar.server.ws.KeyExamples.KEY_PULL_REQUEST_EXAMPLE_001;
@@ -56,6 +60,8 @@ public class ProjectAction implements BatchWsAction {
       .setDescription("Return project repository")
       .setResponseExample(getClass().getResource("project-example.json"))
       .setSince("4.5")
+      .setChangelog(new Change("7.6", String.format("The use of module keys in parameter '%s' is deprecated", PARAM_KEY)))
+      .setChangelog(new Change("7.6", "Stop returning settings"))
       .setInternal(true)
       .setHandler(this);
 
@@ -92,7 +98,7 @@ public class ProjectAction implements BatchWsAction {
   @Override
   public void handle(Request wsRequest, Response wsResponse) throws Exception {
     ProjectRepositories data = projectDataLoader.load(ProjectDataQuery.create()
-      .setModuleKey(wsRequest.mandatoryParam(PARAM_KEY))
+      .setProjectKey(wsRequest.mandatoryParam(PARAM_KEY))
       .setProfileName(wsRequest.param(PARAM_PROFILE))
       .setIssuesMode(wsRequest.mandatoryParamAsBoolean(PARAM_ISSUES_MODE))
       .setBranch(wsRequest.param(PARAM_BRANCH))
@@ -104,65 +110,40 @@ public class ProjectAction implements BatchWsAction {
 
   private static WsProjectResponse buildResponse(ProjectRepositories data) {
     WsProjectResponse.Builder response = WsProjectResponse.newBuilder();
-    setNullable(data.lastAnalysisDate(), response::setLastAnalysisDate, Date::getTime);
+    ofNullable(data.lastAnalysisDate()).map(Date::getTime).ifPresent(response::setLastAnalysisDate);
     response.setTimestamp(data.timestamp());
-    response.getMutableFileDataByModuleAndPath()
-      .putAll(buildFileDataByModuleAndPath(data));
-    response.getMutableSettingsByModule()
-      .putAll(buildSettingsByModule(data));
+    if (data instanceof SingleProjectRepository) {
+      response.putAllFileDataByPath(buildFileDataByPath((SingleProjectRepository) data));
+    } else {
+      response.putAllFileDataByModuleAndPath(buildFileDataByModuleAndPath((MultiModuleProjectRepository) data));
+    }
 
     return response.build();
   }
 
-  private static Map<String, WsProjectResponse.FileDataByPath> buildFileDataByModuleAndPath(ProjectRepositories data) {
-    Map<String, WsProjectResponse.FileDataByPath> fileDataByModuleAndPathResponse = new HashMap<>();
-    for (Map.Entry<String, Map<String, FileData>> moduleAndFileDataByPathEntry : data.fileDataByModuleAndPath().entrySet()) {
-      fileDataByModuleAndPathResponse.put(
-        moduleAndFileDataByPathEntry.getKey(),
-        buildFileDataByPath(moduleAndFileDataByPathEntry.getValue()));
-    }
+  private static Map<String, WsProjectResponse.FileDataByPath> buildFileDataByModuleAndPath(MultiModuleProjectRepository data) {
+    return data.repositoriesByModule().entrySet()
+      .stream()
+      .map(entry -> Maps.immutableEntry(entry.getKey(), buildFileDataByPath(entry.getValue().fileData())))
+      .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+  }
 
-    return fileDataByModuleAndPathResponse;
+  private static Map<String, WsProjectResponse.FileData> buildFileDataByPath(SingleProjectRepository data) {
+    return data.fileData().entrySet()
+      .stream()
+      .collect(Collectors.toMap(Map.Entry::getKey, e -> toFileDataResponse(e.getValue())));
   }
 
   private static WsProjectResponse.FileDataByPath buildFileDataByPath(Map<String, FileData> fileDataByPath) {
     WsProjectResponse.FileDataByPath.Builder response = WsProjectResponse.FileDataByPath.newBuilder();
-    Map<String, WsProjectResponse.FileData> fileDataByPathResponse = response.getMutableFileDataByPath();
-
-    for (Map.Entry<String, FileData> pathFileDataEntry : fileDataByPath.entrySet()) {
-      fileDataByPathResponse.put(
-        pathFileDataEntry.getKey(),
-        toFileDataResponse(pathFileDataEntry.getValue()));
-    }
-
+    fileDataByPath.forEach((key, value) -> response.putFileDataByPath(key, toFileDataResponse(value)));
     return response.build();
-  }
-
-  private static Map<String, WsProjectResponse.Settings> buildSettingsByModule(ProjectRepositories data) {
-    Map<String, WsProjectResponse.Settings> settingsByModuleResponse = new HashMap<>();
-    for (Map.Entry<String, Map<String, String>> moduleSettingsEntry : data.settings().entrySet()) {
-      settingsByModuleResponse.put(
-        moduleSettingsEntry.getKey(),
-        toSettingsResponse(moduleSettingsEntry.getValue()));
-    }
-
-    return settingsByModuleResponse;
-  }
-
-  private static WsProjectResponse.Settings toSettingsResponse(Map<String, String> settings) {
-    WsProjectResponse.Settings.Builder settingsResponse = WsProjectResponse.Settings
-      .newBuilder();
-    settingsResponse
-      .getMutableSettings()
-      .putAll(settings);
-
-    return settingsResponse.build();
   }
 
   private static WsProjectResponse.FileData toFileDataResponse(FileData fileData) {
     Builder fileDataBuilder = WsProjectResponse.FileData.newBuilder();
-    setNullable(fileData.hash(), fileDataBuilder::setHash);
-    setNullable(fileData.revision(), fileDataBuilder::setRevision);
+    ofNullable(fileData.hash()).ifPresent(fileDataBuilder::setHash);
+    ofNullable(fileData.revision()).ifPresent(fileDataBuilder::setRevision);
     return fileDataBuilder.build();
   }
 }

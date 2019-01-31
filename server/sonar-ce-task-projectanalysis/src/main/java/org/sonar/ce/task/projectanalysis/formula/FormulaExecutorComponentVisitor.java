@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -19,19 +19,12 @@
  */
 package org.sonar.ce.task.projectanalysis.formula;
 
-import com.google.common.base.Optional;
 import com.google.common.collect.ImmutableList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import javax.annotation.CheckForNull;
-import org.sonar.ce.task.projectanalysis.component.Component;
-import org.sonar.ce.task.projectanalysis.component.ComponentVisitor;
-import org.sonar.ce.task.projectanalysis.component.PathAwareVisitorAdapter;
-import org.sonar.ce.task.projectanalysis.metric.Metric;
-import org.sonar.ce.task.projectanalysis.metric.MetricRepository;
-import org.sonar.ce.task.projectanalysis.period.Period;
-import org.sonar.ce.task.projectanalysis.period.PeriodHolder;
 import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.ce.task.projectanalysis.component.ComponentVisitor;
 import org.sonar.ce.task.projectanalysis.component.CrawlerDepthLimit;
@@ -40,8 +33,6 @@ import org.sonar.ce.task.projectanalysis.measure.Measure;
 import org.sonar.ce.task.projectanalysis.measure.MeasureRepository;
 import org.sonar.ce.task.projectanalysis.metric.Metric;
 import org.sonar.ce.task.projectanalysis.metric.MetricRepository;
-import org.sonar.ce.task.projectanalysis.period.Period;
-import org.sonar.ce.task.projectanalysis.period.PeriodHolder;
 
 import static java.util.Objects.requireNonNull;
 
@@ -66,15 +57,12 @@ public class FormulaExecutorComponentVisitor extends PathAwareVisitorAdapter<For
     }
   };
 
-  @CheckForNull
-  private final PeriodHolder periodHolder;
   private final MetricRepository metricRepository;
   private final MeasureRepository measureRepository;
   private final List<Formula> formulas;
 
   private FormulaExecutorComponentVisitor(Builder builder, Iterable<Formula> formulas) {
     super(CrawlerDepthLimit.LEAVES, ComponentVisitor.Order.POST_ORDER, COUNTERS_FACTORY);
-    this.periodHolder = builder.periodHolder;
     this.measureRepository = builder.measureRepository;
     this.metricRepository = builder.metricRepository;
     this.formulas = ImmutableList.copyOf(formulas);
@@ -87,8 +75,6 @@ public class FormulaExecutorComponentVisitor extends PathAwareVisitorAdapter<For
   public static class Builder {
     private final MetricRepository metricRepository;
     private final MeasureRepository measureRepository;
-    @CheckForNull
-    private PeriodHolder periodHolder;
 
     private Builder(MetricRepository metricRepository, MeasureRepository measureRepository) {
       this.metricRepository = requireNonNull(metricRepository);
@@ -99,11 +85,6 @@ public class FormulaExecutorComponentVisitor extends PathAwareVisitorAdapter<For
       return new Builder(metricRepository, measureRepository);
     }
 
-    public Builder withVariationSupport(PeriodHolder periodHolder) {
-      this.periodHolder = requireNonNull(periodHolder);
-      return this;
-    }
-
     public FormulaExecutorComponentVisitor buildFor(Iterable<Formula> formulas) {
       return new FormulaExecutorComponentVisitor(this, formulas);
     }
@@ -112,11 +93,6 @@ public class FormulaExecutorComponentVisitor extends PathAwareVisitorAdapter<For
   @Override
   public void visitProject(Component project, Path<FormulaExecutorComponentVisitor.Counters> path) {
     process(project, path);
-  }
-
-  @Override
-  public void visitModule(Component module, Path<FormulaExecutorComponentVisitor.Counters> path) {
-    process(module, path);
   }
 
   @Override
@@ -212,15 +188,6 @@ public class FormulaExecutorComponentVisitor extends PathAwareVisitorAdapter<For
       return measureRepository.getRawMeasure(file, metricRepository.getByKey(metricKey));
     }
 
-    @Override
-    public Period getPeriod() {
-      return periodHolder.getPeriod();
-    }
-
-    @Override
-    public boolean hasPeriod() {
-      return periodHolder.hasPeriod();
-    }
   }
 
   public static class Counters {
@@ -244,7 +211,7 @@ public class FormulaExecutorComponentVisitor extends PathAwareVisitorAdapter<For
     }
   }
 
-  private class CreateMeasureContextImpl implements CreateMeasureContext {
+  private static class CreateMeasureContextImpl implements CreateMeasureContext {
     private final Component component;
     private final Metric metric;
 
@@ -263,14 +230,5 @@ public class FormulaExecutorComponentVisitor extends PathAwareVisitorAdapter<For
       return metric;
     }
 
-    @Override
-    public Period getPeriod() {
-      return periodHolder.getPeriod();
-    }
-
-    @Override
-    public boolean hasPeriod() {
-      return periodHolder.hasPeriod();
-    }
   }
 }

@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -27,7 +27,6 @@ import { Exporter, Profile } from '../types';
 
 interface Props {
   exporters: Exporter[];
-  onRequestFail: (reasong: any) => void;
   organization: string | null;
   profile: Profile;
   profiles: Profile[];
@@ -35,25 +34,31 @@ interface Props {
 }
 
 export default function ProfileDetails(props: Props) {
-  const { profile } = props;
+  const { organization, profile } = props;
   return (
     <div>
       <div className="quality-profile-grid">
         <div className="quality-profile-grid-left">
-          <ProfileRules {...props} />
-          <ProfileExporters {...props} />
+          <ProfileRules organization={organization} profile={profile} />
+          <ProfileExporters
+            exporters={props.exporters}
+            organization={organization}
+            profile={profile}
+          />
           {profile.actions &&
             profile.actions.edit &&
             !profile.isBuiltIn && (
-              <ProfilePermissions
-                organization={props.organization || undefined}
-                profile={profile}
-              />
+              <ProfilePermissions organization={organization || undefined} profile={profile} />
             )}
         </div>
         <div className="quality-profile-grid-right">
-          <ProfileInheritance {...props} />
-          <ProfileProjects {...props} />
+          <ProfileInheritance
+            organization={organization}
+            profile={profile}
+            profiles={props.profiles}
+            updateProfiles={props.updateProfiles}
+          />
+          <ProfileProjects organization={organization} profile={profile} />
         </div>
       </div>
     </div>

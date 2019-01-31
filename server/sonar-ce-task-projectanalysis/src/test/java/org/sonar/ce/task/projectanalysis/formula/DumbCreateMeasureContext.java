@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -21,18 +21,14 @@ package org.sonar.ce.task.projectanalysis.formula;
 
 import org.sonar.ce.task.projectanalysis.component.Component;
 import org.sonar.ce.task.projectanalysis.metric.Metric;
-import org.sonar.ce.task.projectanalysis.period.Period;
-import org.sonar.ce.task.projectanalysis.period.PeriodHolder;
 
 public class DumbCreateMeasureContext implements CreateMeasureContext {
   private final Component component;
   private final Metric metric;
-  private final PeriodHolder periodHolder;
 
-  public DumbCreateMeasureContext(Component component, Metric metric, PeriodHolder periodHolder) {
+  public DumbCreateMeasureContext(Component component, Metric metric) {
     this.component = component;
     this.metric = metric;
-    this.periodHolder = periodHolder;
   }
 
   @Override
@@ -45,13 +41,4 @@ public class DumbCreateMeasureContext implements CreateMeasureContext {
     return metric;
   }
 
-  @Override
-  public Period getPeriod() {
-    return periodHolder.getPeriod();
-  }
-
-  @Override
-  public boolean hasPeriod() {
-    return periodHolder.hasPeriod();
-  }
 }

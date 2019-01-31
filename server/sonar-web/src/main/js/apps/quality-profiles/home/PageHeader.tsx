@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -18,7 +18,6 @@
  * Inc., 51 Franklin Street, Fifth Floor, Boston, MA  02110-1301, USA.
  */
 import * as React from 'react';
-import * as PropTypes from 'prop-types';
 import { Link } from 'react-router';
 import CreateProfileForm from './CreateProfileForm';
 import RestoreProfileForm from './RestoreProfileForm';
@@ -27,12 +26,14 @@ import { getProfilePath } from '../utils';
 import { Actions } from '../../../api/quality-profiles';
 import { Button } from '../../../components/ui/buttons';
 import { translate } from '../../../helpers/l10n';
+import { withRouter, Router } from '../../../components/hoc/withRouter';
 
 interface Props {
   actions: Actions;
   languages: Array<{ key: string; name: string }>;
-  onRequestFail: (reason: any) => void;
   organization: string | null;
+  profiles: Profile[];
+  router: Pick<Router, 'push'>;
   updateProfiles: () => Promise<void>;
 }
 
@@ -41,12 +42,8 @@ interface State {
   restoreFormOpen: boolean;
 }
 
-export default class PageHeader extends React.PureComponent<Props, State> {
-  static contextTypes = {
-    router: PropTypes.object
-  };
-
-  state = {
+class PageHeader extends React.PureComponent<Props, State> {
+  state: State = {
     createFormOpen: false,
     restoreFormOpen: false
   };
@@ -58,7 +55,7 @@ export default class PageHeader extends React.PureComponent<Props, State> {
   handleCreate = (profile: Profile) => {
     this.props.updateProfiles().then(
       () => {
-        this.context.router.push(
+        this.props.router.push(
           getProfilePath(profile.name, profile.language, this.props.organization)
         );
       },
@@ -104,7 +101,9 @@ export default class PageHeader extends React.PureComponent<Props, State> {
           <Link
             className="spacer-left"
             target="_blank"
-            to={{ pathname: '/documentation/quality-profiles' }}>
+            to={{
+              pathname: '/documentation/instance-administration/quality-profiles/'
+            }}>
             {translate('learn_more')}
           </Link>
         </div>
@@ -112,7 +111,6 @@ export default class PageHeader extends React.PureComponent<Props, State> {
         {this.state.restoreFormOpen && (
           <RestoreProfileForm
             onClose={this.closeRestoreForm}
-            onRequestFail={this.props.onRequestFail}
             onRestore={this.props.updateProfiles}
             organization={this.props.organization}
           />
@@ -123,11 +121,13 @@ export default class PageHeader extends React.PureComponent<Props, State> {
             languages={this.props.languages}
             onClose={this.closeCreateForm}
             onCreate={this.handleCreate}
-            onRequestFail={this.props.onRequestFail}
             organization={this.props.organization}
+            profiles={this.props.profiles}
           />
         )}
       </header>
     );
   }
 }
+
+export default withRouter(PageHeader);

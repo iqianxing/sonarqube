@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -25,11 +25,10 @@ import Msvc from './Msvc';
 import ClangGCC from './ClangGCC';
 import Other from './Other';
 import { getHostUrl } from '../../../../helpers/urls';
-import { Component } from '../../../../app/types';
 import { LanguageConfig } from '../../utils';
 
 interface Props {
-  component?: Component;
+  component?: T.Component;
   organization?: string;
   languageConfig: LanguageConfig;
   small?: boolean;

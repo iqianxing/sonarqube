@@ -1,6 +1,6 @@
 /*
  * SonarQube
- * Copyright (C) 2009-2018 SonarSource SA
+ * Copyright (C) 2009-2019 SonarSource SA
  * mailto:info AT sonarsource DOT com
  *
  * This program is free software; you can redistribute it and/or
@@ -22,17 +22,18 @@ import visit from 'unist-util-visit';
 import { DocumentationEntry, DocumentationEntryScope } from './utils';
 import * as Docs from './documentation.directory-loader';
 import { separateFrontMatter, filterContent } from '../../helpers/markdown';
-import { isSonarCloud } from '../../helpers/system';
 
 export default function getPages(): DocumentationEntry[] {
-  return Docs.map((file: any) => {
+  return ((Docs as unknown) as Array<{ content: string; path: string }>).map(file => {
     const parsed = separateFrontMatter(file.content);
     const content = filterContent(parsed.content);
     const text = getText(content);
 
     return {
       relativeName: file.path,
+      url: parsed.frontmatter.url || `/${file.path}`,
       title: parsed.frontmatter.title,
+      navTitle: parsed.frontmatter.nav || undefined,
       order: Number(parsed.frontmatter.order || -1),
       scope: parsed.frontmatter.scope
         ? (parsed.frontmatter.scope.toLowerCase() as DocumentationEntryScope)
@@ -40,11 +41,6 @@ export default function getPages(): DocumentationEntry[] {
       text,
       content: file.content
     };
-  }).filter((page: DocumentationEntry) => {
-    if (!page.scope) {
-      return true;
-    }
-    return isSonarCloud() ? page.scope === 'sonarcloud' : page.scope === 'sonarqube';
   });
 }
 
